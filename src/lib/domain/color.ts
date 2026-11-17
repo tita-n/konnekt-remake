@@ -48,7 +48,10 @@ export function readableOn(background: string): "#0C1411" | "#FFFFFF" {
 
 export const LIGHT_SURFACE = "#FFFFFF";
 export const DARK_SURFACE = "#0F1512";
+/** WCAG 2.2 AA for normal text. */
 export const AA_TEXT = 4.5;
+/** WCAG 1.4.11 non-text contrast for UI components and boundaries. */
+export const AA_NON_TEXT = 3;
 
 export interface ContrastReport {
   onWhite: number;
@@ -60,8 +63,10 @@ export interface ContrastReport {
 }
 
 /**
- * Accent colours must work as small text on both light and dark surfaces and
- * as a primary-button background with white text.
+ * An accent is used as a UI component colour (buttons, links, boundaries) on
+ * both light and dark surfaces, and as a button background carrying text. It
+ * must clear WCAG 1.4.11 (3:1) in both themes, and whichever text colour we
+ * derive on top of it must clear 4.5:1.
  */
 export function checkAccentContrast(accent: string): ContrastReport {
   if (!HEX_COLOUR.test(accent)) {
@@ -77,11 +82,19 @@ export function checkAccentContrast(accent: string): ContrastReport {
   const onWhite = roundRatio(contrastRatio(accent, LIGHT_SURFACE));
   const onDark = roundRatio(contrastRatio(accent, DARK_SURFACE));
   const accentText = Math.min(onWhite, onDark);
-  const primaryButton = roundRatio(contrastRatio(accent, "#FFFFFF"));
+  const whiteOnAccent = roundRatio(contrastRatio(accent, "#FFFFFF"));
+  const darkOnAccent = roundRatio(contrastRatio(accent, "#0C1411"));
+  const primaryButton = Math.max(whiteOnAccent, darkOnAccent);
   const messages: string[] = [];
-  if (onWhite < AA_TEXT) messages.push(`Needs ${AA_TEXT}:1 against white for accent text (currently ${onWhite}:1).`);
-  if (onDark < AA_TEXT) messages.push(`Needs ${AA_TEXT}:1 against the dark surface (currently ${onDark}:1).`);
-  if (primaryButton < AA_TEXT) messages.push(`White text on this accent is only ${primaryButton}:1.`);
+  if (onWhite < AA_NON_TEXT) {
+    messages.push(`Too light for the light theme: needs ${AA_NON_TEXT}:1 against white, currently ${onWhite}:1.`);
+  }
+  if (onDark < AA_NON_TEXT) {
+    messages.push(`Too dark for the dark theme: needs ${AA_NON_TEXT}:1 against the dark surface, currently ${onDark}:1.`);
+  }
+  if (primaryButton < AA_TEXT) {
+    messages.push(`Text on this accent reaches only ${primaryButton}:1; it needs ${AA_TEXT}:1.`);
+  }
   return { onWhite, onDark, accentText, primaryButton, passes: messages.length === 0, messages };
 }
 
@@ -111,6 +124,20 @@ export function accentSurface(accent: string, dark: boolean): { background: stri
   }
   const background = mix(accent, "#FFFFFF", 0.88);
   return { background, foreground: contrastRatio(background, "#0C1411") >= AA_TEXT ? "#0C1411" : "#000000" };
+}
+
+export interface AccentCssVars {
+  "--accent": string;
+  "--accent-fg": string;
+}
+
+/**
+ * Inline CSS variables that retheme a subtree with a university accent.
+ * Tinted surfaces are derived in CSS (color-mix) so they follow the active
+ * theme instead of baking in light-theme values.
+ */
+export function accentCssVars(accent: string): AccentCssVars {
+  return { "--accent": accent, "--accent-fg": readableOn(accent) };
 }
 
 export const hexColourSchema = z

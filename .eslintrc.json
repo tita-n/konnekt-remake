@@ -1,5 +1,7 @@
 {
-  "extends": ["next/core-web-vitals"],
+  "extends": [
+    "next/core-web-vitals"
+  ],
   "rules": {
     "no-restricted-imports": [
       "error",
@@ -21,14 +23,26 @@
         "src/lib/db/tenant.ts",
         "src/lib/auth/session.ts",
         "src/lib/audit.ts",
+        "src/lib/services/**",
+        "src/lib/media/**",
+        "src/lib/email/**",
+        "src/app/api/signup/**",
+        "src/app/(auth)/signup/actions.ts",
+        "src/app/(auth)/signup/[slug]/account/actions.ts",
+        "src/app/api/dev/**",
         "src/app/platform/**",
         "prisma/**",
         "tests/**",
         "e2e/**",
         "scripts/**",
-        "src/app/api/dev/**"
+        "src/app/api/dev/**",
+        "src/app/(auth)/**",
+        "src/app/api/admin/**",
+        "src/app/invite/**"
       ],
-      "rules": { "no-restricted-imports": "off" }
+      "rules": {
+        "no-restricted-imports": "off"
+      }
     }
   ]
 }

@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { AppearanceProvider } from "@/components/providers/appearance-provider";
 import { ToastProvider } from "@/components/providers/toast-provider";
+import { OfflineBanner, PwaProvider } from "@/components/pwa/pwa-provider";
 import "./globals.css";
 
 const inter = Inter({
@@ -75,14 +76,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {/* Must run before first paint to avoid a light/dark flash; it is a
             cached 400-byte static file, not an inline script. */}
         {/* eslint-disable-next-line @next/next/no-sync-scripts */}
-        <script src="/theme-init.js" nonce={nonce} />
+        <script src="/theme-init.js" nonce={nonce} suppressHydrationWarning />
       </head>
       <body>
         <AppearanceProvider>
           <ToastProvider>
+            <PwaProvider />
             <a href="#main" className="skip-link">
               Skip to content
             </a>
+            <OfflineBanner />
             {children}
           </ToastProvider>
         </AppearanceProvider>

@@ -56,11 +56,11 @@ export function Avatar({
         )}
       </span>
       {official ? (
-        <span className="absolute -bottom-0.5 -right-0.5 rounded-full bg-surface" aria-label="Official account">
+        <span className="absolute -bottom-0.5 -right-0.5 rounded-full bg-surface" role="img" aria-label="Official account">
           <ShieldCheck aria-hidden="true" className={cn(badgeSize, "text-accent")} fill="var(--surface)" />
         </span>
       ) : verified ? (
-        <span className="absolute -bottom-0.5 -right-0.5 rounded-full bg-surface" aria-label="Verified student">
+        <span className="absolute -bottom-0.5 -right-0.5 rounded-full bg-surface" role="img" aria-label="Verified student">
           <BadgeCheck aria-hidden="true" className={cn(badgeSize, "text-accent")} fill="var(--surface)" />
         </span>
       ) : null}

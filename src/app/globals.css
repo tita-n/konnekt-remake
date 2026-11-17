@@ -198,3 +198,16 @@ dialog.modal::backdrop {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+@layer base {
+  /* Tinted accent surfaces follow the active theme and the tenant accent. */
+  :root {
+    --accent-soft: color-mix(in srgb, var(--accent) 12%, #ffffff);
+    --accent-soft-fg: color-mix(in srgb, var(--accent) 38%, #0c1411);
+  }
+
+  [data-theme="dark"] {
+    --accent-soft: color-mix(in srgb, var(--accent) 22%, #0f1512);
+    --accent-soft-fg: color-mix(in srgb, var(--accent) 28%, #f5faf7);
+  }
+}

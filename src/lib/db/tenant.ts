@@ -16,9 +16,11 @@ const TENANT_MODELS = [
   "EmailCode",
   "Session",
   "AuditLog",
+  "RoleInvite",
 ] as const;
 
 const TENANT_MODEL_SET = new Set<string>(TENANT_MODELS);
+const TENANT_PROPERTY_SET = new Set<string>(TENANT_MODELS.map((model) => model.charAt(0).toLowerCase() + model.slice(1)));
 
 type TenantModelName = (typeof TENANT_MODELS)[number];
 
@@ -60,6 +62,12 @@ function injectData(data: unknown, universityId: string): unknown {
 }
 
 function tenantQueryExtension(universityId: string) {
+  /** Raw (unscoped) model access used only to verify tenant ownership. */
+  const rawModel = (model: string) =>
+    (platformDb as unknown as Record<string, {
+      findFirst: (args: unknown) => Promise<unknown>;
+    }>)[model]!;
+
   return {
     name: `tenant:${universityId}`,
     query: {
@@ -79,24 +87,58 @@ function tenantQueryExtension(universityId: string) {
             return query(args);
           }
 
-          if (READ_OPERATIONS.has(operation) || WRITE_OPERATIONS.has(operation)) {
+          // findFirst accepts a composite filter, so the tenant can be ANDed in.
+          if (READ_OPERATIONS.has(operation) && operation !== "findUnique" && operation !== "findUniqueOrThrow") {
             return query(whereWithTenant(args, universityId));
           }
 
-          if (operation === "create") {
-            return query({ ...args, data: injectData(args.data, universityId) });
+          // findUnique only accepts a unique filter. Resolve it through findFirst
+          // with the tenant ANDed in, so another tenant's row is simply absent.
+          if (operation === "findUnique" || operation === "findUniqueOrThrow") {
+            const result = await rawModel(model).findFirst(whereWithTenant(args, universityId));
+            if (result == null && operation === "findUniqueOrThrow") {
+              throw Object.assign(new Error("Record not found"), { code: "P2025" });
+            }
+            return result;
           }
 
-          if (CREATE_OPERATIONS.has(operation)) {
+          if (operation === "updateMany" || operation === "deleteMany") {
+            return query(whereWithTenant(args, universityId));
+          }
+
+          // Single-row update/delete require a unique where. Verify ownership
+          // first, then run the original unique query.
+          if (operation === "update" || operation === "delete") {
+            const existing = await rawModel(model).findFirst(
+              whereWithTenant({ where: args.where, select: { id: true } }, universityId),
+            );
+            if (!existing) {
+              throw Object.assign(new Error("Record not found"), { code: "P2025" });
+            }
+            if (operation === "update") assertSameTenant(args.data, universityId);
+            return query(args);
+          }
+
+          if (operation === "create" || CREATE_OPERATIONS.has(operation)) {
             return query({ ...args, data: injectData(args.data, universityId) });
           }
 
           if (operation === "upsert") {
             assertSameTenant(args.create, universityId);
             assertSameTenant(args.update, universityId);
+            const existing = await rawModel(model).findFirst({
+              where: args.where,
+              select: { id: true, universityId: true },
+            });
+            if (
+              existing &&
+              typeof existing === "object" &&
+              (existing as { universityId?: string }).universityId !== universityId
+            ) {
+              throw new Error("Tenant client: refusing to upsert another university's row");
+            }
             return query({
               ...args,
-              where: { AND: [args.where ?? {}, { universityId }] },
               create: { ...(args.create as Args), universityId },
               update: { ...(args.update as Args), universityId },
             });
@@ -134,7 +176,12 @@ export function tenantDb(universityId: string): TenantClient {
   const extended = platformDb.$extends(tenantQueryExtension(universityId));
   return new Proxy(extended, {
     get(target, property, receiver) {
-      if (typeof property === "string" && !property.startsWith("$") && !TENANT_MODEL_SET.has(property)) {
+      if (
+        typeof property === "string" &&
+        !property.startsWith("$") &&
+        !property.startsWith("_") &&
+        !TENANT_PROPERTY_SET.has(property)
+      ) {
         throw new Error(
           `Tenant client: model "${property}" is not tenant-scoped. Use an explicit platform-admin API.`,
         );

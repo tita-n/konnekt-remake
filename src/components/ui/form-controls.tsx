@@ -117,6 +117,86 @@ export const PasswordField = forwardRef<HTMLInputElement, TextFieldProps>(functi
   );
 });
 
+export interface TextAreaProps extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, "id">, FieldChrome {}
+
+export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(function TextArea(
+  { label, hint, error, required, hideLabel, id: providedId, labelAction, className, rows = 4, ...props },
+  ref,
+) {
+  const generated = useId();
+  const id = providedId ?? generated;
+  return (
+    <div className="w-full">
+      <div className="mb-1.5 flex items-baseline justify-between gap-3">
+        <label htmlFor={id} className={cn("text-small font-semibold text-fg", hideLabel && "sr-only", required && "label-required")}>
+          {label}
+        </label>
+        {labelAction}
+      </div>
+      <textarea
+        ref={ref}
+        id={id}
+        rows={rows}
+        required={required}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy(id, hint, error)}
+        className={cn(inputBase, "min-h-[104px] resize-y py-2.5", error ? "border-danger" : "border-border", className)}
+        {...props}
+      />
+      <FieldMessages id={id} hint={hint} error={error} />
+    </div>
+  );
+});
+
+export interface SelectFieldProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "id">, FieldChrome {
+  options: Array<{ value: string; label: string; disabled?: boolean }>;
+  placeholder?: string;
+}
+
+export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(function SelectField(
+  { label, hint, error, required, hideLabel, id: providedId, labelAction, options, placeholder, className, ...props },
+  ref,
+) {
+  const generated = useId();
+  const id = providedId ?? generated;
+  return (
+    <div className="w-full">
+      <div className="mb-1.5 flex items-baseline justify-between gap-3">
+        <label htmlFor={id} className={cn("text-small font-semibold text-fg", hideLabel && "sr-only", required && "label-required")}>
+          {label}
+        </label>
+        {labelAction}
+      </div>
+      <select
+        ref={ref}
+        id={id}
+        required={required}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy(id, hint, error)}
+        className={cn(
+          inputBase,
+          "h-11 appearance-none bg-[length:16px] bg-[right_0.9rem_center] bg-no-repeat pr-10",
+          error ? "border-danger" : "border-border",
+          className,
+        )}
+        style={{
+          backgroundImage:
+            "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2355645c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
+        }}
+        {...props}
+      >
+        {placeholder ? <option value="">{placeholder}</option> : null}
+        {options.map((option) => (
+          <option key={option.value} value={option.value} disabled={option.disabled}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <FieldMessages id={id} hint={hint} error={error} />
+    </div>
+  );
+});
+
 const strengthColors = ["bg-danger", "bg-danger", "bg-warning", "bg-accent", "bg-success"];
 
 export function PasswordStrengthMeter({ password, userInputs }: { password: string; userInputs?: string[] }) {

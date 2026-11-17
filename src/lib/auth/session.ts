@@ -28,6 +28,8 @@ export interface SessionUser {
   departmentVisibility: "EVERYONE" | "UNIVERSITY" | "NOBODY";
   levelVisibility: "EVERYONE" | "UNIVERSITY" | "NOBODY";
   createdAt: Date;
+  deletedRequestedAt: Date | null;
+  purgeAfter: Date | null;
   roles: Array<{ role: string; universityId: string | null }>;
   university: {
     id: string;
@@ -173,6 +175,8 @@ export async function getSession(): Promise<{ session: SessionRecord; user: Sess
       departmentVisibility: true,
       levelVisibility: true,
       createdAt: true,
+      deletedRequestedAt: true,
+      purgeAfter: true,
       roles: { select: { role: true, universityId: true } },
       university: {
         select: {
@@ -194,7 +198,7 @@ export async function getSession(): Promise<{ session: SessionRecord; user: Sess
       },
     },
   });
-  if (!user || user.status === "DELETED_PENDING") return null;
+  if (!user) return null;
 
   // Touch lastSeen at most once an hour per session to avoid write amplification.
   const lastSeenCutoff = new Date(Date.now() - 60 * 60 * 1000);

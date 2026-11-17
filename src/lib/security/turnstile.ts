@@ -35,5 +35,8 @@ export async function verifyTurnstile(token: string | null | undefined, remoteIp
 }
 
 export function turnstileSiteKey(): string {
+  // When server-side bypass is active in dev/test there is no point rendering
+  // a widget whose token would be ignored.
+  if (env.TURNSTILE_BYPASS && !isProduction) return "";
   return env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
 }

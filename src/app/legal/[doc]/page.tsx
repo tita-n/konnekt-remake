@@ -1,0 +1,47 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { isLegalDoc, LEGAL_DOCS, readLegalDoc } from "@/lib/legal";
+
+export async function generateMetadata({ params }: { params: Promise<{ doc: string }> }): Promise<Metadata> {
+  const { doc } = await params;
+  return { title: isLegalDoc(doc) ? LEGAL_DOCS[doc] : "Legal" };
+}
+
+export default async function LegalPage({ params }: { params: Promise<{ doc: string }> }) {
+  const { doc } = await params;
+  if (!isLegalDoc(doc)) notFound();
+  const document = await readLegalDoc(doc);
+  if (!document) notFound();
+
+  return (
+    <article className="prose-legal max-w-none">
+      <p className="text-tiny font-bold uppercase tracking-[0.12em] text-accent">Version {document.version}</p>
+      <div className="mt-2">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+            h1: ({ children }) => <h1 className="text-h1 text-fg">{children}</h1>,
+            table: ({ children }) => (
+              <div className="my-4 overflow-x-auto">
+                <table className="w-full border-collapse text-small">{children}</table>
+              </div>
+            ),
+            th: ({ children }) => <th className="border-b border-border px-2 py-1.5 text-left font-semibold text-fg">{children}</th>,
+            td: ({ children }) => <td className="border-b border-border px-2 py-1.5 align-top text-fg-muted">{children}</td>,
+            code: ({ children }) => <code className="rounded bg-surface-2 px-1 py-0.5 text-[0.85em]">{children}</code>,
+            a: ({ href, children }) => (
+              <a href={href} className="text-accent underline underline-offset-2">
+                {children}
+              </a>
+            ),
+          }}
+        >
+          {document.body}
+        </ReactMarkdown>
+      </div>
+      {document.updated ? <p className="mt-8 text-tiny text-fg-subtle">Last updated {document.updated}.</p> : null}
+    </article>
+  );
+}
