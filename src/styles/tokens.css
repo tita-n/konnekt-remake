@@ -1,0 +1,110 @@
+/*
+ * Konnekt design tokens.
+ * Surfaces are flat and solid by default (Material 3 Expressive). Glass is
+ * reserved for the top bar, bottom tab bar and bottom sheets, and is switched
+ * off globally by [data-glass="solid"].
+ */
+:root {
+  --bg: #f3f5f4;
+  --surface: #ffffff;
+  --surface-2: #eef2ef;
+  --surface-3: #e4eae6;
+  --fg: #0c1411;
+  --fg-muted: #55645c;
+  --fg-subtle: #6d7c74;
+  --border: #dce3df;
+  --border-strong: #c3cec8;
+
+  /* Overridden at runtime with the university accent. */
+  --accent: #1b7f5a;
+  --accent-fg: #ffffff;
+  --accent-soft: #e6f2ec;
+  --accent-soft-fg: #0c1411;
+
+  --danger: #b3261e;
+  --danger-fg: #ffffff;
+  --danger-soft: #fceceb;
+  --success: #17694b;
+  --success-soft: #e4f3ec;
+  --warning: #7a5200;
+  --warning-soft: #fdf3df;
+  --focus: #0b5fff;
+
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.65);
+  --glass-blur: 8px;
+
+  --radius-card: 16px;
+  --radius-button: 12px;
+  --shadow-card: 0 1px 2px rgba(12, 20, 17, 0.04);
+
+  --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: var(--font-jakarta), var(--font-sans);
+
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --bg: #0a0f0d;
+  --surface: #121915;
+  --surface-2: #18211c;
+  --surface-3: #202b25;
+  --fg: #f1f5f2;
+  --fg-muted: #a5b3aa;
+  --fg-subtle: #90a096;
+  --border: #26332c;
+  --border-strong: #37463e;
+  --accent-soft: #17342a;
+  --accent-soft-fg: #f1f5f2;
+  --danger: #ff8a80;
+  --danger-fg: #2a0908;
+  --danger-soft: #37130f;
+  --success: #7ad3ac;
+  --success-soft: #112b21;
+  --warning: #f3c26b;
+  --warning-soft: #2e2413;
+  --focus: #8fb3ff;
+
+  --glass-bg: rgba(18, 25, 21, 0.68);
+  --glass-border: rgba(255, 255, 255, 0.12);
+
+  color-scheme: dark;
+}
+
+[data-glass="solid"] {
+  --glass-bg: var(--surface);
+  --glass-border: var(--border);
+  --glass-blur: 0px;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --glass-bg: var(--surface);
+    --glass-border: var(--border);
+    --glass-blur: 0px;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --border: #8c9a92;
+    --fg-muted: #3a463f;
+    --glass-bg: var(--surface);
+    --glass-blur: 0px;
+  }
+  [data-theme="dark"] {
+    --border: #5b6b62;
+    --fg-muted: #d3ddd7;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
