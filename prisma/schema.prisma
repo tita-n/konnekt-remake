@@ -1,0 +1,307 @@
+// Konnekt data model — Phase 0.
+// Every tenant-owned model carries universityId and is only reachable through
+// the tenant-scoped client in src/lib/db/tenant.ts.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UniversityStatus {
+  WAITLIST
+  ACTIVE
+  OFF
+}
+
+enum AcademicNodeType {
+  COLLEGE
+  FACULTY
+  DEPARTMENT
+}
+
+enum UserStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+  SUSPENDED
+  ALUMNI
+  DELETED_PENDING
+}
+
+enum Role {
+  PLATFORM_ADMIN
+  UNIVERSITY_ADMIN
+  REVIEWER
+  MODERATOR
+  OFFICIAL
+}
+
+enum VerificationMethod {
+  STUDENT_EMAIL
+  ID_CARD
+  VOUCH
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum DecisionReason {
+  MATRIC_MISMATCH
+  ID_UNREADABLE
+  DUPLICATE_ACCOUNT
+  NOT_A_STUDENT
+  EXPIRED_DOCUMENT
+  FAKE_DOCUMENT
+  OTHER
+}
+
+enum EmailCodePurpose {
+  SIGNUP_EMAIL
+  STUDENT_EMAIL
+  PASSWORD_RESET
+}
+
+enum WaitlistKind {
+  UNIVERSITY
+  STUDENT
+}
+
+enum Visibility {
+  EVERYONE
+  UNIVERSITY
+  NOBODY
+}
+
+model University {
+  id                  String           @id @default(cuid())
+  name                String
+  shortName           String
+  slug                String           @unique
+  logoUrl             String?
+  accentColor         String           @default("#1B7F5A")
+  status              UniversityStatus @default(WAITLIST)
+  /// Layer labels, e.g. { "COLLEGE": "College", "FACULTY": "Faculty", "DEPARTMENT": "Department" }
+  labels              Json             @default("{}")
+  /// Phase-gated capabilities, e.g. { "campusVoice": false }
+  featureFlags        Json             @default("{}")
+  studentEmailDomains String[]         @default([])
+  idCardEnabled       Boolean          @default(true)
+  vouchingEnabled     Boolean          @default(false)
+  matricPattern       String           @default("^\\d{2}/\\d{4,5}/\\d{3}$")
+  /// Required consent version for this university's signup, e.g. "2026-01-01"
+  policyVersion       String           @default("2026-01-01")
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  academicNodes        AcademicNode[]
+  users                User[]
+  roleAssignments      RoleAssignment[]
+  verificationRequests VerificationRequest[]
+  auditLogs            AuditLog[]
+
+  @@index([status])
+}
+
+model AcademicNode {
+  id           String           @id @default(cuid())
+  universityId String
+  parentId     String?
+  type         AcademicNodeType
+  name         String
+  slug         String
+  /// Materialized path of ancestor ids, root-first, slash separated, no trailing slash.
+  /// "" for a root node; e.g. "college1/faculty1" for a department.
+  path         String           @default("")
+  sortOrder    Int              @default(0)
+  isActive     Boolean          @default(true)
+  /// Allowed levels for a department, e.g. [100,200,300,400,500,600]. Empty for non-departments.
+  levels       Int[]            @default([])
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  university University     @relation(fields: [universityId], references: [id], onDelete: Restrict)
+  parent     AcademicNode?  @relation("AcademicTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children   AcademicNode[] @relation("AcademicTree")
+  users      User[]
+  parentPath String         @default("") @map("parent_path")
+
+  @@unique([universityId, parentPath, slug], map: "academic_node_unique_slug")
+  @@index([universityId])
+  @@index([universityId, path])
+  @@index([universityId, parentId, sortOrder])
+}
+
+model User {
+  id                   String     @id @default(cuid())
+  universityId         String
+  email                String     @unique
+  emailVerified        Boolean    @default(false)
+  username             String     @unique
+  passwordHash         String
+  fullName             String
+  photoUrl             String?
+  bio                  String?
+  status               UserStatus @default(UNVERIFIED)
+  matricNumber         String?
+  matricNormalized     String?
+  departmentNodeId     String?
+  level                Int?
+  isPostgraduate       Boolean    @default(false)
+  interests            String[]   @default([])
+  consentPolicyVersion String?
+  consentAcceptedAt    DateTime?
+  departmentVisibility Visibility @default(UNIVERSITY)
+  levelVisibility      Visibility @default(UNIVERSITY)
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+  lastActiveAt         DateTime?
+  verifiedAt           DateTime?
+  deletedRequestedAt   DateTime?
+  purgeAfter           DateTime?
+
+  university           University            @relation(fields: [universityId], references: [id], onDelete: Restrict)
+  department           AcademicNode?         @relation(fields: [departmentNodeId], references: [id], onDelete: Restrict)
+  roles                RoleAssignment[]
+  sessions             Session[]
+  emailCodes           EmailCode[]
+  verificationRequests VerificationRequest[] @relation("Requester")
+  vouchesGiven         VerificationRequest[] @relation("Voucher")
+  reviewsGiven         VerificationRequest[] @relation("Reviewer")
+  passwordResets       PasswordResetToken[]
+  auditLogs            AuditLog[]
+
+  @@index([universityId])
+  @@index([universityId, status])
+  @@index([universityId, matricNormalized])
+  @@index([universityId, departmentNodeId])
+}
+
+model RoleAssignment {
+  id           String   @id @default(cuid())
+  userId       String
+  universityId String?
+  role         Role
+  grantedBy    String?
+  createdAt    DateTime @default(now())
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  university University? @relation(fields: [universityId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([universityId, role])
+}
+
+model VerificationRequest {
+  id               String             @id @default(cuid())
+  userId           String
+  universityId     String
+  method           VerificationMethod
+  matricNumber     String?
+  matricNormalized String?
+  /// Cloudinary private asset id. Wiped when the request is decided.
+  idImageRef       String?
+  status           VerificationStatus @default(PENDING)
+  voucherId        String?
+  reviewerId       String?
+  decisionReason   DecisionReason?
+  decisionNote     String?
+  createdAt        DateTime           @default(now())
+  decidedAt        DateTime?
+
+  user       User       @relation("Requester", fields: [userId], references: [id], onDelete: Cascade)
+  voucher    User?      @relation("Voucher", fields: [voucherId], references: [id], onDelete: SetNull)
+  reviewer   User?      @relation("Reviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  university University @relation(fields: [universityId], references: [id], onDelete: Restrict)
+
+  @@index([universityId, status, createdAt])
+  @@index([userId, status])
+  @@index([voucherId, status])
+  @@index([universityId, matricNormalized])
+}
+
+model EmailCode {
+  id         String           @id @default(cuid())
+  userId     String?
+  universityId String?
+  email      String
+  purpose    EmailCodePurpose
+  codeHash   String
+  expiresAt  DateTime
+  attempts   Int              @default(0)
+  consumedAt DateTime?
+  createdAt  DateTime         @default(now())
+
+  user       User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([email, purpose, createdAt])
+  @@index([universityId])
+  @@index([userId, purpose])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}model Session {
+  id        String    @id @default(cuid())
+  userId    String
+  universityId String?
+  tokenHash String    @unique
+  userAgent  String?
+  ipHash     String?
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  lastSeenAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([universityId])
+}
+
+model WaitlistEntry {
+  id             String       @id @default(cuid())
+  kind           WaitlistKind
+  universityName String?
+  email          String
+  createdAt      DateTime     @default(now())
+
+  @@index([kind, createdAt])
+  @@index([email])
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  actorId      String?
+  universityId String?
+  action       String
+  targetType   String
+  targetId     String?
+  metadata     Json     @default("{}")
+  ipHash       String?
+  createdAt    DateTime @default(now())
+
+  actor      User?       @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  university University? @relation(fields: [universityId], references: [id], onDelete: SetNull)
+
+  @@index([universityId, createdAt])
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
+}
