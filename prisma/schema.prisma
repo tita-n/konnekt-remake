@@ -105,7 +105,9 @@ model University {
   users                User[]
   roleAssignments      RoleAssignment[]
   verificationRequests VerificationRequest[]
-  auditLogs            AuditLog[]
+  auditLogs           AuditLog[]
+  signupDrafts        SignupDraft[]
+  roleInvites         RoleInvite[]
 
   @@index([status])
 }
@@ -184,6 +186,34 @@ model User {
   @@index([universityId, departmentNodeId])
 }
 
+/// Pre-account signup state. A student may verify their student email or submit
+/// an ID card before an account exists; the draft holds that proof (and only a
+/// password *hash*) for at most 24 hours, then becomes a User atomically.
+model SignupDraft {
+  id                   String             @id @default(cuid())
+  tokenHash            String             @unique
+  universityId         String
+  method               VerificationMethod
+  matricNumber         String?
+  matricNormalized     String?
+  idImageRef           String?
+  vouchId              String?
+  studentEmail         String?
+  studentEmailVerifiedAt DateTime?
+  pendingFullName      String?
+  pendingUsername      String?
+  pendingEmail         String?
+  pendingPasswordHash  String?
+  emailCodeSentAt      DateTime?
+  createdAt            DateTime           @default(now())
+  expiresAt            DateTime
+
+  university           University         @relation(fields: [universityId], references: [id], onDelete: Cascade)
+
+  @@index([universityId])
+  @@index([expiresAt])
+}
+
 model RoleAssignment {
   id           String   @id @default(cuid())
   userId       String
@@ -197,6 +227,25 @@ model RoleAssignment {
 
   @@index([userId])
   @@index([universityId, role])
+}
+
+/// Email invitation to hold a staff role. Tokens are single-use, hashed and
+/// expire; accepting requires being signed in with the invited address.
+model RoleInvite {
+  id           String    @id @default(cuid())
+  universityId String?
+  email        String
+  role         Role
+  tokenHash    String    @unique
+  invitedBy    String?
+  expiresAt    DateTime
+  acceptedAt   DateTime?
+  createdAt    DateTime  @default(now())
+
+  university   University? @relation(fields: [universityId], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([universityId])
 }
 
 model VerificationRequest {
