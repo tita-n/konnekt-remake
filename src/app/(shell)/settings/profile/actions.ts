@@ -68,4 +68,3 @@ export async function updateProfileAction(_prev: FormState, formData: FormData):
   revalidatePath("/settings/profile");
   return { ok: true, message: "Profile saved." };
 }
-
