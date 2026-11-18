@@ -69,4 +69,3 @@ export async function updateProfileAction(_prev: FormState, formData: FormData):
   return { ok: true, message: "Profile saved." };
 }
 
-export { bioSchema };

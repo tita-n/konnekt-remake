@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   ArrowLeft,
   ClipboardCheck,
+  Flag,
   LayoutDashboard,
   Network,
   Settings2,
@@ -20,6 +21,7 @@ interface NavItem {
   label: string;
   icon: LucideIcon;
   adminOnly?: boolean;
+  moderatorOnly?: boolean;
   badge?: number;
 }
 
@@ -29,23 +31,30 @@ export function AdminShell({
   user,
   pendingCount,
   isAdmin,
+  canModerate,
+  reportCount,
 }: {
   children: React.ReactNode;
   university: { name: string; shortName: string; logoUrl: string | null; accentColor: string; status: string };
   user: { fullName: string; photoUrl: string | null };
   pendingCount: number;
   isAdmin: boolean;
+  canModerate: boolean;
+  reportCount: number;
 }) {
   const pathname = usePathname();
   const nav: NavItem[] = [
     { href: "/admin", label: "Overview", icon: LayoutDashboard },
     { href: "/admin/verification", label: "Verification", icon: ClipboardCheck, badge: pendingCount },
+    { href: "/admin/reports", label: "Reports", icon: Flag, moderatorOnly: true, badge: reportCount },
     { href: "/admin/students", label: "Students", icon: Users, adminOnly: true },
     { href: "/admin/academic", label: "Academic tree", icon: Network, adminOnly: true },
     { href: "/admin/team", label: "Team", icon: ShieldCheck, adminOnly: true },
     { href: "/admin/settings", label: "University", icon: Settings2, adminOnly: true },
   ];
-  const visible = nav.filter((item) => !item.adminOnly || isAdmin);
+  const visible = nav.filter(
+    (item) => (!item.adminOnly || isAdmin) && (!item.moderatorOnly || canModerate),
+  );
 
   return (
     <div className="min-h-dvh bg-bg text-fg md:flex">

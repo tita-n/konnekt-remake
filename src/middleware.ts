@@ -14,7 +14,7 @@ function buildCsp(nonce: string, isDev: boolean, appUrl: string): string {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https://res.cloudinary.com",
     "font-src 'self' data:",
-    `connect-src 'self' ${turnstile} ${sentry}${isDev ? " ws: wss:" : ""}`,
+    `connect-src 'self' ${turnstile} ${sentry} https://api.cloudinary.com${isDev ? " ws: wss:" : ""}`,
     `frame-src ${turnstile}`,
     "worker-src 'self' blob:",
     "manifest-src 'self'",

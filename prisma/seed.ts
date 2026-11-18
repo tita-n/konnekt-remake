@@ -10,9 +10,13 @@ import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
+import { assertSeedAllowed } from "./seed-guard";
+import { seedSocialContent } from "./seed-social";
 
-if (process.env.NODE_ENV === "production") {
-  console.error("Refusing to seed: NODE_ENV=production. Seed data never belongs in production.");
+try {
+  assertSeedAllowed();
+} catch (error) {
+  console.error(error instanceof Error ? error.message : "Refusing to seed.");
   process.exit(1);
 }
 
@@ -299,6 +303,45 @@ async function main() {
     interests: ["Coding", "Afrobeats", "Basketball", "Design"],
   });
 
+  // Fixed accounts for the audience matrix in end-to-end tests.
+  await upsertUser({
+    email: "levelmate@demo.edu.ng",
+    username: "adaeze_levelmate",
+    fullName: "Kamsi Eze",
+    status: "VERIFIED",
+    departmentKey: "dept-computer",
+    level: 300,
+    matric: "CSC/2022/1088",
+    bio: "Same department, same level. Usually in the lab.",
+  });
+  await upsertUser({
+    email: "otherlevel@demo.edu.ng",
+    username: "obi_400",
+    fullName: "Obi Nwankwo",
+    status: "VERIFIED",
+    departmentKey: "dept-computer",
+    level: 400,
+    matric: "CSC/2021/0921",
+  });
+  await upsertUser({
+    email: "otherdept@demo.edu.ng",
+    username: "maths_300",
+    fullName: "Sade Ogun",
+    status: "VERIFIED",
+    departmentKey: "dept-mathematics",
+    level: 300,
+    matric: "MTH/2022/3301",
+  });
+  await upsertUser({
+    email: "othercollege@demo.edu.ng",
+    username: "law_300",
+    fullName: "Bello Amina",
+    status: "VERIFIED",
+    departmentKey: "dept-law",
+    level: 300,
+    matric: "LAW/2022/7710",
+  });
+
   const pending = await upsertUser({
     email: "pending@demo.edu.ng",
     username: "emeka_pending",
@@ -400,6 +443,18 @@ async function main() {
       ],
     });
   }
+
+  await seedSocialContent(db, {
+    universityId: university.id,
+    nodeIds,
+    passwordHash: hashValue,
+    moderatorId: uniAdmin.id,
+    demoAuthors: [
+      { id: verified.id, fullName: "Adaeze Okonkwo", username: "adaeze", deptKey: "dept-computer", level: 300 },
+      { id: courseRep.id, fullName: "Tunde Bakare", username: "csc_rep", deptKey: "dept-computer", level: 400 },
+      { id: reviewer.id, fullName: "Ngozi Umeh", username: "demo_reviewer", deptKey: "dept-microbiology", level: 400 },
+    ],
+  });
 
   // A welcome audit entry proves the append-only log is wired up.
   const auditExists = await db.auditLog.findFirst({ where: { action: "seed.completed" } });

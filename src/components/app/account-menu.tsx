@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, LayoutDashboard, LogOut, Settings, ShieldCheck, UserRound } from "lucide-react";
+import { ChevronDown, LayoutDashboard, Settings, ShieldCheck, UserRound } from "lucide-react";
 import { Avatar } from "@/components/ui/display";
-import { signOutAction } from "@/app/actions/auth";
+import { LogoutButton } from "./logout-button";
 
 export function AccountMenu({
   name,
@@ -85,16 +85,9 @@ export function AccountMenu({
               </MenuLink>
             ) : null}
           </div>
-          <form action={signOutAction} className="border-t border-border p-1.5">
-            <button
-              type="submit"
-              role="menuitem"
-              className="flex w-full items-center gap-2.5 rounded-button px-3 py-2.5 text-left text-[0.9375rem] text-danger transition hover:bg-danger-soft"
-            >
-              <LogOut aria-hidden="true" className="size-4" />
-              Log out
-            </button>
-          </form>
+          <div className="border-t border-border p-1.5">
+            <LogoutButton />
+          </div>
         </div>
       ) : null}
     </div>

@@ -28,6 +28,22 @@ export const POLICIES = {
   waitlist: { limit: 5, windowSeconds: 60 * 60 },
   adminMutation: { limit: 120, windowSeconds: 60 },
   dataExport: { limit: 3, windowSeconds: 24 * 60 * 60 },
+  postCreate: { limit: 10, windowSeconds: 60 * 60 },
+  commentCreate: { limit: 5, windowSeconds: 60 },
+  commentCreateHourly: { limit: 60, windowSeconds: 60 * 60 },
+  reaction: { limit: 120, windowSeconds: 60 },
+  report: { limit: 20, windowSeconds: 24 * 60 * 60 },
+  pollVote: { limit: 60, windowSeconds: 60 * 60 },
+  uploadSign: { limit: 40, windowSeconds: 60 * 60 },
+  mentionSearch: { limit: 120, windowSeconds: 60 },
+  // Accounts younger than 24 hours get a reduced budget under a separate key,
+  // so the stricter window can never inherit a cached looser limiter.
+  postCreateYoung: { limit: 5, windowSeconds: 60 * 60 },
+  commentCreateYoung: { limit: 3, windowSeconds: 60 },
+  commentCreateHourlyYoung: { limit: 20, windowSeconds: 60 * 60 },
+  reactionYoung: { limit: 60, windowSeconds: 60 },
+  reportYoung: { limit: 5, windowSeconds: 24 * 60 * 60 },
+  pollVoteYoung: { limit: 30, windowSeconds: 60 * 60 },
 } as const satisfies Record<string, Policy>;
 
 export type PolicyName = keyof typeof POLICIES;
@@ -78,11 +94,23 @@ function limiterFor(name: PolicyName, policy: Policy): Ratelimit | null {
   return limiter;
 }
 
-export async function rateLimit(
+/**
+ * Stricter limits for accounts younger than 24 hours. The caller passes a
+ * reduced policy for new accounts; the same sliding-window machinery applies.
+ */
+export async function rateLimitWithPolicy(
   name: PolicyName,
+  policy: Policy,
   identifier: string,
 ): Promise<LimitResult> {
-  const policy = POLICIES[name];
+  return limitInternal(name, policy, identifier);
+}
+
+export async function rateLimit(name: PolicyName, identifier: string): Promise<LimitResult> {
+  return limitInternal(name, POLICIES[name], identifier);
+}
+
+async function limitInternal(name: PolicyName, policy: Policy, identifier: string): Promise<LimitResult> {
   const limiter = limiterFor(name, policy);
   if (!limiter) {
     if (isProduction) {

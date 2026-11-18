@@ -91,4 +91,3 @@ export async function saveInterestsStep(_prev: FormState, formData: FormData): P
   redirect(user.status === "PENDING" || user.status === "REJECTED" || user.status === "UNVERIFIED" ? "/status" : "/pulse");
 }
 
-export { bioSchema };

@@ -80,6 +80,77 @@ enum Visibility {
   NOBODY
 }
 
+enum PostType {
+  POST
+  QUESTION
+  POLL
+  REPOST
+}
+
+enum AudienceKind {
+  PUBLIC
+  COLLEGE
+  FACULTY
+  DEPARTMENT
+  LEVEL
+}
+
+enum PostStatus {
+  ACTIVE
+  REMOVED
+  DELETED
+}
+
+enum CommentStatus {
+  ACTIVE
+  REMOVED
+  DELETED
+}
+
+enum ReactionTargetType {
+  POST
+  COMMENT
+}
+
+enum MentionSourceType {
+  POST
+  COMMENT
+}
+
+enum ReportTargetType {
+  POST
+  COMMENT
+}
+
+enum ReportReason {
+  SPAM
+  HARASSMENT
+  HATE_OR_ABUSE
+  NUDITY_OR_SEXUAL_CONTENT
+  VIOLENCE_OR_THREATS
+  IMPERSONATION
+  FALSE_INFORMATION
+  SOMETHING_ELSE
+}
+
+enum ReportStatus {
+  PENDING
+  RESOLVED
+}
+
+enum ModerationTargetType {
+  POST
+  COMMENT
+  USER
+}
+
+enum ModerationActionType {
+  REMOVE
+  KEEP
+  WARN
+  SUSPEND
+}
+
 model University {
   id                  String           @id @default(cuid())
   name                String
@@ -105,9 +176,9 @@ model University {
   users                User[]
   roleAssignments      RoleAssignment[]
   verificationRequests VerificationRequest[]
-  auditLogs           AuditLog[]
-  signupDrafts        SignupDraft[]
-  roleInvites         RoleInvite[]
+  auditLogs            AuditLog[]
+  signupDrafts         SignupDraft[]
+  roleInvites          RoleInvite[]
 
   @@index([status])
 }
@@ -168,6 +239,8 @@ model User {
   verifiedAt           DateTime?
   deletedRequestedAt   DateTime?
   purgeAfter           DateTime?
+  suspendedUntil       DateTime?
+  flaggedForReviewAt   DateTime?
 
   university           University            @relation(fields: [universityId], references: [id], onDelete: Restrict)
   department           AcademicNode?         @relation(fields: [departmentNodeId], references: [id], onDelete: Restrict)
@@ -179,6 +252,19 @@ model User {
   reviewsGiven         VerificationRequest[] @relation("Reviewer")
   passwordResets       PasswordResetToken[]
   auditLogs            AuditLog[]
+  posts                Post[]
+  comments             Comment[]
+  reactions            Reaction[]
+  bookmarks            Bookmark[]
+  drafts               Draft[]
+  mutesGiven           Mute[]                @relation("Muter")
+  mutesReceived        Mute[]                @relation("Muted")
+  blocksGiven          Block[]               @relation("Blocker")
+  blocksReceived       Block[]               @relation("Blocked")
+  reportsMade          Report[]              @relation("Reporter")
+  moderationActions    ModerationAction[]    @relation("Moderator")
+  strikes              Strike[]
+  mentions             Mention[]
 
   @@index([universityId])
   @@index([universityId, status])
@@ -190,25 +276,25 @@ model User {
 /// an ID card before an account exists; the draft holds that proof (and only a
 /// password *hash*) for at most 24 hours, then becomes a User atomically.
 model SignupDraft {
-  id                   String             @id @default(cuid())
-  tokenHash            String             @unique
-  universityId         String
-  method               VerificationMethod
-  matricNumber         String?
-  matricNormalized     String?
-  idImageRef           String?
-  vouchId              String?
-  studentEmail         String?
+  id                     String             @id @default(cuid())
+  tokenHash              String             @unique
+  universityId           String
+  method                 VerificationMethod
+  matricNumber           String?
+  matricNormalized       String?
+  idImageRef             String?
+  vouchId                String?
+  studentEmail           String?
   studentEmailVerifiedAt DateTime?
-  pendingFullName      String?
-  pendingUsername      String?
-  pendingEmail         String?
-  pendingPasswordHash  String?
-  emailCodeSentAt      DateTime?
-  createdAt            DateTime           @default(now())
-  expiresAt            DateTime
+  pendingFullName        String?
+  pendingUsername        String?
+  pendingEmail           String?
+  pendingPasswordHash    String?
+  emailCodeSentAt        DateTime?
+  createdAt              DateTime           @default(now())
+  expiresAt              DateTime
 
-  university           University         @relation(fields: [universityId], references: [id], onDelete: Cascade)
+  university University @relation(fields: [universityId], references: [id], onDelete: Cascade)
 
   @@index([universityId])
   @@index([expiresAt])
@@ -242,7 +328,7 @@ model RoleInvite {
   acceptedAt   DateTime?
   createdAt    DateTime  @default(now())
 
-  university   University? @relation(fields: [universityId], references: [id], onDelete: Cascade)
+  university University? @relation(fields: [universityId], references: [id], onDelete: Cascade)
 
   @@index([email])
   @@index([universityId])
@@ -277,18 +363,18 @@ model VerificationRequest {
 }
 
 model EmailCode {
-  id         String           @id @default(cuid())
-  userId     String?
+  id           String           @id @default(cuid())
+  userId       String?
   universityId String?
-  email      String
-  purpose    EmailCodePurpose
-  codeHash   String
-  expiresAt  DateTime
-  attempts   Int              @default(0)
-  consumedAt DateTime?
-  createdAt  DateTime         @default(now())
+  email        String
+  purpose      EmailCodePurpose
+  codeHash     String
+  expiresAt    DateTime
+  attempts     Int              @default(0)
+  consumedAt   DateTime?
+  createdAt    DateTime         @default(now())
 
-  user       User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([email, purpose, createdAt])
   @@index([universityId])
@@ -306,23 +392,346 @@ model PasswordResetToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-}model Session {
-  id        String    @id @default(cuid())
-  userId    String
+}
+model Session {
+  id           String    @id @default(cuid())
+  userId       String
   universityId String?
-  tokenHash String    @unique
-  userAgent  String?
-  ipHash     String?
-  createdAt  DateTime  @default(now())
-  expiresAt  DateTime
-  revokedAt  DateTime?
-  lastSeenAt DateTime  @default(now())
+  tokenHash    String    @unique
+  userAgent    String?
+  ipHash       String?
+  createdAt    DateTime  @default(now())
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  lastSeenAt   DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([expiresAt])
   @@index([universityId])
+}
+
+model Post {
+  id                String       @id @default(cuid())
+  universityId      String
+  authorId          String
+  type              PostType     @default(POST)
+  body              String       @db.Text
+  /// Path prefix of the audience, or ["PUBLIC"] for the whole university.
+  audiencePath      String[]     @default([])
+  audienceKind      AudienceKind @default(PUBLIC)
+  repostOfId        String?
+  questionTitle     String?
+  topicTag          String?
+  acceptedCommentId String?      @unique
+  status            PostStatus   @default(ACTIVE)
+  /// Recency with a small narrower-audience boost; cursor pagination sorts on this.
+  rankAt            DateTime     @default(now())
+  editedAt          DateTime?
+  removedAt         DateTime?
+  moderationReason  String?
+  /// Client-generated key so an offline retry can never create a duplicate.
+  idempotencyKey    String?      @unique
+  commentCount      Int          @default(0)
+  reactionCount     Int          @default(0)
+  repostCount       Int          @default(0)
+  bookmarkCount     Int          @default(0)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  author          User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  repostOf        Post?          @relation("Reposts", fields: [repostOfId], references: [id], onDelete: SetNull)
+  reposts         Post[]         @relation("Reposts")
+  acceptedComment Comment?       @relation("AcceptedAnswer", fields: [acceptedCommentId], references: [id], onDelete: SetNull)
+  media           PostMedia[]
+  poll            Poll?
+  comments        Comment[]
+  revisions       PostRevision[]
+  hashtags        PostHashtag[]
+
+  @@index([universityId, status, rankAt, id])
+  @@index([universityId, audienceKind, rankAt])
+  @@index([universityId, authorId, createdAt])
+  @@index([repostOfId])
+  @@index([createdAt])
+}
+
+model PostRevision {
+  id           String   @id @default(cuid())
+  universityId String
+  postId       String
+  editorId     String
+  body         String   @db.Text
+  createdAt    DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([universityId, postId, createdAt])
+}
+
+model PostMedia {
+  id           String  @id @default(cuid())
+  universityId String
+  postId       String
+  publicId     String
+  url          String?
+  width        Int
+  height       Int
+  order        Int     @default(0)
+  alt          String?
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([universityId, postId, order])
+}
+
+model Poll {
+  id           String   @id @default(cuid())
+  universityId String
+  postId       String   @unique
+  endsAt       DateTime
+  createdAt    DateTime @default(now())
+
+  post    Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  options PollOption[]
+  votes   PollVote[]
+
+  @@index([universityId, endsAt])
+}
+
+model PollOption {
+  id           String @id @default(cuid())
+  universityId String
+  pollId       String
+  text         String
+  order        Int    @default(0)
+  voteCount    Int    @default(0)
+
+  poll  Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  votes PollVote[]
+
+  @@index([universityId, pollId, order])
+}
+
+model PollVote {
+  id           String   @id @default(cuid())
+  universityId String
+  pollId       String
+  optionId     String
+  userId       String
+  createdAt    DateTime @default(now())
+
+  poll   Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  option PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  @@unique([pollId, userId], map: "poll_vote_one_per_user")
+  @@index([universityId, userId])
+}
+
+model Comment {
+  id               String        @id @default(cuid())
+  universityId     String
+  postId           String
+  authorId         String
+  parentId         String?
+  body             String        @db.Text
+  status           CommentStatus @default(ACTIVE)
+  helpfulCount     Int           @default(0)
+  removedAt        DateTime?
+  moderationReason String?
+  editedAt         DateTime?
+  createdAt        DateTime      @default(now())
+
+  post       Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author     User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent     Comment?  @relation("Replies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies    Comment[] @relation("Replies")
+  acceptedOn Post?     @relation("AcceptedAnswer")
+
+  @@index([universityId, postId, parentId, status, createdAt])
+  @@index([universityId, authorId, createdAt])
+}
+
+/// One kind only (heart); the row means "this user reacted to this target".
+model Reaction {
+  id           String             @id @default(cuid())
+  universityId String
+  userId       String
+  targetType   ReactionTargetType
+  targetId     String
+  createdAt    DateTime           @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([targetType, targetId, userId], map: "reaction_one_per_user")
+  @@index([universityId, targetId])
+  @@index([universityId, userId])
+}
+
+model Bookmark {
+  id           String   @id @default(cuid())
+  universityId String
+  userId       String
+  postId       String
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId], map: "bookmark_one_per_user")
+  @@index([universityId, userId, createdAt])
+}
+
+model Hashtag {
+  id           String   @id @default(cuid())
+  universityId String
+  tag          String
+  createdAt    DateTime @default(now())
+
+  posts PostHashtag[]
+
+  @@unique([universityId, tag])
+  @@index([universityId, createdAt])
+}
+
+model PostHashtag {
+  id           String @id @default(cuid())
+  universityId String
+  postId       String
+  hashtagId    String
+
+  post    Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  hashtag Hashtag @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, hashtagId])
+  @@index([universityId, hashtagId, postId])
+}
+
+model Mention {
+  id              String            @id @default(cuid())
+  universityId    String
+  sourceType      MentionSourceType
+  sourceId        String
+  mentionedUserId String
+  createdAt       DateTime          @default(now())
+
+  mentionedUser User @relation(fields: [mentionedUserId], references: [id], onDelete: Cascade)
+
+  @@index([universityId, mentionedUserId, createdAt])
+  @@index([sourceType, sourceId])
+}
+
+/// One helpful mark per student per answer. Kept separate from hearts so a
+/// helpful mark and a reaction can coexist without double counting.
+model HelpfulMark {
+  id           String   @id @default(cuid())
+  universityId String
+  commentId    String
+  userId       String
+  createdAt    DateTime @default(now())
+
+  @@unique([commentId, userId], map: "helpful_one_per_user")
+  @@index([universityId, commentId])
+}
+
+model Draft {
+  id           String   @id @default(cuid())
+  universityId String
+  userId       String
+  type         PostType @default(POST)
+  payload      Json     @default("{}")
+  audience     Json     @default("{}")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([universityId, userId, updatedAt])
+}
+
+model Mute {
+  id           String   @id @default(cuid())
+  universityId String
+  userId       String
+  mutedUserId  String
+  createdAt    DateTime @default(now())
+
+  user      User @relation("Muter", fields: [userId], references: [id], onDelete: Cascade)
+  mutedUser User @relation("Muted", fields: [mutedUserId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, mutedUserId], map: "mute_one_per_user")
+  @@index([universityId, mutedUserId])
+}
+
+model Block {
+  id            String   @id @default(cuid())
+  universityId  String
+  userId        String
+  blockedUserId String
+  createdAt     DateTime @default(now())
+
+  user        User @relation("Blocker", fields: [userId], references: [id], onDelete: Cascade)
+  blockedUser User @relation("Blocked", fields: [blockedUserId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, blockedUserId], map: "block_one_per_user")
+  @@index([universityId, blockedUserId])
+}
+
+model Report {
+  id           String           @id @default(cuid())
+  universityId String
+  reporterId   String
+  targetType   ReportTargetType
+  targetId     String
+  reason       ReportReason
+  details      String?          @db.Text
+  status       ReportStatus     @default(PENDING)
+  resolvedAt   DateTime?
+  resolvedById String?
+  createdAt    DateTime         @default(now())
+
+  reporter User               @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  actions  ModerationAction[]
+
+  @@unique([reporterId, targetType, targetId], map: "report_one_per_user")
+  @@index([universityId, status, createdAt])
+  @@index([universityId, targetType, targetId])
+}
+
+model ModerationAction {
+  id           String               @id @default(cuid())
+  universityId String
+  reportId     String?
+  moderatorId  String
+  targetType   ModerationTargetType
+  targetId     String
+  action       ModerationActionType
+  reason       String               @db.Text
+  durationDays Int?
+  createdAt    DateTime             @default(now())
+
+  report    Report? @relation(fields: [reportId], references: [id], onDelete: SetNull)
+  moderator User    @relation("Moderator", fields: [moderatorId], references: [id], onDelete: Restrict)
+  strike    Strike?
+
+  @@index([universityId, createdAt])
+  @@index([universityId, targetType, targetId])
+  @@index([universityId, moderatorId, createdAt])
+}
+
+model Strike {
+  id                 String   @id @default(cuid())
+  universityId       String
+  userId             String
+  moderationActionId String   @unique
+  createdAt          DateTime @default(now())
+  expiresAt          DateTime
+
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moderationAction ModerationAction @relation(fields: [moderationActionId], references: [id], onDelete: Cascade)
+
+  @@index([universityId, userId, createdAt])
+  @@index([universityId, expiresAt])
 }
 
 model WaitlistEntry {

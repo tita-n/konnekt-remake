@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ArrowUpRight, ClipboardCheck, GraduationCap, Network, ShieldCheck, UserRoundCheck } from "lucide-react";
 import { requireUniversityRole } from "@/lib/auth/guards";
 import { getAdminOverview, listVerificationQueue } from "@/lib/services/admin";
@@ -9,10 +10,14 @@ import { buttonStyles } from "@/components/ui/button-styles";
 export const metadata = { title: "Overview" };
 
 export default async function AdminOverviewPage() {
-  const user = await requireUniversityRole(["UNIVERSITY_ADMIN", "REVIEWER"]);
+  const user = await requireUniversityRole(["UNIVERSITY_ADMIN", "REVIEWER", "MODERATOR"]);
   const isAdmin = user.roles.some(
     (role) => role.universityId === user.universityId && role.role === "UNIVERSITY_ADMIN",
   );
+  const isReviewer = user.roles.some(
+    (role) => role.universityId === user.universityId && role.role === "REVIEWER",
+  );
+  if (!isAdmin && !isReviewer) redirect("/admin/reports");
   const [stats, queue] = await Promise.all([
     getAdminOverview(user.universityId),
     listVerificationQueue(user.universityId, { status: "PENDING", method: "ALL", page: 1 }),

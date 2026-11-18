@@ -11,10 +11,15 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const user = await requireUniversityRole(["UNIVERSITY_ADMIN", "REVIEWER"] as Role[]);
+  const user = await requireUniversityRole(["UNIVERSITY_ADMIN", "REVIEWER", "MODERATOR"] as Role[]);
   const roles = user.roles.filter((role) => role.universityId === user.universityId).map((role) => role.role);
   const isAdmin = roles.includes("UNIVERSITY_ADMIN");
-  const pendingCount = await tenantDb(user.universityId).verificationRequest.count({ where: { status: "PENDING" } });
+  const canModerate = isAdmin || roles.includes("MODERATOR");
+  const db = tenantDb(user.universityId);
+  const [pendingCount, reportCount] = await Promise.all([
+    db.verificationRequest.count({ where: { status: "PENDING" } }),
+    canModerate ? db.report.count({ where: { status: "PENDING" } }) : Promise.resolve(0),
+  ]);
 
   return (
     <div
@@ -26,6 +31,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         user={{ fullName: user.fullName, photoUrl: user.photoUrl }}
         pendingCount={pendingCount}
         isAdmin={isAdmin}
+        canModerate={canModerate}
+        reportCount={reportCount}
       >
         {children}
       </AdminShell>

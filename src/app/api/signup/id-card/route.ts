@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { rateLimit } from "@/lib/security/rate-limit";
 import { assertSameOrigin } from "@/lib/security/request";
-import { getSignupDraft, saveIdCardProof } from "@/lib/services/signup";
+import { getSignupDraft, saveIdCardProof, startSignupDraft } from "@/lib/services/signup";
 import { preparePrivateImage, ImageValidationError } from "@/lib/media/images";
 import { deletePrivateImage, putPrivateImage } from "@/lib/media/private-store";
 import { platformDb } from "@/lib/db/platform";
@@ -16,9 +16,24 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "Request blocked." }, { status: 403 });
   }
 
-  const draft = await getSignupDraft();
+  const form = await request.formData();
+  let draft = await getSignupDraft();
   if (!draft) {
-    return NextResponse.json({ error: "Your signup session expired. Start again." }, { status: 401 });
+    // Someone can land on the ID page directly, or their cookie can expire
+    // while they choose a photo. Start a fresh draft for this university
+    // instead of asking them to re-enter everything.
+    const slug = form.get("slug");
+    const university =
+      typeof slug === "string"
+        ? await platformDb.university.findFirst({
+            where: { slug, status: "ACTIVE" },
+            select: { id: true, idCardEnabled: true },
+          })
+        : null;
+    if (!university || !university.idCardEnabled) {
+      return NextResponse.json({ error: "Your signup session expired. Start again." }, { status: 401 });
+    }
+    draft = await startSignupDraft(university.id, "ID_CARD");
   }
 
   const limit = await rateLimit("upload", draft.id);
@@ -29,7 +44,6 @@ export async function POST(request: Request): Promise<NextResponse> {
     );
   }
 
-  const form = await request.formData();
   const file = form.get("file");
   const matricNumber = form.get("matricNumber");
   if (!(file instanceof File) || typeof matricNumber !== "string" || !matricNumber.trim()) {

@@ -82,6 +82,7 @@ export function IdCardForm({
       const form = new FormData();
       form.append("file", new File([compressed], "id-card.jpg", { type: "image/jpeg" }));
       form.append("matricNumber", matric.trim());
+      form.append("slug", slug);
       const csrf = readCookie("konnekt_signup_csrf");
       const response = await fetch("/api/signup/id-card", {
         method: "POST",

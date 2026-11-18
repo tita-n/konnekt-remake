@@ -1,0 +1,103 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { ArrowLeft, Flag, ShieldAlert, TriangleAlert } from "lucide-react";
+import { requireUniversityRole } from "@/lib/auth/guards";
+import { getStudentModerationHistory } from "@/lib/services/moderation";
+import { ReinstateForm } from "@/components/admin/reinstate-form";
+import { AdminAvatar } from "@/components/admin/admin-avatar";
+import { formatDate, timeAgo } from "@/lib/utils";
+
+export const metadata: Metadata = { title: "Moderation history" };
+export const dynamic = "force-dynamic";
+
+export default async function StudentModerationPage({ params }: { params: Promise<{ id: string }> }) {
+  const user = await requireUniversityRole(["UNIVERSITY_ADMIN", "MODERATOR"]);
+  const { id } = await params;
+  const history = await getStudentModerationHistory(user, id);
+  if (!history) notFound();
+  const canReinstate = user.roles.some((role) => role.universityId === user.universityId && role.role === "UNIVERSITY_ADMIN");
+
+  return (
+    <div className="space-y-5">
+      <Link href="/admin/reports" className="inline-flex items-center gap-1.5 text-small font-semibold text-fg-muted hover:text-fg">
+        <ArrowLeft aria-hidden="true" className="size-4" /> Reports
+      </Link>
+
+      <header className="flex flex-wrap items-start gap-4 rounded-card border border-border bg-surface p-5">
+        <AdminAvatar name={history.user.fullName} src={history.user.photoUrl} size={64} />
+        <div className="min-w-0 flex-1">
+          <h1 className="text-h1 text-fg">{history.user.fullName}</h1>
+          <p className="text-small text-fg-muted">@{history.user.username} · {history.user.departmentName ?? "Department hidden"} {history.user.level ? `· ${history.user.level}L` : ""}</p>
+          <p className="mt-1 inline-flex items-center gap-1.5 rounded-chip bg-surface-2 px-2 py-0.5 text-tiny font-semibold uppercase tracking-wide text-fg-muted">
+            {history.user.status.toLowerCase()}
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <div className="rounded-card bg-surface-2 px-4 py-3 text-center">
+            <p className="text-h2 tabular-nums text-fg">{history.reportsAgainst}</p>
+            <p className="text-tiny text-fg-subtle">Reports against</p>
+          </div>
+          <div className="rounded-card bg-danger-soft px-4 py-3 text-center">
+            <p className="text-h2 tabular-nums text-danger">{history.activeStrikes} of 3</p>
+            <p className="text-tiny text-danger/80">Active strikes</p>
+          </div>
+        </div>
+      </header>
+
+      {history.activeStrikes >= 3 ? (
+        <p className="flex items-start gap-2 rounded-card border border-danger/30 bg-danger-soft px-4 py-3 text-small font-semibold text-danger">
+          <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+          Three active strikes in 90 days. This account is flagged for admin review; it has not been automatically banned.
+        </p>
+      ) : null}
+
+      <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+        <section className="rounded-card border border-border bg-surface p-4">
+          <h2 className="text-h3 text-fg">Moderation history</h2>
+          {history.history.length === 0 ? (
+            <p className="mt-2 text-small text-fg-muted">No moderation actions recorded.</p>
+          ) : (
+            <ol className="mt-4 space-y-4">
+              {history.history.map((action) => (
+                <li key={action.id} className="relative pl-6">
+                  <span className="absolute left-0 top-1 flex size-4 items-center justify-center rounded-full bg-accent-soft" aria-hidden="true">
+                    <span className="size-2 rounded-full bg-accent" />
+                  </span>
+                  <span className="absolute bottom-[-1rem] left-[7px] top-5 w-px bg-border" aria-hidden="true" />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-small font-semibold text-fg">{action.label}</p>
+                    <span className="rounded-chip bg-danger-soft px-2 py-0.5 text-tiny font-semibold text-danger">{action.reasonLabel}</span>
+                  </div>
+                  <p className="mt-0.5 text-tiny text-fg-subtle">
+                    {formatDate(action.createdAt)} · {action.moderatorName}
+                    {action.durationDays ? ` · ${action.durationDays}-day suspension` : ""}
+                  </p>
+                  <p className="mt-1 rounded-input bg-surface-2 px-3 py-2 text-small text-fg-muted">{action.reason}</p>
+                </li>
+              ))}
+            </ol>
+          )}
+        </section>
+
+        <aside className="space-y-4">
+          <section className="rounded-card border border-border bg-surface p-4">
+            <h2 className="flex items-center gap-2 text-h3 text-fg"><ShieldAlert aria-hidden="true" className="size-4 text-danger" /> Account</h2>
+            <p className="mt-1 text-small text-fg-muted">
+              Suspensions revoke live sessions. Strikes expire 90 days after the action; a review decision is separate from an automatic ban.
+            </p>
+            {canReinstate && history.user.status === "SUSPENDED" ? (
+              <div className="mt-3"><ReinstateForm studentId={history.user.id} /></div>
+            ) : null}
+            <Link href="/admin/audit" className="mt-3 inline-flex items-center gap-1 text-small font-semibold text-accent hover:underline">
+              <Flag aria-hidden="true" className="size-3.5" /> View audit log
+            </Link>
+          </section>
+          <p className="text-tiny leading-relaxed text-fg-subtle">
+            Reporters stay anonymous. Authors see the removal reason on the post and can link to the community rules.
+          </p>
+        </aside>
+      </div>
+    </div>
+  );
+}

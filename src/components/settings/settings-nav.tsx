@@ -9,6 +9,7 @@ const items = [
   { href: "/settings/profile", label: "Profile" },
   { href: "/settings/account", label: "Account" },
   { href: "/settings/privacy", label: "Privacy" },
+  { href: "/settings/blocked", label: "Blocked & muted" },
   { href: "/settings/appearance", label: "Appearance" },
   { href: "/settings/about", label: "About" },
 ];

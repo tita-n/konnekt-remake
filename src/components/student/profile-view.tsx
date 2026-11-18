@@ -3,6 +3,9 @@ import { BadgeCheck, GraduationCap, Pencil, Sparkles } from "lucide-react";
 import type { ProfileView as ProfileData } from "@/lib/services/profile";
 import { Avatar, Card } from "@/components/ui/display";
 import { ButtonLink } from "@/components/ui/button";
+import { ProfileTabs } from "./profile-tabs";
+import type { PostView } from "@/lib/posts/types";
+import type { ProfileReply } from "@/lib/services/posts";
 import { formatDate } from "@/lib/utils";
 
 export function ProfileView({
@@ -12,6 +15,9 @@ export function ProfileView({
   isSelf,
   canViewDepartment,
   canViewLevel,
+  posts = [],
+  replies = [],
+  bookmarks = [],
 }: {
   profile: ProfileData;
   university: { name: string; shortName: string; accentColor: string };
@@ -19,6 +25,9 @@ export function ProfileView({
   isSelf: boolean;
   canViewDepartment: boolean;
   canViewLevel: boolean;
+  posts?: PostView[];
+  replies?: ProfileReply[];
+  bookmarks?: PostView[];
 }) {
   const department = labels.department ?? "Department";
   return (
@@ -91,6 +100,8 @@ export function ProfileView({
             </ul>
           </div>
         ) : null}
+
+        <ProfileTabs initialPosts={posts} replies={replies} bookmarks={bookmarks} isSelf={isSelf} />
 
         <Card className="mt-5 p-4">
           <h2 className="text-h3 text-fg">Campus details</h2>

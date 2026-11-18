@@ -29,6 +29,20 @@ Copy `.env.example` to `.env` (or `.env.local`). Never commit real secrets. Only
 | `SENTRY_ENVIRONMENT` | — | Sentry environment label. |
 | `SEED_PLATFORM_ADMIN_EMAIL` | `admin@konnekt.ng` | Platform admin created by the seed. |
 
+## Adapters and startup checks
+
+Every external dependency has a real and a local implementation, selected by the keys above (`src/lib/adapters.ts`). At server start (outside `next build`), `assertProductionServices` lists any required production adapter that is missing and refuses to boot. `GET /api/health` and the platform console expose the same status without secrets.
+
+| Adapter | Real provider | Local fallback | Required in production |
+| --- | --- | --- | --- |
+| Email | Resend | In-process outbox | Yes |
+| Image storage | Cloudinary | Local gitignored folders | Yes |
+| Rate limits | Upstash Redis | In-memory counters | Yes |
+| Bot protection | Cloudflare Turnstile | Bypass in local/dev only | Yes |
+| Error tracking | Sentry | No-op logging | No |
+
+Phase 1 adds no new environment variables. Post media uses the existing Cloudinary adapter; authenticated ID-card delivery remains restricted to verification reviewers.
+
 ## Production requirements
 
 At server start with `NODE_ENV=production` (outside `next build`), these must be set or startup fails with a precise message:

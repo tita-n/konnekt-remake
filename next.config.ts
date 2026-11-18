@@ -7,7 +7,9 @@ const withSerwist = withSerwistInit({
   // The dev server serves uncompiled workers; production builds the worker.
   disable: process.env.NODE_ENV === "development",
   register: false,
-  cacheOnNavigation: true,
+  // Never cache HTML or RSC payloads on navigation; the user-specific feed is
+  // kept in a per-account IndexedDB store and cleared on logout.
+  cacheOnNavigation: false,
   reloadOnOnline: true,
   additionalPrecacheEntries: [{ url: "/offline", revision: null }],
 });

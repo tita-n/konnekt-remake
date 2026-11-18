@@ -2,13 +2,15 @@ import { expect, test } from "@playwright/test";
 import { loginAs } from "./helpers";
 
 test.describe("verified student", () => {
-  test("lands in the branded shell and sees honest empty states", async ({ page }) => {
+  test("lands in the branded shell with the live Pulse feed", async ({ page }) => {
     await loginAs(page, "student");
     await page.goto("/pulse", { waitUntil: "networkidle" });
 
     await expect(page.getByRole("heading", { name: "Pulse", level: 1 })).toBeVisible();
     await expect(page.getByText("Demo", { exact: true }).first()).toBeVisible();
-    await expect(page.getByText(/nothing is faked/i)).toBeVisible();
+    await expect(page.getByRole("group", { name: "Filter your Pulse" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Trending on campus" })).toBeVisible();
+    await expect(page.locator('article[aria-label^="Post by"]').first()).toBeVisible();
 
     for (const tab of ["Communities", "Events", "Inbox"]) {
       await page.getByRole("link", { name: new RegExp(tab, "i") }).last().click();

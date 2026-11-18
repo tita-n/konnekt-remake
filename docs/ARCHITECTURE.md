@@ -5,8 +5,9 @@
 ```
 Browser (PWA)
   ├─ public pages      /, /login, /signup/[slug]/*, /legal/*
-  ├─ student shell     /pulse, /communities, /events, /inbox, /profile/*, /settings/*
-  ├─ university console /admin/*        (UNIVERSITY_ADMIN, REVIEWER)
+  ├─ student shell     /pulse, /p/[id], /compose, /hashtag/[tag], /bookmarks,
+  │                     /drafts, /communities, /events, /inbox, /profile/*, /settings/*
+  ├─ university console /admin/*, /admin/reports, /admin/students/[id]/moderation
   └─ platform console   /platform/*     (PLATFORM_ADMIN)
 
 Next.js App Router (Node runtime on Vercel)
@@ -42,7 +43,29 @@ The browser never receives a secret. Public IDs and signed URLs are produced aft
   - Non-tenant models (`university`, `waitlistEntry`) throw at runtime and are absent from the type.
 - `withTenantTransaction(id, fn)` runs an interactive transaction on the extended client; extension behaviour inside transactions is covered by integration tests.
 
-Tenant models: `AcademicNode`, `User`, `RoleAssignment`, `VerificationRequest`, `EmailCode`, `Session`, `AuditLog`, `RoleInvite`. Platform-only: `University`, `WaitlistEntry`.
+Tenant models: `AcademicNode`, `User`, `RoleAssignment`, `VerificationRequest`, `EmailCode`, `Session`, `AuditLog`, `RoleInvite`, `Post`, `PostMedia`, `Comment`, `Reaction`, `Bookmark`, `Repost`, `Hashtag`, `PostHashtag`, `Mention`, `Poll`, `PollOption`, `PollVote`, `Draft`, `Report`, `ModerationAction`, `Strike`, `Block`, `Mute`, `HelpfulMark`. Platform-only: `University`, `WaitlistEntry`.
+
+## Social visibility
+
+A `SocialViewer` is resolved once per request from the session: academic path, department, level, labels and lineage. Posts store `audiencePath` (an ordered `text[]`) and `audienceKind`. A viewer may see only exact prefixes of their own path, plus `PUBLIC`.
+
+1. `visibleAudienceFilter` produces exact-array equality predicates for `PUBLIC` and every visible prefix. It never uses substring or label matching.
+2. Postgres scans `Post_universityId_status_rankAt_id_idx` in ranking order; the audience predicate filters candidates.
+3. Every row is rechecked with `canSeePost`, and relationship sets remove blocked/muted authors.
+4. A hidden post, comment or profile calls `notFound()`; the response is the same as a missing record.
+
+Post detail deliberately allows `REMOVED` rows for viewers who could see the original audience, so the author and moderators can inspect the removal notice. `DELETED` rows are absent everywhere. Reposts copy the original audience verbatim and can never widen it.
+
+## Moderation
+
+Reports target one post or comment and are unique per reporter/target. The admin console groups pending reports, shows the target and prior activity, and records a decision (`KEEP`, `WARN`, `REMOVE`, `SUSPEND`). A removal updates the target and its comments, resolves the report, writes a `ModerationAction`, and issues an expiring `Strike` in one tenant transaction. Three active strikes set `flaggedForReviewAt`; no automatic ban exists. `ModerationAction` and `AuditLog` are append-only by product and database trigger respectively.
+
+## Offline and the outbox
+
+- `src/app/sw.ts` precaches build assets and `/offline`; navigations and `/api/*` are `NetworkOnly`. Signed-in HTML and API responses are never stored in Cache Storage.
+- `src/lib/offline/store.ts` uses one IndexedDB database with `feeds` and `outbox` stores. Feed keys are user ids, so a cached page cannot cross accounts. `clearKonnektClientData` deletes the database, Cache Storage and account-scoped storage on logout.
+- The composer writes an outbox item when `navigator.onLine` is false, with the original idempotency key and payload. Pulse flushes on mount and on the `online` event; successful items are removed, server errors are marked failed and retried manually.
+- The UI never shows a published post while offline. It shows a queued confirmation, then a pending count on Pulse until the server accepts the write.
 
 ## Identity and verification
 
@@ -95,9 +118,9 @@ Rate limits use Upstash sliding windows in production, with separate policies pe
 | --- | --- | --- |
 | Unit | Vitest | matric, email domains, colour contrast, password strength, CSV parsing, status machines, slugs |
 | Integration | Vitest + real Postgres | tenant isolation (reads/writes/upserts), DB constraints, audit immutability, verification decisions, invitations |
-| E2E | Playwright | student shell/profile/settings, admin queue and private image, role boundaries, platform create/audit/export |
-| Accessibility | axe via Playwright | public pages, student shell/settings, verification queue/detail |
-| Performance | Lighthouse CI | production build: Performance ≥90, Accessibility ≥95 |
+| E2E | Playwright | signup, onboarding, audience matrix, polls, reports/removal, blocks/mutes, shared-device logout, offline outbox, student shell, admin/platform consoles |
+| Accessibility | axe via Playwright | public pages, student shell/settings, verification queue/detail, feed and composer |
+| Performance | Lighthouse CI + EXPLAIN | production build Performance ≥90, Accessibility ≥95; feed plan in `docs/PERFORMANCE.md` |
 
 CI runs quality + integration, e2e, and Lighthouse jobs. The integration database is migrated with `prisma migrate deploy`; seeds are deterministic and idempotent.
 
