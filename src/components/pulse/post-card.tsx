@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   BadgeCheck,
@@ -71,19 +71,11 @@ export function PostCard({
   const [editBody, setEditBody] = useState(post.body);
   const [saving, setSaving] = useState(false);
   const [showFull, setShowFull] = useState(expanded);
-  const menu = useRef<HTMLDivElement>(null);
+  const [viewerIndex, setViewerIndex] = useState(0);
+  const [viewerMenu, setViewerMenu] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => setLocal(post), [post]);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onPointerDown = (event: PointerEvent) => {
-      if (!menu.current?.contains(event.target as Node)) setMenuOpen(false);
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [menuOpen]);
 
   const removed = local.status !== "ACTIVE";
   const isLong = local.body.length > 320;
@@ -271,45 +263,10 @@ export function PostCard({
           </p>
         </div>
 
-        <div className="relative z-40 shrink-0" ref={menu}>
-          <IconButton label="Post options" aria-haspopup="menu" aria-expanded={menuOpen} onClick={() => setMenuOpen((value) => !value)}>
+        <div className="shrink-0">
+          <IconButton label="Post options" aria-haspopup="dialog" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}>
             <MoreHorizontal aria-hidden="true" className="size-5" />
           </IconButton>
-          {menuOpen ? (
-            <div
-              role="menu"
-              aria-label="Post options"
-              className="absolute right-0 top-10 z-50 w-60 animate-pop-in overflow-hidden rounded-card border border-border bg-surface p-1.5 shadow-floating"
-            >
-              {local.isOwner ? (
-                <>
-                  <MenuItem icon={<Pencil aria-hidden="true" className="size-4" />} onClick={() => { setEditing(true); setMenuOpen(false); }}>
-                    Edit post
-                  </MenuItem>
-                  <MenuItem destructive icon={<Trash2 aria-hidden="true" className="size-4" />} onClick={() => { setDeleteOpen(true); setMenuOpen(false); }}>
-                    Delete
-                  </MenuItem>
-                </>
-              ) : null}
-              <MenuItem icon={<Link2 aria-hidden="true" className="size-4" />} onClick={copyLink}>Copy link</MenuItem>
-              <MenuItem icon={<Bookmark aria-hidden="true" className="size-4" />} onClick={() => { void bookmark(); setMenuOpen(false); }}>
-                {local.viewer.bookmarked ? "Remove bookmark" : "Bookmark"}
-              </MenuItem>
-              {!local.isOwner ? (
-                <>
-                  <MenuItem icon={<BellOff aria-hidden="true" className="size-4" />} onClick={() => { void setRelationship("mute"); setMenuOpen(false); }}>
-                    Mute @{local.author.username}
-                  </MenuItem>
-                  <MenuItem icon={<Flag aria-hidden="true" className="size-4" />} onClick={() => { setReportOpen(true); setMenuOpen(false); }}>
-                    Report
-                  </MenuItem>
-                  <MenuItem destructive icon={<ShieldBan aria-hidden="true" className="size-4" />} onClick={() => { void setRelationship("block"); setMenuOpen(false); }}>
-                    Block @{local.author.username}
-                  </MenuItem>
-                </>
-              ) : null}
-            </div>
-          ) : null}
         </div>
       </div>
 
@@ -385,7 +342,7 @@ export function PostCard({
         ) : null}
 
         {!removed && local.media.length > 0 ? (
-          <MediaGrid media={local.media} onOpen={() => setViewerOpen(true)} />
+          <MediaGrid media={local.media} onOpen={(index) => { setViewerIndex(index); setViewerOpen(true); }} />
         ) : null}
 
         {!removed && poll ? (
@@ -405,7 +362,22 @@ export function PostCard({
         ) : null}
       </div>
 
-      <div className="flex items-center justify-between gap-1 px-2.5 pb-1.5 pt-1">
+      {expanded && !removed ? (
+        <div className="flex items-center justify-between gap-3 px-4 pb-0.5 pt-2 text-tiny text-fg-muted">
+          <p className="min-w-0 truncate">
+            <span className="font-medium text-fg">{formatCount(local.reactionCount)}</span> reactions
+            <span aria-hidden="true"> · </span>
+            <span className="font-medium text-fg">{formatCount(local.commentCount)}</span> comments
+            <span aria-hidden="true"> · </span>
+            <span className="font-medium text-fg">{formatCount(local.repostCount)}</span> reposts
+          </p>
+          <button type="button" onClick={() => void openReactions()} className="inline-flex shrink-0 items-center gap-0.5 font-semibold text-accent hover:underline">
+            Who reacted <ChevronRight aria-hidden="true" className="size-3.5" />
+          </button>
+        </div>
+      ) : null}
+
+      <div className="flex items-center justify-between gap-0.5 px-2.5 pb-1 pt-0.5">
         <ActionButton
           label={`${local.commentCount} comments`}
           href={`/p/${local.id}#comments`}
@@ -415,10 +387,10 @@ export function PostCard({
         <button
           type="button"
           onClick={() => void repost()}
-          className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-button text-small font-medium text-fg-muted transition hover:bg-surface-2 hover:text-fg"
+          className="inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-[10px] text-small font-medium text-fg-muted transition hover:bg-surface-2 hover:text-fg"
           aria-label={`Repost (${local.repostCount})`}
         >
-          <Repeat2 aria-hidden="true" className="size-[19px]" />
+          <Repeat2 aria-hidden="true" className="size-[18px]" />
           {local.repostCount > 0 ? <span className="tabular-nums">{formatCount(local.repostCount)}</span> : null}
         </button>
         <button
@@ -427,11 +399,11 @@ export function PostCard({
           aria-pressed={local.viewer.reacted}
           aria-label={local.viewer.reacted ? "Remove heart" : "React with a heart"}
           className={cn(
-            "inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-button text-small font-medium transition hover:bg-surface-2",
+            "inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-[10px] text-small font-medium transition hover:bg-surface-2",
             local.viewer.reacted ? "text-danger" : "text-fg-muted hover:text-fg",
           )}
         >
-          <Heart aria-hidden="true" className="size-[19px]" fill={local.viewer.reacted ? "currentColor" : "none"} />
+          <Heart aria-hidden="true" className="size-[18px]" fill={local.viewer.reacted ? "currentColor" : "none"} />
           {local.reactionCount > 0 ? (
             <span className="tabular-nums" onClick={(event) => { event.stopPropagation(); void openReactions(); }}>
               {formatCount(local.reactionCount)}
@@ -444,13 +416,47 @@ export function PostCard({
           aria-pressed={local.viewer.bookmarked}
           aria-label={local.viewer.bookmarked ? "Remove bookmark" : "Bookmark"}
           className={cn(
-            "inline-flex min-h-11 flex-1 items-center justify-center rounded-button transition hover:bg-surface-2",
+            "inline-flex min-h-9 flex-1 items-center justify-center rounded-[10px] transition hover:bg-surface-2",
             local.viewer.bookmarked ? "text-accent" : "text-fg-muted hover:text-fg",
           )}
         >
-          <Bookmark aria-hidden="true" className="size-[19px]" fill={local.viewer.bookmarked ? "currentColor" : "none"} />
+          <Bookmark aria-hidden="true" className="size-[18px]" fill={local.viewer.bookmarked ? "currentColor" : "none"} />
         </button>
       </div>
+
+      <BottomSheet open={menuOpen} onClose={() => setMenuOpen(false)} title="Post options">
+        <div role="menu" aria-label="Post options" className="space-y-0.5 pb-2">
+          {local.isOwner ? (
+            <>
+              <MenuItem icon={<Pencil aria-hidden="true" className="size-5" />} onClick={() => { setEditing(true); setMenuOpen(false); }}>
+                Edit post
+              </MenuItem>
+              <MenuItem destructive icon={<Trash2 aria-hidden="true" className="size-5" />} onClick={() => { setDeleteOpen(true); setMenuOpen(false); }}>
+                Delete
+              </MenuItem>
+              <MenuItem icon={<Link2 aria-hidden="true" className="size-5" />} onClick={() => void copyLink()}>Copy link</MenuItem>
+              <MenuItem icon={<Share2 aria-hidden="true" className="size-5" />} onClick={() => { setMenuOpen(false); setShareOpen(true); }}>Share post</MenuItem>
+            </>
+          ) : (
+            <>
+              <MenuItem icon={<Link2 aria-hidden="true" className="size-5" />} onClick={() => void copyLink()}>Copy link</MenuItem>
+              <MenuItem icon={<Bookmark aria-hidden="true" className="size-5" />} onClick={() => { void bookmark(); setMenuOpen(false); }}>
+                {local.viewer.bookmarked ? "Remove bookmark" : "Bookmark"}
+              </MenuItem>
+              <MenuItem icon={<BellOff aria-hidden="true" className="size-5" />} onClick={() => { void setRelationship("mute"); setMenuOpen(false); }}>
+                Mute @{local.author.username}
+              </MenuItem>
+              <MenuItem icon={<Share2 aria-hidden="true" className="size-5" />} onClick={() => { setMenuOpen(false); setShareOpen(true); }}>Share post</MenuItem>
+              <MenuItem icon={<Flag aria-hidden="true" className="size-5" />} onClick={() => { setMenuOpen(false); setReportOpen(true); }}>
+                Report
+              </MenuItem>
+              <MenuItem destructive icon={<ShieldBan aria-hidden="true" className="size-5" />} onClick={() => { void setRelationship("block"); setMenuOpen(false); }}>
+                Block @{local.author.username}
+              </MenuItem>
+            </>
+          )}
+        </div>
+      </BottomSheet>
 
       <Dialog
         open={deleteOpen}
@@ -484,13 +490,12 @@ export function PostCard({
         }}
       />
 
-      <BottomSheet open={shareOpen} onClose={() => setShareOpen(false)} title="Share" description="Anyone with the link sees only what they're allowed to.">
-        <div className="space-y-1 pb-3">
-          <MenuItem icon={<Copy aria-hidden="true" className="size-4" />} onClick={() => void copyLink()}>Copy link</MenuItem>
-          <MenuItem icon={<Share2 aria-hidden="true" className="size-4" />} onClick={() => void shareOutside()}>Share outside the app</MenuItem>
-          <MenuItem icon={<Flag aria-hidden="true" className="size-4" />} onClick={() => { setShareOpen(false); setReportOpen(true); }}>
-            Report this post
-          </MenuItem>
+      <BottomSheet open={shareOpen} onClose={() => setShareOpen(false)} title="Share">
+        <div className="space-y-0.5 pb-3">
+          <MenuItem icon={<Copy aria-hidden="true" className="size-5" />} onClick={() => void copyLink()}>Copy link</MenuItem>
+          <MenuItem icon={<Send aria-hidden="true" className="size-5" />} onClick={() => { setShareOpen(false); void copyLink(); }}>Share to chat</MenuItem>
+          <MenuItem icon={<Share2 aria-hidden="true" className="size-5" />} onClick={() => void shareOutside()}>Share outside the app</MenuItem>
+          <MenuItem icon={<Repeat2 aria-hidden="true" className="size-5" />} onClick={() => { setShareOpen(false); void repost(); }}>Repost to my profile</MenuItem>
         </div>
       </BottomSheet>
 
@@ -523,20 +528,103 @@ export function PostCard({
         </div>
       </BottomSheet>
 
-      {viewerOpen ? (
-        <div role="dialog" aria-modal="true" aria-label="Image viewer" className="fixed inset-0 z-[70] flex flex-col bg-black/95">
-          <div className="flex h-14 items-center justify-between px-3">
-            <p className="text-small text-white/70">{local.media.length} {local.media.length === 1 ? "image" : "images"}</p>
-            <button type="button" onClick={() => setViewerOpen(false)} aria-label="Close image viewer" className="flex size-11 items-center justify-center rounded-full text-white hover:bg-white/10">
-              <X aria-hidden="true" className="size-6" />
-            </button>
+      {viewerOpen && local.media.length > 0 ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Image viewer"
+          tabIndex={-1}
+          className="fixed inset-0 z-[100] flex flex-col bg-black text-white"
+          onKeyDown={(event) => {
+            if (event.key === "Escape") setViewerOpen(false);
+            if (event.key === "ArrowLeft") setViewerIndex((index) => Math.max(0, index - 1));
+            if (event.key === "ArrowRight") setViewerIndex((index) => Math.min(local.media.length - 1, index + 1));
+          }}
+        >
+          <div className="relative mx-auto flex h-14 w-full max-w-2xl items-center px-4 pt-2">
+            <div className="flex h-11 w-full items-center gap-2 rounded-[14px] bg-white/12 px-1.5">
+              <button type="button" onClick={() => setViewerOpen(false)} aria-label="Close image viewer" className="flex size-9 items-center justify-center rounded-full text-white hover:bg-white/10">
+                <X aria-hidden="true" className="size-5" />
+              </button>
+              <p className="flex-1 text-center text-small font-semibold tabular-nums text-white">
+                {viewerIndex + 1} / {local.media.length}
+              </p>
+              <button
+                type="button"
+                onClick={() => setViewerMenu((value) => !value)}
+                aria-label="Image options"
+                aria-expanded={viewerMenu}
+                className="flex size-9 items-center justify-center rounded-full text-white hover:bg-white/10"
+              >
+                <MoreHorizontal aria-hidden="true" className="size-5" />
+              </button>
+            </div>
+            {viewerMenu ? (
+              <div className="absolute right-4 top-14 z-10 w-48 overflow-hidden rounded-[14px] bg-surface p-1 text-fg shadow-floating">
+                <a
+                  href={local.media[viewerIndex]?.url}
+                  download
+                  className="flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-small hover:bg-surface-2"
+                  onClick={() => setViewerMenu(false)}
+                >
+                  <Download aria-hidden="true" className="size-4" /> Save image
+                </a>
+                <button
+                  type="button"
+                  onClick={() => { setViewerMenu(false); setViewerOpen(false); setReportOpen(true); }}
+                  className="flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-left text-small hover:bg-surface-2"
+                >
+                  <Flag aria-hidden="true" className="size-4" /> Report
+                </button>
+              </div>
+            ) : null}
           </div>
-          <div className="flex-1 space-y-4 overflow-y-auto px-2 pb-8">
-            {local.media.map((media) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img key={media.id} src={media.url} alt={media.alt ?? "Post image"} width={media.width} height={media.height} className="mx-auto h-auto max-h-[80dvh] w-auto max-w-full rounded-lg object-contain" />
-            ))}
+
+          <div className="relative flex min-h-0 flex-1 items-center justify-center px-3 py-4">
+            {viewerIndex > 0 ? (
+              <button
+                type="button"
+                onClick={() => setViewerIndex((index) => index - 1)}
+                aria-label="Previous image"
+                className="absolute left-4 z-10 flex size-10 items-center justify-center rounded-full bg-black/50 text-white/90 hover:bg-black/70"
+              >
+                <ChevronRight aria-hidden="true" className="size-6 rotate-180" />
+              </button>
+            ) : null}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={local.media[viewerIndex]?.url}
+              alt={local.media[viewerIndex]?.alt ?? "Post image"}
+              width={local.media[viewerIndex]?.width}
+              height={local.media[viewerIndex]?.height}
+              className="max-h-full max-w-full object-contain"
+            />
+            {viewerIndex < local.media.length - 1 ? (
+              <button
+                type="button"
+                onClick={() => setViewerIndex((index) => index + 1)}
+                aria-label="Next image"
+                className="absolute right-4 z-10 flex size-10 items-center justify-center rounded-full bg-black/50 text-white/90 hover:bg-black/70"
+              >
+                <ChevronRight aria-hidden="true" className="size-6" />
+              </button>
+            ) : null}
           </div>
+
+          {local.media.length > 1 ? (
+            <div className="flex items-center justify-center gap-2 pb-10 pt-2">
+              {local.media.map((media, index) => (
+                <button
+                  key={media.id}
+                  type="button"
+                  aria-label={`Show image ${index + 1}`}
+                  aria-current={index === viewerIndex}
+                  onClick={() => setViewerIndex(index)}
+                  className={cn("size-2 rounded-full transition", index === viewerIndex ? "bg-white" : "bg-white/40")}
+                />
+              ))}
+            </div>
+          ) : <div className="h-10" />}
         </div>
       ) : null}
     </article>
@@ -548,7 +636,7 @@ function ActionButton({ label, href, icon, count }: { label: string; href: strin
     <Link
       href={href}
       aria-label={label}
-      className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-button text-small font-medium text-fg-muted transition hover:bg-surface-2 hover:text-fg"
+      className="inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-[10px] text-small font-medium text-fg-muted transition hover:bg-surface-2 hover:text-fg"
     >
       {icon}
       {count > 0 ? <span className="tabular-nums">{formatCount(count)}</span> : null}
@@ -583,11 +671,11 @@ function MenuItem({
   );
 }
 
-function MediaGrid({ media, onOpen }: { media: PostMediaView[]; onOpen: () => void }) {
+function MediaGrid({ media, onOpen }: { media: PostMediaView[]; onOpen: (index: number) => void }) {
   if (media.length === 1) {
     const item = media[0]!;
     return (
-      <button type="button" onClick={onOpen} className="mt-3 block w-full overflow-hidden rounded-[12px] border border-border" aria-label="Open image viewer">
+      <button type="button" onClick={() => onOpen(0)} className="mt-3 block w-full overflow-hidden rounded-[12px] border border-border" aria-label="Open image viewer">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={item.url}
@@ -603,13 +691,13 @@ function MediaGrid({ media, onOpen }: { media: PostMediaView[]; onOpen: () => vo
   }
   return (
     <div className={cn("mt-3 grid gap-1 overflow-hidden rounded-[12px]", media.length === 2 ? "grid-cols-2" : "grid-cols-2")}>
-      {media.map((item) => (
+      {media.map((item, index) => (
         <button
           key={item.id}
           type="button"
-          onClick={onOpen}
+          onClick={() => onOpen(index)}
           className="relative aspect-square overflow-hidden bg-surface-2"
-          aria-label="Open image viewer"
+          aria-label={`Open image ${index + 1}`}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -750,41 +838,40 @@ export function ReportSheet({
   }
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="Report">
+    <BottomSheet open={open} onClose={onClose} title={step === "reason" ? "Why are you reporting this?" : "Report"}>
       {step === "reason" ? (
         <div className="pb-3">
           <fieldset>
-            <legend className="mb-2 text-small font-semibold text-fg">Why are you reporting this?</legend>
-            <div className="space-y-1">
+            <legend className="sr-only">Why are you reporting this?</legend>
+            <div className="space-y-0.5">
               {REPORT_REASON_OPTIONS.map((option) => (
                 <label
                   key={option.value}
                   className={cn(
-                    "flex min-h-11 cursor-pointer items-center gap-3 rounded-button border px-3 py-2 text-small transition",
-                    reason === option.value ? "border-accent bg-accent-soft" : "border-transparent hover:bg-surface-2",
+                    "flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-[10px] px-2.5 py-2 text-small transition",
+                    reason === option.value ? "bg-accent-soft text-accent-soft-fg" : "text-fg hover:bg-surface-2",
                   )}
                 >
+                  <span>{option.label}</span>
                   <input
                     type="radio"
                     name="report-reason"
                     value={option.value}
                     checked={reason === option.value}
                     onChange={() => setReason(option.value)}
-                    className="size-4 accent-[var(--accent)]"
+                    className="size-[18px] shrink-0 accent-[var(--accent)]"
                   />
-                  <span className="text-fg">{option.label}</span>
                 </label>
               ))}
             </div>
           </fieldset>
-          <div className="mt-4 flex gap-2">
-            <Button variant="secondary" fullWidth onClick={onClose}>Cancel</Button>
-            <Button fullWidth disabled={!reason} onClick={() => setStep("details")}>Next</Button>
+          <div className="mt-5 pb-1">
+            <Button fullWidth size="lg" disabled={!reason} onClick={() => setStep("details")}>Next</Button>
           </div>
         </div>
       ) : step === "details" ? (
         <div className="pb-3">
-          <button type="button" onClick={() => setStep("reason")} className="mb-3 inline-flex items-center gap-1 text-small font-semibold text-accent">
+          <button type="button" onClick={() => setStep("reason")} className="mb-4 inline-flex items-center gap-1.5 text-small font-medium text-fg-muted hover:text-fg">
             <ArrowLeft aria-hidden="true" className="size-4" /> Back
           </button>
           <label htmlFor="report-details" className="text-small font-semibold text-fg">Add details (optional)</label>
@@ -798,9 +885,8 @@ export function ReportSheet({
           />
           <p className="mt-1 text-right text-tiny text-fg-subtle">{details.length}/500</p>
           {error ? <p role="alert" className="text-small text-danger">{error}</p> : null}
-          <div className="mt-3 flex gap-2">
-            <Button variant="secondary" fullWidth onClick={onClose}>Cancel</Button>
-            <Button fullWidth loading={submitting} loadingLabel="Sending…" onClick={() => void submit()}>Submit</Button>
+          <div className="mt-5 pb-1">
+            <Button fullWidth size="lg" loading={submitting} loadingLabel="Sending…" onClick={() => void submit()}>Submit</Button>
           </div>
         </div>
       ) : (
@@ -810,18 +896,20 @@ export function ReportSheet({
           </span>
           <h3 className="mt-3 text-h3 text-fg">Thanks. Our moderators will review this.</h3>
           <p className="mt-1 text-small text-fg-muted">Your name is never shown to the author.</p>
-          <div className="mt-5 space-y-2">
+          <div className="mt-5 space-y-0.5 pb-1">
             {onMute ? (
-              <Button variant="secondary" fullWidth leftIcon={<BellOff aria-hidden="true" className="size-4" />} onClick={() => void onMute()}>
-                Mute @{username}
-              </Button>
+              <button type="button" onClick={() => void onMute()} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-[10px] text-small font-medium text-fg hover:bg-surface-2">
+                <BellOff aria-hidden="true" className="size-4" /> Mute @{username}
+              </button>
             ) : null}
             {onBlock ? (
-              <Button variant="secondary" fullWidth leftIcon={<ShieldBan aria-hidden="true" className="size-4" />} onClick={() => void onBlock()}>
-                Block @{username}
-              </Button>
+              <button type="button" onClick={() => void onBlock()} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-[10px] text-small font-medium text-danger hover:bg-danger-soft">
+                <ShieldBan aria-hidden="true" className="size-4" /> Block @{username}
+              </button>
             ) : null}
-            <Button fullWidth onClick={() => { toast({ title: "Report received" }); onClose(); }}>Done</Button>
+            <button type="button" onClick={() => { toast({ title: "Report received" }); onClose(); }} className="min-h-10 w-full pt-1 text-small font-semibold text-accent hover:underline">
+              Done
+            </button>
           </div>
         </div>
       )}

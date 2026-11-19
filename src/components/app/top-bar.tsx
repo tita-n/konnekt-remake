@@ -15,7 +15,7 @@ export function TopBar({
 }) {
   return (
     <header className="glass sticky top-0 z-40 border-b border-x-0 border-t-0">
-      <div className="mx-auto flex h-14 max-w-2xl items-center justify-between gap-2 px-3">
+      <div className="mx-auto flex h-14 max-w-2xl items-center justify-between gap-2 px-4">
         <Link href="/pulse" className="flex min-w-0 items-center gap-2.5 rounded-button pr-2" aria-label={`${university.name} home`}>
           {university.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -25,7 +25,7 @@ export function TopBar({
               {university.shortName.slice(0, 2).toUpperCase()}
             </span>
           )}
-          <span className="truncate font-display text-[1.0625rem] font-bold tracking-tight text-fg">
+          <span className="truncate font-display text-[1.0625rem] font-bold tracking-[-0.02em] text-fg">
             {university.shortName}
           </span>
         </Link>

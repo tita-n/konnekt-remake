@@ -21,7 +21,7 @@ function describedBy(id: string, hint?: string, error?: string | null): string |
 }
 
 const inputBase =
-  "w-full rounded-input border bg-surface px-3.5 text-[0.9375rem] text-fg placeholder:text-fg-subtle transition-colors duration-150 focus:border-accent disabled:cursor-not-allowed disabled:bg-surface-2 disabled:text-fg-muted";
+  "w-full rounded-input border bg-surface px-3.5 text-body text-fg placeholder:text-fg-subtle transition-colors duration-150 focus:border-accent disabled:cursor-not-allowed disabled:bg-surface-2 disabled:text-fg-muted";
 
 export interface TextFieldProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "id">, FieldChrome {
   leading?: React.ReactNode;
@@ -344,7 +344,7 @@ export function Chip({ selected = false, children, className, icon, ...props }: 
       )}
       {...props}
     >
-      {selected ? <Check aria-hidden="true" className="size-3.5" strokeWidth={3} /> : icon}
+      {icon}
       {children}
     </button>
   );

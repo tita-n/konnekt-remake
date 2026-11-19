@@ -1,42 +1,44 @@
 /*
  * Konnekt design tokens.
- * Surfaces are flat and solid by default (Material 3 Expressive). Glass is
- * reserved for the top bar, bottom tab bar and bottom sheets, and is switched
- * off globally by [data-glass="solid"].
+ * The product language is the Nova mockups: white paper surfaces, hairline
+ * borders, indigo accents, 16px cards and 12px controls. Accent colours remain
+ * per-university; everything else is fixed so every campus looks like Konnekt.
  */
 :root {
-  --bg: #f3f5f4;
+  --bg: #ffffff;
   --surface: #ffffff;
-  --surface-2: #eef2ef;
-  --surface-3: #e4eae6;
-  --fg: #0c1411;
-  --fg-muted: #55645c;
-  --fg-subtle: #647169;
-  --border: #dce3df;
-  --border-strong: #c3cec8;
+  --surface-2: #f6f6fa;
+  --surface-3: #ededf4;
+  --fg: #12141a;
+  --fg-muted: #5b6270;
+  --fg-subtle: #7b8190;
+  --border: #e7e8ef;
+  --border-strong: #d5d7e2;
 
   /* Overridden at runtime with the university accent. */
-  --accent: #1b7f5a;
+  --accent: #4f46e5;
   --accent-fg: #ffffff;
-  --accent-soft: #e6f2ec;
-  --accent-soft-fg: #0c1411;
+  --accent-soft: #eef0ff;
+  --accent-soft-fg: #3730a3;
 
-  --danger: #b3261e;
+  --highlight: #f5a524;
+  --highlight-soft: #fff4dc;
+  --danger: #d92d20;
   --danger-fg: #ffffff;
-  --danger-soft: #fceceb;
-  --success: #17694b;
-  --success-soft: #e4f3ec;
-  --warning: #7a5200;
-  --warning-soft: #fdf3df;
-  --focus: #0b5fff;
+  --danger-soft: #fef3f2;
+  --success: #067647;
+  --success-soft: #ecfdf3;
+  --warning: #b54708;
+  --warning-soft: #fffaeb;
+  --focus: #4f46e5;
 
-  --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.65);
-  --glass-blur: 8px;
+  --glass-bg: rgba(255, 255, 255, 0.92);
+  --glass-border: rgba(231, 232, 239, 0.9);
+  --glass-blur: 12px;
 
   --radius-card: 16px;
   --radius-button: 12px;
-  --shadow-card: 0 1px 2px rgba(12, 20, 17, 0.04);
+  --shadow-card: none;
 
   --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-display: var(--font-jakarta), var(--font-sans);
@@ -45,17 +47,19 @@
 }
 
 [data-theme="dark"] {
-  --bg: #0a0f0d;
-  --surface: #121915;
-  --surface-2: #18211c;
-  --surface-3: #202b25;
-  --fg: #f1f5f2;
-  --fg-muted: #a5b3aa;
-  --fg-subtle: #90a096;
-  --border: #26332c;
-  --border-strong: #37463e;
-  --accent-soft: #17342a;
-  --accent-soft-fg: #f1f5f2;
+  --bg: #0e1013;
+  --surface: #15181d;
+  --surface-2: #1c2027;
+  --surface-3: #252a33;
+  --fg: #f3f4f7;
+  --fg-muted: #a5acb8;
+  --fg-subtle: #8c94a3;
+  --border: #282d36;
+  --border-strong: #3a414d;
+  --accent-soft: #211f45;
+  --accent-soft-fg: #c7c4ff;
+  --highlight: #f5a524;
+  --highlight-soft: #2e2413;
   --danger: #ff8a80;
   --danger-fg: #2a0908;
   --danger-soft: #37130f;
@@ -63,10 +67,10 @@
   --success-soft: #112b21;
   --warning: #f3c26b;
   --warning-soft: #2e2413;
-  --focus: #8fb3ff;
+  --focus: #a5b4ff;
 
-  --glass-bg: rgba(18, 25, 21, 0.68);
-  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-bg: rgba(21, 24, 29, 0.9);
+  --glass-border: rgba(255, 255, 255, 0.1);
 
   color-scheme: dark;
 }
@@ -87,14 +91,14 @@
 
 @media (prefers-contrast: more) {
   :root {
-    --border: #8c9a92;
-    --fg-muted: #3a463f;
+    --border: #8c93a3;
+    --fg-muted: #3d4451;
     --glass-bg: var(--surface);
     --glass-blur: 0px;
   }
   [data-theme="dark"] {
-    --border: #5b6b62;
-    --fg-muted: #d3ddd7;
+    --border: #5b6472;
+    --fg-muted: #d3d8e0;
   }
 }
 

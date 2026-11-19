@@ -22,7 +22,7 @@ try {
 
 const db = new PrismaClient();
 const PASSWORD = "KonnektDemo123!";
-const ACCENT = "#147A57";
+const ACCENT = "#4F46E5";
 
 async function passwordHash() {
   return hash(PASSWORD, { algorithm: 2, memoryCost: 19456, timeCost: 2, parallelism: 1, outputLen: 32 });

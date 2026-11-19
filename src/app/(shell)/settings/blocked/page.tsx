@@ -14,14 +14,15 @@ export default async function BlockedSettingsPage() {
   const viewer = await loadSocialViewer(user);
   const data = viewer ? await listRestrictedStudents(viewer) : { blocked: [], muted: [] };
   return (
-    <div className="px-3 pb-4">
-      <header className="flex items-center gap-2 px-1 pt-3">
-        <Link href="/settings" aria-label="Back to settings" className="flex size-10 items-center justify-center rounded-full hover:bg-surface-2">
+    <div className="pb-4">
+      <header className="sticky top-14 z-20 flex h-14 items-center border-b border-border bg-surface px-2">
+        <Link href="/settings" aria-label="Back to settings" className="flex size-10 items-center justify-center rounded-full text-fg hover:bg-surface-2">
           <ArrowLeft aria-hidden="true" className="size-5" />
         </Link>
-        <h1 className="text-h1 text-fg">Blocked and muted</h1>
+        <h1 className="flex-1 text-center text-h2 text-fg">Blocked and muted</h1>
+        <span className="size-10" aria-hidden="true" />
       </header>
-      <div className="mt-4">
+      <div className="px-3 pt-3">
         <RestrictedPeople initialBlocked={data.blocked} initialMuted={data.muted} />
       </div>
     </div>

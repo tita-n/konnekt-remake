@@ -82,7 +82,7 @@ export function UniversitySettingsForm({ settings }: { settings: UniversitySetti
                 />
                 <input
                   type="color"
-                  value={/^#[0-9a-fA-F]{6}$/.test(accent) ? accent : "#1B7F5A"}
+                  value={/^#[0-9a-fA-F]{6}$/.test(accent) ? accent : "#4F46E5"}
                   onChange={(event) => setAccent(event.target.value)}
                   aria-label="Pick accent colour"
                   className="h-10 w-12 cursor-pointer rounded-input border border-border bg-surface p-1"

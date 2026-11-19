@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowUp, CloudOff, Loader2, Plus, RefreshCw, TrendingUp, WifiOff } from "lucide-react";
+import { ArrowUp, CloudOff, Loader2, Plus, RefreshCw, Sun, TrendingUp } from "lucide-react";
 import type { FeedFilter, FeedFilterOption, FeedPage, TrendingTag } from "@/lib/posts/types";
 import { apiGet } from "@/lib/posts/client";
 import { cacheFeed, flushOutbox, listOutbox, readCachedFeed } from "@/lib/offline/store";
@@ -240,8 +240,8 @@ export function PulseFeed({
       </div>
 
       {!online ? (
-        <div className="mx-3 mt-3 flex items-start gap-2.5 rounded-card border border-warning/30 bg-warning-soft px-3 py-2.5 text-small text-warning" role="status">
-          <WifiOff aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+        <div className="mx-3 mt-1 flex items-center gap-2.5 rounded-[10px] bg-highlight-soft px-3.5 py-2.5 text-small text-warning" role="status">
+          <Sun aria-hidden="true" className="size-4 shrink-0" />
           <span>You&apos;re offline. Showing saved content.</span>
         </div>
       ) : null}
@@ -276,20 +276,19 @@ export function PulseFeed({
       ) : null}
 
       {trending.length > 0 ? (
-        <section aria-label="Trending on campus" className="mx-3 my-3 rounded-card border border-border bg-accent-soft px-3 py-3">
-          <h2 className="flex items-center gap-1.5 text-small font-semibold text-accent-soft-fg">
-            <TrendingUp aria-hidden="true" className="size-4" />
+        <section aria-label="Trending on campus" className="mx-3 my-2 flex items-center gap-2 overflow-hidden rounded-[10px] bg-accent-soft px-3 py-2">
+          <h2 className="flex shrink-0 items-center gap-1 text-tiny font-semibold text-accent-soft-fg">
+            <TrendingUp aria-hidden="true" className="size-3.5" />
             Trending on campus
           </h2>
-          <ul className="no-scrollbar mt-2 flex gap-1.5 overflow-x-auto">
+          <ul className="no-scrollbar flex min-w-0 flex-1 gap-1.5 overflow-x-auto">
             {trending.map((tag) => (
               <li key={tag.tag} className="shrink-0">
                 <Link
                   href={`/hashtag/${tag.tag}`}
-                  className="inline-flex h-8 items-center rounded-chip border border-border/70 bg-surface px-3 text-small font-medium text-fg hover:border-accent"
+                  className="inline-flex h-7 items-center rounded-chip border border-border bg-surface px-2.5 text-tiny font-medium text-fg hover:border-accent"
                 >
                   #{tag.tag}
-                  <span className="ml-1.5 text-tiny text-fg-subtle">{formatCount(tag.postCount)}</span>
                 </Link>
               </li>
             ))}
@@ -297,7 +296,7 @@ export function PulseFeed({
         </section>
       ) : null}
 
-      <div className="space-y-3 px-3 pb-4 pt-1">
+      <div className="space-y-2 px-3 pb-4 pt-1">
         {loading ? (
           <FeedSkeleton />
         ) : error ? (
@@ -347,7 +346,7 @@ export function PulseFeed({
 
 function FeedSkeleton() {
   return (
-    <div className="space-y-3" aria-hidden="true">
+    <div className="space-y-2" aria-hidden="true">
       {[0, 1, 2].map((index) => (
         <div key={index} className="rounded-card border border-border bg-surface p-4">
           <div className="flex items-center gap-3">

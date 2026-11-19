@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Lock, Search } from "lucide-react";
+import { ArrowLeft, Lock, Search } from "lucide-react";
 import { requireStudent } from "@/lib/auth/guards";
 import { getBookmarks } from "@/lib/services/posts";
 import { loadSocialViewer } from "@/lib/services/social";
@@ -15,7 +15,6 @@ const TYPE_FILTERS = [
   { value: "ALL", label: "All" },
   { value: "POST", label: "Posts" },
   { value: "QUESTION", label: "Questions" },
-  { value: "POLL", label: "Polls" },
 ] as const;
 
 export default async function BookmarksPage({
@@ -31,18 +30,22 @@ export default async function BookmarksPage({
   const base = `/bookmarks?${new URLSearchParams({ ...(params.q ? { q: params.q } : {}), type }).toString()}`;
 
   return (
-    <div className="px-3 pb-4">
-      <header className="px-1 pt-5">
-        <h1 className="text-h1 text-fg">Bookmarks</h1>
-        <p className="mt-1 text-small text-fg-muted">Things worth coming back to.</p>
+    <div className="pb-4">
+      <header className="sticky top-14 z-20 flex h-14 items-center border-b border-border bg-surface px-2">
+        <Link href="/profile/me" aria-label="Back to profile" className="flex size-10 items-center justify-center rounded-full text-fg hover:bg-surface-2">
+          <ArrowLeft aria-hidden="true" className="size-5" />
+        </Link>
+        <h1 className="flex-1 text-center text-h2 text-fg">Bookmarks</h1>
+        <span className="size-10" aria-hidden="true" />
       </header>
 
-      <p className="mt-4 flex items-center gap-2 rounded-card bg-accent-soft px-3 py-2.5 text-small text-accent-soft-fg">
+      <div className="px-3 pt-3">
+      <p className="flex items-center gap-2.5 rounded-[12px] bg-accent-soft px-3.5 py-3 text-small text-accent-soft-fg">
         <Lock aria-hidden="true" className="size-4 shrink-0" />
         Only you can see your bookmarks.
       </p>
 
-      <form method="get" action="/bookmarks" className="mt-3 flex gap-2" role="search">
+      <form method="get" action="/bookmarks" className="mt-2.5 flex gap-2" role="search">
         <label htmlFor="bookmark-search" className="sr-only">Search your bookmarks</label>
         <div className="relative flex-1">
           <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fg-subtle" />
@@ -51,13 +54,13 @@ export default async function BookmarksPage({
             name="q"
             defaultValue={params.q ?? ""}
             placeholder="Search your bookmarks"
-            className="h-11 w-full rounded-input border border-border bg-surface pl-9 pr-3 text-small text-fg placeholder:text-fg-subtle focus:border-accent"
+            className="h-11 w-full rounded-[12px] border border-border bg-surface pl-9 pr-3 text-small text-fg placeholder:text-fg-subtle focus:border-accent"
           />
         </div>
         {params.type ? <input type="hidden" name="type" value={params.type} /> : null}
       </form>
 
-      <div className="mt-3 flex gap-1.5 overflow-x-auto no-scrollbar" role="group" aria-label="Filter bookmarks">
+      <div className="mt-2.5 flex gap-1.5 overflow-x-auto no-scrollbar" role="group" aria-label="Filter bookmarks">
         {TYPE_FILTERS.map((item) => (
           <Link
             key={item.value}
@@ -73,7 +76,7 @@ export default async function BookmarksPage({
         ))}
       </div>
 
-      <div className="mt-3 space-y-3">
+      <div className="mt-2.5 space-y-2">
         {page.posts.length === 0 ? (
           <div className="rounded-card border border-border bg-surface">
             <EmptyState
@@ -90,6 +93,7 @@ export default async function BookmarksPage({
             Load more
           </Link>
         ) : null}
+      </div>
       </div>
     </div>
   );

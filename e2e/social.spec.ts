@@ -18,6 +18,7 @@ async function createPost(page: Page, body: string, audience?: string): Promise<
   if (audience) {
     await page.getByRole("button", { name: /Posting to/ }).click();
     await page.getByRole("button", { name: new RegExp(audience) }).click();
+    await page.getByRole("button", { name: "Done", exact: true }).click();
   }
   await page.getByRole("banner").getByRole("button", { name: "Post", exact: true }).click();
   await page.waitForURL(/\/p\/[^/]+$/, { timeout: 30_000 });

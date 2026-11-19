@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Bookmark, FileText, MessageCircle } from "lucide-react";
+import { Bookmark } from "lucide-react";
 import type { PostView } from "@/lib/posts/types";
 import type { ProfileReply } from "@/lib/services/posts";
 import { PostCard } from "@/components/pulse/post-card";
@@ -24,15 +24,15 @@ export function ProfileTabs({
   isSelf: boolean;
 }) {
   const [tab, setTab] = useState<Tab>("posts");
-  const tabs: Array<{ value: Tab; label: string; icon: typeof FileText; count: number }> = [
-    { value: "posts", label: "Posts", icon: FileText, count: initialPosts.length },
-    { value: "replies", label: "Replies", icon: MessageCircle, count: replies.length },
-    ...(isSelf ? [{ value: "bookmarks" as const, label: "Bookmarks", icon: Bookmark, count: bookmarks.length }] : []),
+  const tabs: Array<{ value: Tab; label: string; private?: boolean }> = [
+    { value: "posts", label: "Posts" },
+    { value: "replies", label: "Replies" },
+    ...(isSelf ? [{ value: "bookmarks" as const, label: "Bookmarks", private: true }] : []),
   ];
 
   return (
-    <div className="mt-5">
-      <div className="flex rounded-chip border border-border bg-surface-2 p-1" role="tablist" aria-label="Profile content">
+    <div className="mt-4">
+      <div className="flex overflow-hidden rounded-full border border-border" role="tablist" aria-label="Profile content">
         {tabs.map((item) => (
           <button
             key={item.value}
@@ -41,12 +41,12 @@ export function ProfileTabs({
             aria-selected={tab === item.value}
             onClick={() => setTab(item.value)}
             className={cn(
-              "flex h-9 flex-1 items-center justify-center gap-1.5 rounded-chip text-small font-semibold transition",
-              tab === item.value ? "bg-accent text-accent-fg" : "text-fg-muted",
+              "flex h-10 flex-1 items-center justify-center gap-1.5 text-small font-semibold transition-colors",
+              tab === item.value ? "bg-accent text-accent-fg" : "bg-surface text-fg-muted hover:bg-surface-2",
             )}
           >
-            <item.icon aria-hidden="true" className="size-3.5" />
             {item.label}
+            {item.private ? <Bookmark aria-hidden="true" className="size-3.5" /> : null}
           </button>
         ))}
       </div>
@@ -58,7 +58,7 @@ export function ProfileTabs({
               <EmptyState title="No posts yet" description={isSelf ? "Your posts will appear here." : "This student hasn't posted yet."} compact />
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {initialPosts.map((post) => <PostCard key={post.id} post={post} />)}
             </div>
           )
@@ -87,7 +87,7 @@ export function ProfileTabs({
             <EmptyState title="No bookmarks yet" description="Your private saved posts will appear here." compact />
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {bookmarks.map((post) => <PostCard key={post.id} post={post} />)}
           </div>
         )}

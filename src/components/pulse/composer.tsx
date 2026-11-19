@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
   AtSign,
-  BarChart3,
   Check,
   ChevronDown,
   Hash,
@@ -45,11 +44,6 @@ interface AudienceChoice {
   scope: string;
 }
 
-const MODES: Array<{ value: Mode; label: string; icon: typeof BarChart3 }> = [
-  { value: "POST", label: "Post", icon: ImagePlus },
-  { value: "QUESTION", label: "Question", icon: Users },
-  { value: "POLL", label: "Poll", icon: BarChart3 },
-];
 
 export function Composer({
   viewer,
@@ -64,11 +58,10 @@ export function Composer({
 }) {
   const router = useRouter();
   const { toast } = useToast();
-  const [mode, setMode] = useState<Mode>(
+  const mode: Mode =
     initialDraft?.type === "QUESTION" || initialDraft?.type === "POLL" || initialDraft?.type === "POST"
       ? initialDraft.type
-      : initialType,
-  );
+      : initialType;
   const [online, setOnline] = useState(true);
   const [body, setBody] = useState(initialDraft?.payload.body ?? "");
   const [questionTitle, setQuestionTitle] = useState(initialDraft?.payload.questionTitle ?? "");
@@ -87,6 +80,7 @@ export function Composer({
       "",
   );
   const [audienceOpen, setAudienceOpen] = useState(false);
+  const [audienceDraft, setAudienceDraft] = useState(audienceId);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -297,58 +291,40 @@ export function Composer({
 
   return (
     <div className="min-h-dvh bg-bg text-fg">
-      <header className="glass sticky top-0 z-40 border-b border-border">
-        <div className="mx-auto flex h-14 max-w-2xl items-center gap-2 px-2">
-          <Link href="/pulse" aria-label="Close composer" className="flex size-11 items-center justify-center rounded-full hover:bg-surface-2">
+      <header className="glass sticky top-0 z-40 border-b border-border bg-surface">
+        <div className="mx-auto flex h-14 max-w-2xl items-center gap-2 px-3">
+          <Link href="/pulse" aria-label="Close composer" className="flex size-10 items-center justify-center rounded-full text-fg hover:bg-surface-2">
             <X aria-hidden="true" className="size-5" />
           </Link>
           <div className="min-w-0 flex-1 text-center">
-            <p className="text-[0.9375rem] font-semibold">
+            <p className="text-body font-semibold text-fg">
               {mode === "POST" ? "Post" : mode === "QUESTION" ? "Question" : "Poll"}
             </p>
-            <p className="text-tiny text-fg-subtle">{draftState === "saved" ? "Draft saved" : draftState === "saving" ? "Saving draft…" : "New post"}</p>
+            <p className="text-tiny text-fg-subtle">{draftState === "saved" ? "Draft saved" : draftState === "saving" ? "Saving…" : "Draft"}</p>
           </div>
-          <Button size="sm" onClick={() => void submit()} loading={submitting} loadingLabel="Posting…">
+          <Button size="sm" className="rounded-full px-4" onClick={() => void submit()} loading={submitting} loadingLabel="Posting…">
             Post
           </Button>
         </div>
       </header>
 
       <main className="mx-auto w-full max-w-2xl px-4 pb-10 pt-4">
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Post type">
-          {MODES.map((item) => (
-            <button
-              key={item.value}
-              type="button"
-              aria-pressed={mode === item.value}
-              onClick={() => setMode(item.value)}
-              className={cn(
-                "inline-flex h-9 items-center gap-1.5 rounded-chip border px-3 text-small font-semibold transition",
-                mode === item.value ? "border-accent bg-accent text-accent-fg" : "border-border bg-surface text-fg-muted hover:text-fg",
-              )}
-            >
-              <item.icon aria-hidden="true" className="size-4" />
-              {item.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="mt-4 flex items-center gap-3">
+        <div className="flex items-center gap-3">
           <Avatar name={viewer.fullName} src={viewer.photoUrl} size="md" verified />
           <div className="min-w-0">
-            <p className="truncate text-[0.9375rem] font-semibold">{viewer.fullName}</p>
-            <p className="truncate text-small text-fg-subtle">@{viewer.username}</p>
+            <p className="truncate text-body font-semibold text-fg">{viewer.fullName}</p>
+            <p className="truncate text-small text-fg-muted">@{viewer.username}</p>
           </div>
         </div>
 
         <button
           type="button"
-          onClick={() => setAudienceOpen(true)}
-          className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-chip bg-accent-soft px-3 text-small font-semibold text-accent-soft-fg hover:brightness-95"
+          onClick={() => { setAudienceDraft(audienceId); setAudienceOpen(true); }}
+          className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-chip bg-surface-2 px-3 text-small font-semibold text-fg hover:bg-surface-3"
         >
-          <Users aria-hidden="true" className="size-4" />
-          Posting to {audience?.label ?? "your audience"}
-          <ChevronDown aria-hidden="true" className="size-3.5" />
+          <Users aria-hidden="true" className="size-4 text-fg-muted" />
+          Posting to: {audience?.label ?? "your audience"}
+          <ChevronDown aria-hidden="true" className="size-3.5 text-fg-muted" />
         </button>
 
         {mode === "QUESTION" ? (
@@ -405,7 +381,7 @@ export function Composer({
                   ? "Add the details that will help people answer…"
                   : "What's happening on campus?"
             }
-            className="min-h-32 w-full resize-none rounded-card border border-border bg-surface px-3.5 py-3 text-body leading-relaxed text-fg placeholder:text-fg-subtle focus:border-accent"
+            className="min-h-40 w-full resize-none border-0 bg-transparent px-0 py-4 text-[1.0625rem] leading-relaxed text-fg placeholder:text-fg-subtle focus:outline-none focus-visible:outline-none"
           />
           <p className={cn("mt-1 text-right text-tiny", body.length > 1900 ? "text-warning" : "text-fg-subtle")}>{body.length}/2000</p>
         </div>
@@ -521,8 +497,8 @@ export function Composer({
           </ul>
         ) : null}
 
-        <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
-          <div className="flex items-center gap-0.5">
+        <div className="sticky bottom-0 -mx-4 mt-4 flex items-center justify-between border-t border-border bg-surface px-4 py-2.5">
+          <div className="flex items-center gap-1">
             <input
               ref={fileInput}
               type="file"
@@ -567,30 +543,52 @@ export function Composer({
         </p>
       </main>
 
-      <BottomSheet open={audienceOpen} onClose={() => setAudienceOpen(false)} title="Who can see this?" description="You can only choose audiences along your own path.">
-        <div className="space-y-1.5 pb-4">
-          {audiences.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              onClick={() => { setAudienceId(option.id); setAudienceOpen(false); }}
-              className={cn(
-                "flex min-h-14 w-full items-center gap-3 rounded-card border px-3 py-2.5 text-left transition",
-                audienceId === option.id ? "border-accent bg-accent-soft" : "border-border hover:bg-surface-2",
-              )}
-            >
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-surface text-accent">
-                {option.scope === "university" ? <Users aria-hidden="true" className="size-4" /> : <Lock aria-hidden="true" className="size-4" />}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-small font-semibold text-fg">{option.label}</span>
-                <span className="block truncate text-tiny text-fg-subtle">{option.description}</span>
-              </span>
-              {audienceId === option.id ? <Check aria-hidden="true" className="size-5 shrink-0 text-accent" /> : null}
-            </button>
-          ))}
+      <BottomSheet
+        open={audienceOpen}
+        onClose={() => setAudienceOpen(false)}
+        title="Who can see this?"
+        footer={
+          <Button
+            fullWidth
+            size="lg"
+            className="rounded-full"
+            onClick={() => { setAudienceId(audienceDraft); setAudienceOpen(false); }}
+          >
+            Done
+          </Button>
+        }
+      >
+        <div className="space-y-0.5 pb-2">
+          {audiences.map((option) => {
+            const selected = audienceDraft === option.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => setAudienceDraft(option.id)}
+                className={cn(
+                  "flex min-h-[58px] w-full items-center gap-3 rounded-[12px] px-3 py-2.5 text-left transition",
+                  selected ? "bg-accent-soft" : "hover:bg-surface-2",
+                )}
+              >
+                <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-full", selected ? "bg-surface text-accent" : "bg-surface-2 text-fg-muted")}>
+                  {option.scope === "university" ? <Users aria-hidden="true" className="size-4" /> : <Lock aria-hidden="true" className="size-4" />}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-small font-semibold text-fg">{option.label}</span>
+                  <span className="block truncate text-tiny text-fg-subtle">{option.description}</span>
+                </span>
+                <span className={cn("flex size-5 shrink-0 items-center justify-center rounded-full border-2", selected ? "border-accent bg-accent" : "border-border-strong")}>
+                  {selected ? <span className="size-1.5 rounded-full bg-surface" /> : null}
+                </span>
+              </button>
+            );
+          })}
         </div>
-        <p className="pb-2 text-tiny text-fg-subtle">A repost always keeps the original audience, so it can never widen who sees it.</p>
+        <p className="px-1 pb-2 text-tiny leading-relaxed text-fg-subtle">
+          Only people in this audience will see your post. A repost always keeps the original audience.
+        </p>
       </BottomSheet>
     </div>
   );

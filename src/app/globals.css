@@ -20,8 +20,8 @@
     background: var(--bg);
     color: var(--fg);
     font-family: var(--font-sans);
-    font-size: 0.9375rem;
-    line-height: 1.55;
+    font-size: 1rem;
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     min-height: 100dvh;
@@ -179,7 +179,7 @@ dialog.modal {
   background: transparent;
   width: 100%;
   max-width: 28rem;
-  border-radius: 20px;
+  border-radius: 16px;
 }
 dialog.modal::backdrop {
   background: rgba(6, 12, 9, 0.45);
@@ -204,12 +204,12 @@ dialog.modal::backdrop {
 @layer base {
   /* Tinted accent surfaces follow the active theme and the tenant accent. */
   :root {
-    --accent-soft: color-mix(in srgb, var(--accent) 12%, #ffffff);
-    --accent-soft-fg: color-mix(in srgb, var(--accent) 38%, #0c1411);
+    --accent-soft: color-mix(in srgb, var(--accent) 10%, #ffffff);
+    --accent-soft-fg: color-mix(in srgb, var(--accent) 72%, #12141a);
   }
 
   [data-theme="dark"] {
-    --accent-soft: color-mix(in srgb, var(--accent) 22%, #0f1512);
-    --accent-soft-fg: color-mix(in srgb, var(--accent) 28%, #f5faf7);
+    --accent-soft: color-mix(in srgb, var(--accent) 22%, #15181d);
+    --accent-soft-fg: color-mix(in srgb, var(--accent) 24%, #f3f4f7);
   }
 }
