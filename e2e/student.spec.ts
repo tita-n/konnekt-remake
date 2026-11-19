@@ -7,7 +7,7 @@ test.describe("verified student", () => {
     await page.goto("/pulse", { waitUntil: "networkidle" });
 
     await expect(page.getByRole("heading", { name: "Pulse", level: 1 })).toBeVisible();
-    await expect(page.getByText("Demo", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("Nova", { exact: true }).first()).toBeVisible();
     await expect(page.getByRole("group", { name: "Filter your Pulse" })).toBeVisible();
     await expect(page.getByRole("region", { name: "Trending on campus" })).toBeVisible();
     await expect(page.locator('article[aria-label^="Post by"]').first()).toBeVisible();
@@ -22,8 +22,8 @@ test.describe("verified student", () => {
     await loginAs(page, "student");
     await page.goto("/profile/me", { waitUntil: "networkidle" });
 
-    await expect(page.getByRole("heading", { name: "Adaeze Okonkwo", exact: false })).toBeVisible();
-    await expect(page.getByText("Computer Science", { exact: false }).first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Chinedu Okafor", exact: false })).toBeVisible();
+    await expect(page.getByText("Software Engineering", { exact: false }).first()).toBeVisible();
     await expect(page.getByText("300", { exact: false }).first()).toBeVisible();
     await expect(page.getByText("Verified student").first()).toBeVisible();
   });

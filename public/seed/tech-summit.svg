@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1E1B4B"/><stop offset="100%" stop-color="#312E81"/></linearGradient>
+  </defs>
+  <rect width="960" height="540" fill="url(#bg)"/>
+  <polygon points="220,0 420,410 120,410" fill="#818CF8" opacity="0.16"/>
+  <polygon points="740,0 840,410 540,410" fill="#38BDF8" opacity="0.16"/>
+  <rect x="210" y="96" width="540" height="230" rx="20" fill="#4338CA" stroke="#818CF8" stroke-width="4"/>
+  <rect x="256" y="136" width="448" height="150" rx="14" fill="#1E1B4B"/>
+  <text x="480" y="205" text-anchor="middle" font-family="system-ui,sans-serif" font-size="44" font-weight="800" fill="#FFFFFF">TECHSUMMIT 2026</text>
+  <text x="480" y="248" text-anchor="middle" font-family="system-ui,sans-serif" font-size="22" font-weight="600" fill="#A5B4FC">Nova University Innovation Track</text>
+  <rect x="110" y="388" width="740" height="32" rx="12" fill="#4F46E5"/>
+  <rect x="448" y="328" width="64" height="60" rx="10" fill="#6366F1"/>
+  <circle cx="480" cy="296" r="18" fill="#8D5524"/>
+  <g fill="#0F172A" opacity="0.72">
+    <circle cx="190" cy="466" r="24"/><circle cx="268" cy="472" r="24"/><circle cx="348" cy="466" r="24"/>
+    <circle cx="428" cy="474" r="24"/><circle cx="532" cy="474" r="24"/><circle cx="612" cy="466" r="24"/>
+    <circle cx="692" cy="472" r="24"/><circle cx="770" cy="466" r="24"/>
+  </g>
+</svg>

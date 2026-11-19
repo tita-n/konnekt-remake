@@ -7,10 +7,10 @@ test.describe("university console", () => {
     await page.goto("/admin/verification", { waitUntil: "networkidle" });
 
     await expect(page.getByRole("heading", { name: "Verification queue" })).toBeVisible();
-    await expect(page.getByRole("link", { name: /Emeka Nwachukwu/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Emeka Nwosu/ })).toBeVisible();
 
-    await page.getByRole("link", { name: /Emeka Nwachukwu/ }).first().click();
-    await expect(page.getByRole("heading", { name: "Emeka Nwachukwu" })).toBeVisible();
+    await page.getByRole("link", { name: /Emeka Nwosu/ }).first().click();
+    await expect(page.getByRole("heading", { name: "Emeka Nwosu" })).toBeVisible();
     await expect(page.getByText("Check the details")).toBeVisible();
 
     const image = page.getByAltText(/Student ID submitted by/);
@@ -66,7 +66,7 @@ test.describe("platform console", () => {
     await loginAs(page, "platform");
     await page.goto("/platform/universities", { waitUntil: "networkidle" });
     await expect(page.getByRole("heading", { name: "Universities" })).toBeVisible();
-    await expect(page.getByText("Demo University").first()).toBeVisible();
+    await expect(page.getByText("Nova University").first()).toBeVisible();
 
     const suffix = Date.now().toString(36).slice(-5);
     await page.getByLabel("University name").fill(`E2E University ${suffix}`);

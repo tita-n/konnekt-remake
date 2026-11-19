@@ -33,6 +33,7 @@
   h3,
   h4 {
     font-family: var(--font-display);
+    letter-spacing: -0.01em;
     text-wrap: balance;
   }
 
@@ -68,6 +69,10 @@
   img,
   svg {
     display: block;
+  }
+
+  [data-theme="dark"] svg.lucide {
+    stroke-width: 1.75;
   }
 }
 
@@ -146,15 +151,13 @@
     padding-left: 1.25rem;
   }
   .prose-legal a {
-    color: var(--accent);
+    color: var(--accent-ink);
     text-decoration: underline;
     text-underline-offset: 2px;
   }
   .prose-legal strong {
     color: var(--fg);
   }
-
-
 }
 
 /* Bottom sheet dialog reset */
@@ -170,7 +173,7 @@ dialog.sheet {
   overscroll-behavior: contain;
 }
 dialog.sheet::backdrop {
-  background: rgba(6, 12, 9, 0.45);
+  background: rgba(6, 12, 9, 0.40);
   animation: fade-in 160ms ease-out;
 }
 dialog.modal {
@@ -179,10 +182,10 @@ dialog.modal {
   background: transparent;
   width: 100%;
   max-width: 28rem;
-  border-radius: 16px;
+  border-radius: 20px;
 }
 dialog.modal::backdrop {
-  background: rgba(6, 12, 9, 0.45);
+  background: rgba(6, 12, 9, 0.40);
   animation: fade-in 160ms ease-out;
 }
 
@@ -209,7 +212,7 @@ dialog.modal::backdrop {
   }
 
   [data-theme="dark"] {
-    --accent-soft: color-mix(in srgb, var(--accent) 22%, #15181d);
-    --accent-soft-fg: color-mix(in srgb, var(--accent) 24%, #f3f4f7);
+    --accent-soft: color-mix(in srgb, var(--accent) 16%, #171a1f);
+    --accent-soft-fg: color-mix(in srgb, var(--accent-ink) 75%, #f2f3f5);
   }
 }

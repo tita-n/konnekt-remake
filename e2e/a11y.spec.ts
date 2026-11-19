@@ -43,7 +43,7 @@ test("verification queue passes axe", async ({ page }) => {
   await loginAs(page, "admin");
   await page.goto("/admin/verification", { waitUntil: "networkidle" });
   await scan(page, "admin verification");
-  await page.getByRole("link", { name: /Emeka Nwachukwu/ }).first().click();
+  await page.getByRole("link", { name: /Emeka Nwosu/ }).first().click();
   await page.waitForURL(/\/admin\/verification\/.+/, { timeout: 20_000 });
   await expect(page.getByText("Check the details")).toBeVisible({ timeout: 20_000 });
   await scan(page, "admin verification detail");

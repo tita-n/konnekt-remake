@@ -17,9 +17,9 @@ export async function login(page: Page, identifier: string, password = DEMO_PASS
 /** Sign in once per role and reuse the cookie state for a whole spec. */
 export async function loginAs(page: Page, role: "student" | "admin" | "reviewer" | "platform"): Promise<void> {
   const identifiers = {
-    student: "student@demo.edu.ng",
-    admin: "admin@demo.edu.ng",
-    reviewer: "reviewer@demo.edu.ng",
+    student: "student@nova.edu.ng",
+    admin: "admin@nova.edu.ng",
+    reviewer: "reviewer@nova.edu.ng",
     platform: "admin@konnekt.ng",
   } as const;
   const cached = sessionCache.get(role);

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CheckCircle2, Clock, MailQuestion, XCircle } from "lucide-react";
+import { CheckCircle2, MailQuestion } from "lucide-react";
 import { getSession } from "@/lib/auth/session";
 import { landingPath } from "@/lib/auth/landing";
 import { tenantDb } from "@/lib/db/tenant";
@@ -12,6 +12,8 @@ import { formatDate } from "@/lib/utils";
 import { ButtonLink } from "@/components/ui/button";
 import { signOutAction } from "@/app/actions/auth";
 import { LogoMark } from "@/components/brand/logo";
+import { ClayIllustration } from "@/components/ui/clay-illustrations";
+import { RubberStamp } from "@/components/ui/rubber-stamp";
 import { StatusAutoRefresh } from "@/components/student/status-auto-refresh";
 
 export const metadata: Metadata = { title: "Your verification status" };
@@ -51,28 +53,36 @@ export default async function StatusPage() {
 
   return (
     <div style={style} className="min-h-dvh bg-bg">
-      <header className="mx-auto flex w-full max-w-md items-center justify-between px-5 pt-6">
+      <header className="mx-auto flex w-full max-w-md items-center justify-between px-4 pt-6">
         <LogoMark className="size-9 text-accent" />
         <form action={signOutAction}>
-          <button type="submit" className="text-small font-semibold text-fg-muted hover:text-fg">
+          <button
+            type="submit"
+            className="min-h-11 rounded-button px-3 text-small font-semibold text-fg-muted transition hover:bg-surface-2 hover:text-fg"
+          >
             Log out
           </button>
         </form>
       </header>
 
-      <main id="main" className="mx-auto w-full max-w-md px-5 pb-12 pt-10">
+      <main id="main" className="mx-auto w-full max-w-md px-4 pb-12 pt-8">
         {user.status === "PENDING" ? (
           <section aria-labelledby="status-heading" className="text-center">
-            <span className="mx-auto flex size-16 items-center justify-center rounded-full bg-warning-soft">
-              <Clock aria-hidden="true" className="size-7 text-warning" />
-            </span>
-            <h1 id="status-heading" className="mt-5 text-h1 text-fg">
+            <div className="flex justify-center">
+              <ClayIllustration kind="hourglass" />
+            </div>
+            <h1 id="status-heading" className="mt-4 text-h1 text-fg">
               We&apos;re checking your details
             </h1>
             <p className="mt-2 text-body text-fg-muted">
               A reviewer at {user.university.name} is looking at your {latest?.method === "VOUCH" ? "vouch request" : "student ID"}.
               Most requests are decided within a day.
             </p>
+            <div className="mt-3 flex items-center justify-center gap-1.5" aria-hidden="true">
+              <span className="size-2 rounded-full bg-accent/50 motion-safe:animate-pulse" />
+              <span className="size-2 rounded-full bg-accent/75 motion-safe:animate-pulse [animation-delay:250ms]" />
+              <span className="size-2 rounded-full bg-accent motion-safe:animate-pulse [animation-delay:500ms]" />
+            </div>
             <div className="mt-6 rounded-card border border-border bg-surface p-4 text-left">
               <dl className="space-y-2.5 text-small">
                 <div className="flex justify-between gap-3">
@@ -105,17 +115,17 @@ export default async function StatusPage() {
             <StatusAutoRefresh />
           </section>
         ) : user.status === "REJECTED" ? (
-          <section aria-labelledby="status-heading">
-            <span className="mx-auto flex size-16 items-center justify-center rounded-full bg-danger-soft">
-              <XCircle aria-hidden="true" className="size-7 text-danger" />
-            </span>
-            <h1 id="status-heading" className="mt-5 text-center text-h1 text-fg">
+          <section aria-labelledby="status-heading" className="text-center">
+            <div className="flex justify-center py-4">
+              <RubberStamp status="REJECTED" />
+            </div>
+            <h1 id="status-heading" className="mt-3 text-h1 text-fg">
               We couldn&apos;t verify you yet
             </h1>
             {latest?.decisionReason ? (
-              <div className="mt-5 rounded-card border border-border bg-surface p-4">
-                <p className="text-small font-semibold text-fg">Reason given</p>
-                <p className="mt-1 text-small text-fg-muted">{DECISION_REASON_LABELS[latest.decisionReason]}</p>
+              <div className="mt-5 rounded-card border border-border bg-surface p-4 text-left">
+                <p className="text-small font-semibold text-fg">What to fix</p>
+                <p className="mt-1 text-small font-medium text-danger">{DECISION_REASON_LABELS[latest.decisionReason]}</p>
                 {latest.decisionNote ? <p className="mt-2 text-small text-fg-muted">{latest.decisionNote}</p> : null}
                 <p className="mt-2 text-tiny text-fg-subtle">Decided {latest.decidedAt ? formatDate(latest.decidedAt) : "recently"}</p>
               </div>
@@ -128,7 +138,7 @@ export default async function StatusPage() {
             <div className="mt-5 flex flex-col gap-2">
               {attemptsLeft > 0 ? (
                 <ButtonLink href="/status/resubmit" size="lg" fullWidth>
-                  Try verification again
+                  Resubmit verification
                 </ButtonLink>
               ) : (
                 <p className="rounded-card bg-warning-soft px-3.5 py-3 text-small text-warning">
@@ -137,7 +147,7 @@ export default async function StatusPage() {
               )}
               <a
                 href={`mailto:${supportEmail}?subject=Verification%20help`}
-                className="inline-flex h-12 items-center justify-center rounded-button border border-border-strong bg-surface text-[0.9375rem] font-semibold text-fg"
+                className="inline-flex h-12 items-center justify-center rounded-button border border-border-strong bg-surface text-[0.9375rem] font-semibold text-fg hover:bg-surface-2"
               >
                 Contact support
               </a>
@@ -146,7 +156,7 @@ export default async function StatusPage() {
         ) : (
           <section aria-labelledby="status-heading" className="text-center">
             <span className="mx-auto flex size-16 items-center justify-center rounded-full bg-accent-soft">
-              <MailQuestion aria-hidden="true" className="size-7 text-accent" />
+              <MailQuestion aria-hidden="true" className="size-7 text-accent-ink" />
             </span>
             <h1 id="status-heading" className="mt-5 text-h1 text-fg">
               One step left
@@ -171,7 +181,7 @@ export default async function StatusPage() {
 
         <p className="mt-8 text-center text-tiny leading-relaxed text-fg-subtle">
           Something wrong?{" "}
-          <Link href={`mailto:${supportEmail}`} className="font-semibold text-accent underline-offset-2 hover:underline">
+          <Link href={`mailto:${supportEmail}`} className="font-semibold text-accent-ink underline-offset-2 hover:underline">
             Contact support
           </Link>
           . Signed in as {user.email}.

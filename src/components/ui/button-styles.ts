@@ -8,20 +8,20 @@ export type ButtonVariant = "primary" | "secondary" | "ghost" | "destructive" | 
 export type ButtonSize = "sm" | "md" | "lg";
 
 export const buttonBase =
-  "relative inline-flex select-none items-center justify-center gap-2 font-semibold transition-[transform,background-color,border-color,color,box-shadow] duration-200 ease-spring disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus active:scale-[0.985]";
+  "relative inline-flex select-none items-center justify-center gap-2 font-semibold transition-[transform,background-color,border-color,color,box-shadow,filter] duration-150 ease-out disabled:pointer-events-none disabled:opacity-45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus active:scale-[0.98]";
 
 export const buttonVariants: Record<ButtonVariant, string> = {
-  primary: "bg-accent text-accent-fg hover:brightness-[0.96]",
-  secondary: "border border-border-strong bg-surface text-fg hover:bg-surface-2",
+  primary: "bg-accent text-accent-fg hover:bg-accent-hover active:brightness-90",
+  secondary: "border border-accent text-accent-ink bg-surface hover:bg-accent-soft",
   ghost: "bg-transparent text-fg hover:bg-surface-2",
-  destructive: "bg-danger text-danger-fg hover:brightness-[0.96]",
-  // The only skeuomorphic treatment in the system: slightly raised, pressable.
-  create: "bg-accent text-accent-fg shadow-[0_2px_0_0_var(--accent-shadow,_rgba(0,0,0,0.28))] active:translate-y-[2px] active:shadow-none",
+  destructive: "bg-danger-btn text-danger-fg hover:brightness-95 active:brightness-90",
+  // Skeuomorphic treatment reserved for the raised Create trigger.
+  create: "bg-accent text-accent-fg shadow-create active:translate-y-[2px] active:shadow-none",
 };
 
 export const buttonSizes: Record<ButtonSize, string> = {
-  sm: "h-9 rounded-button px-3 text-small",
-  md: "h-11 rounded-button px-4 text-[0.9375rem]",
+  sm: "h-8 rounded-button px-3 text-small",
+  md: "h-10 rounded-button px-4 text-[0.9375rem]",
   lg: "h-12 rounded-button px-5 text-[0.9375rem]",
 };
 

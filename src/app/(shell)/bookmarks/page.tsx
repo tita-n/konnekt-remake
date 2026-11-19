@@ -40,61 +40,62 @@ export default async function BookmarksPage({
       </header>
 
       <div className="px-3 pt-3">
-      <p className="flex items-center gap-2.5 rounded-[12px] bg-accent-soft px-3.5 py-3 text-small text-accent-soft-fg">
-        <Lock aria-hidden="true" className="size-4 shrink-0" />
-        Only you can see your bookmarks.
-      </p>
+        <p className="flex items-center gap-2.5 rounded-[12px] bg-accent-soft px-3.5 py-3 text-small font-medium text-accent-soft-fg">
+          <Lock aria-hidden="true" className="size-4 shrink-0 text-accent" />
+          Only you can see your bookmarks.
+        </p>
 
-      <form method="get" action="/bookmarks" className="mt-2.5 flex gap-2" role="search">
-        <label htmlFor="bookmark-search" className="sr-only">Search your bookmarks</label>
-        <div className="relative flex-1">
-          <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fg-subtle" />
-          <input
-            id="bookmark-search"
-            name="q"
-            defaultValue={params.q ?? ""}
-            placeholder="Search your bookmarks"
-            className="h-11 w-full rounded-[12px] border border-border bg-surface pl-9 pr-3 text-small text-fg placeholder:text-fg-subtle focus:border-accent"
-          />
-        </div>
-        {params.type ? <input type="hidden" name="type" value={params.type} /> : null}
-      </form>
-
-      <div className="mt-2.5 flex gap-1.5 overflow-x-auto no-scrollbar" role="group" aria-label="Filter bookmarks">
-        {TYPE_FILTERS.map((item) => (
-          <Link
-            key={item.value}
-            href={`/bookmarks?${new URLSearchParams({ type: item.value, ...(params.q ? { q: params.q } : {}) }).toString()}`}
-            aria-current={type === item.value ? "page" : undefined}
-            className={cn(
-              "inline-flex h-9 shrink-0 items-center rounded-chip px-3 text-small font-semibold",
-              type === item.value ? "bg-accent text-accent-fg" : "border border-border bg-surface text-fg-muted",
-            )}
-          >
-            {item.label}
-          </Link>
-        ))}
-      </div>
-
-      <div className="mt-2.5 space-y-2">
-        {page.posts.length === 0 ? (
-          <div className="rounded-card border border-border bg-surface">
-            <EmptyState
-              illustration="search"
-              title={params.q ? "No bookmarks match" : "No bookmarks yet"}
-              description={params.q ? "Try a different search or filter." : "Tap the bookmark icon on a post and it will show up here, privately."}
+        <form method="get" action="/bookmarks" className="mt-3 flex gap-2" role="search">
+          <label htmlFor="bookmark-search" className="sr-only">Search your bookmarks</label>
+          <div className="relative flex-1">
+            <Search aria-hidden="true" className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-fg-subtle" />
+            <input
+              id="bookmark-search"
+              name="q"
+              defaultValue={params.q ?? ""}
+              placeholder="Search your bookmarks"
+              className="h-11 w-full rounded-[14px] border border-border bg-surface-2/65 pl-10 pr-3.5 text-small text-fg placeholder:text-fg-subtle focus:border-accent focus:bg-surface"
             />
           </div>
-        ) : (
-          page.posts.map((post) => <PostCard key={post.id} post={post} />)
-        )}
-        {page.hasMore && page.nextCursor ? (
-          <Link href={`${base}&cursor=${encodeURIComponent(page.nextCursor)}`} className="flex h-11 items-center justify-center rounded-button border border-border bg-surface text-small font-semibold text-accent">
-            Load more
-          </Link>
-        ) : null}
-      </div>
+          {params.type ? <input type="hidden" name="type" value={params.type} /> : null}
+        </form>
+
+        <div className="mt-3 flex gap-2 overflow-x-auto no-scrollbar" role="group" aria-label="Filter bookmarks">
+          {TYPE_FILTERS.map((item) => (
+            <Link
+              key={item.value}
+              href={`/bookmarks?${new URLSearchParams({ type: item.value, ...(params.q ? { q: params.q } : {}) }).toString()}`}
+              aria-current={type === item.value ? "page" : undefined}
+              className={cn(
+                "inline-flex h-8 shrink-0 items-center rounded-full px-4 text-small font-semibold transition",
+                type === item.value ? "bg-accent text-accent-fg" : "border border-border bg-surface text-fg-muted hover:text-fg",
+              )}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
+
+        <div className="mt-3 space-y-2.5">
+          {page.posts.length === 0 ? (
+            <div className="rounded-card border border-border bg-surface">
+              <EmptyState
+                illustration="search"
+                title={params.q ? "No bookmarks match" : "No bookmarks yet"}
+                description={params.q ? "Try a different search or filter." : "Tap the bookmark icon on a post and it will show up here, privately."}
+              />
+            </div>
+          ) : (
+            page.posts.map((post) => <PostCard key={post.id} post={post} />)
+          )}
+          {page.hasMore && page.nextCursor ? (
+            <Link href={`${base}&cursor=${encodeURIComponent(page.nextCursor)}`} className="flex h-11 items-center justify-center rounded-full border border-border bg-surface text-small font-semibold text-accent">
+              Load more
+            </Link>
+          ) : null}
+        </div>
       </div>
     </div>
   );
 }
+

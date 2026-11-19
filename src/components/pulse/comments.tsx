@@ -5,20 +5,20 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   Check,
-  CheckCircle2,
   ChevronDown,
+  Flag,
   Heart,
+  Image as ImageIcon,
+  Loader2,
   MoreHorizontal,
   Pencil,
   Send,
   ThumbsUp,
   Trash2,
-  Flag,
-  Loader2,
 } from "lucide-react";
 import type { CommentView, PostView } from "@/lib/posts/types";
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/posts/client";
-import { Avatar } from "@/components/ui/display";
+import { Avatar, VerifiedTick } from "@/components/ui/display";
 import { IconButton } from "@/components/ui/button";
 import { useToast } from "@/components/providers/toast-provider";
 import { cn, timeAgo } from "@/lib/utils";
@@ -150,12 +150,12 @@ export function CommentSection({
     : comments;
 
   return (
-    <section id="comments" aria-label="Comments" className="border-t border-border bg-surface">
-      <div className="flex items-center justify-between gap-3 px-4 pb-2 pt-4">
-        <h2 className="text-h3 text-fg">
+    <section id="comments" aria-label="Comments" className="border-t border-border bg-bg pb-20">
+      <div className="flex items-center justify-between gap-3 px-4 pb-2.5 pt-4">
+        <h2 className="font-display text-[1rem] font-bold text-fg">
           {post.type === "QUESTION" ? "Answers" : "Comments"} ({post.commentCount})
         </h2>
-        <div className="inline-flex rounded-chip border border-border bg-surface-2 p-0.5" role="group" aria-label="Sort comments">
+        <div className="inline-flex rounded-full border border-border bg-surface p-0.5" role="group" aria-label="Sort comments">
           {(["top", "newest"] as const).map((value) => (
             <button
               key={value}
@@ -163,8 +163,8 @@ export function CommentSection({
               aria-pressed={sort === value}
               onClick={() => void switchSort(value)}
               className={cn(
-                "h-8 rounded-chip px-3 text-small font-semibold capitalize transition",
-                sort === value ? "bg-surface text-fg shadow-card" : "text-fg-muted",
+                "h-7 rounded-full px-3.5 text-tiny font-semibold capitalize transition",
+                sort === value ? "bg-accent text-accent-fg" : "text-fg-muted hover:text-fg",
               )}
             >
               {value}
@@ -174,13 +174,13 @@ export function CommentSection({
       </div>
 
       {ordered.length === 0 ? (
-        <p className="px-4 py-8 text-center text-small text-fg-muted">
+        <div className="mx-3 rounded-[14px] border border-border bg-surface px-4 py-8 text-center text-small text-fg-muted">
           {post.type === "QUESTION" ? "No answers yet. Be the first to help." : "No comments yet. Start the conversation."}
-        </p>
+        </div>
       ) : (
-        <ul className="divide-y divide-border">
+        <ul className="space-y-2.5 px-3 pb-3">
           {ordered.map((comment) => (
-            <li key={comment.id} className="px-4 py-3">
+            <li key={comment.id}>
               <CommentRow
                 comment={comment}
                 isQuestion={post.type === "QUESTION"}
@@ -206,23 +206,33 @@ export function CommentSection({
           event.preventDefault();
           void submit();
         }}
-        className="glass sticky bottom-0 z-20 flex items-end gap-2 border-t border-border px-3 py-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))]"
+        className="glass fixed inset-x-0 bottom-0 z-20 mx-auto flex max-w-2xl items-center gap-2 border-t border-border bg-surface px-3 py-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))]"
       >
         <Avatar name={viewer.fullName} src={viewer.photoUrl} size="sm" />
         <label htmlFor="new-comment" className="sr-only">Add a comment</label>
-        <textarea
-          id="new-comment"
-          value={body}
-          onChange={(event) => setBody(event.target.value.slice(0, 1000))}
-          rows={1}
-          placeholder="Add a comment…"
-          className="max-h-28 min-h-10 flex-1 resize-none rounded-[20px] border border-border bg-surface px-3.5 py-2 text-small text-fg placeholder:text-fg-subtle focus:border-accent"
-        />
+        <div className="flex flex-1 items-center rounded-full border border-border bg-surface pl-4 pr-2 focus-within:border-accent">
+          <textarea
+            id="new-comment"
+            value={body}
+            onChange={(event) => setBody(event.target.value.slice(0, 1000))}
+            rows={1}
+            placeholder={post.type === "QUESTION" ? "Write an answer…" : "Add a comment…"}
+            className="max-h-24 min-h-9 flex-1 resize-none border-0 bg-transparent py-2 text-small text-fg placeholder:text-fg-subtle focus:outline-none"
+          />
+          <button
+            type="button"
+            onClick={() => toast({ title: "Image comments coming soon" })}
+            aria-label="Attach image to comment"
+            className="flex size-8 shrink-0 items-center justify-center rounded-full text-fg-subtle hover:bg-surface-2"
+          >
+            <ImageIcon aria-hidden="true" className="size-4" />
+          </button>
+        </div>
         <button
           type="submit"
           disabled={sending || !body.trim()}
           aria-label="Send comment"
-          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-accent-fg disabled:opacity-40"
+          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-accent-fg transition disabled:opacity-40"
         >
           {sending ? <Loader2 aria-hidden="true" className="size-4 animate-spin" /> : <Send aria-hidden="true" className="size-4" />}
         </button>
@@ -297,65 +307,88 @@ function CommentRow({
 
   if (comment.status === "REMOVED") {
     return (
-      <div className="rounded-card border border-danger/20 bg-danger-soft px-3 py-2.5 text-small text-danger">
+      <div className="rounded-[14px] border border-danger/20 bg-danger-soft px-3.5 py-2.5 text-small text-danger">
         This {isQuestion ? "answer" : "comment"} was removed by a moderator.
       </div>
     );
   }
 
+  const cardClasses =
+    depth === 0
+      ? accepted
+        ? "rounded-[14px] border border-[#16a34a]/40 bg-[#ecfdf5]/75 p-3.5"
+        : "rounded-[14px] border border-border bg-surface p-3.5"
+      : "relative pl-6 pt-2";
+
   return (
-    <div className={cn(depth > 0 && "ml-8 border-l-2 border-border pl-3")}>
+    <div className={cardClasses}>
+      {depth > 0 ? (
+        <span
+          aria-hidden="true"
+          className="absolute -top-2 left-2 h-7 w-3.5 rounded-bl-[10px] border-b border-l border-border-strong/50"
+        />
+      ) : null}
+
       <div className="flex items-start gap-2.5">
         {comment.author ? (
           <Link href={`/profile/${comment.author.username}`} aria-label={`${comment.author.fullName}'s profile`}>
-            <Avatar name={comment.author.fullName} src={comment.author.photoUrl} size="sm" verified />
+            <Avatar name={comment.author.fullName} src={comment.author.photoUrl} size={depth > 0 ? "xs" : "sm"} />
           </Link>
         ) : (
-          <Avatar name="Removed" size="sm" />
+          <Avatar name="Removed" size={depth > 0 ? "xs" : "sm"} />
         )}
+
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <p className="min-w-0 text-small">
-              {comment.author ? (
-                <Link href={`/profile/${comment.author.username}`} className="font-semibold text-fg hover:underline">
-                  {comment.author.fullName}
-                </Link>
-              ) : (
-                <span className="font-semibold text-fg">Removed</span>
-              )}
-              <span className="text-fg-subtle"> · {timeAgo(comment.createdAt)}</span>
-              {comment.editedAt ? <span className="text-tiny text-fg-subtle"> · Edited</span> : null}
-            </p>
-            <div className="relative shrink-0">
-              <IconButton label="Comment options" onClick={() => setMenuOpen((value) => !value)} className="size-8">
-                <MoreHorizontal aria-hidden="true" className="size-4" />
-              </IconButton>
-              {menuOpen ? (
-                <div role="menu" className="absolute right-0 top-8 z-20 w-44 rounded-card border border-border bg-surface p-1 shadow-floating">
-                  {comment.isOwner ? (
-                    <>
-                      <button type="button" role="menuitem" onClick={() => { setEditing(true); setMenuOpen(false); }} className="flex w-full items-center gap-2 rounded-button px-2.5 py-2 text-left text-small hover:bg-surface-2">
-                        <Pencil aria-hidden="true" className="size-3.5" /> Edit
-                      </button>
-                      <button type="button" role="menuitem" onClick={() => { onDelete(); setMenuOpen(false); }} className="flex w-full items-center gap-2 rounded-button px-2.5 py-2 text-left text-small text-danger hover:bg-danger-soft">
-                        <Trash2 aria-hidden="true" className="size-3.5" /> Delete
-                      </button>
-                    </>
-                  ) : (
-                    <button type="button" role="menuitem" onClick={() => { onReport(); setMenuOpen(false); }} className="flex w-full items-center gap-2 rounded-button px-2.5 py-2 text-left text-small text-fg hover:bg-surface-2">
-                      <Flag aria-hidden="true" className="size-3.5" /> Report
-                    </button>
-                  )}
-                </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1">
+                {comment.author ? (
+                  <Link href={`/profile/${comment.author.username}`} className="truncate text-small font-bold text-fg hover:underline">
+                    {comment.author.fullName}
+                  </Link>
+                ) : (
+                  <span className="text-small font-bold text-fg">Removed</span>
+                )}
+                {comment.author ? <VerifiedTick className="size-3.5" /> : null}
+              </div>
+              <p className="truncate text-[0.75rem] text-fg-subtle">
+                {comment.author ? `@${comment.author.username} · ` : ""}
+                {timeAgo(comment.createdAt)}
+                {comment.editedAt ? " · Edited" : ""}
+              </p>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-1.5">
+              {accepted ? (
+                <span className="inline-flex h-6 items-center gap-1 rounded-full bg-[#16a34a] px-2.5 text-[0.6875rem] font-semibold text-white">
+                  <Check aria-hidden="true" className="size-3" strokeWidth={2.8} /> Accepted answer
+                </span>
               ) : null}
+              <div className="relative">
+                <IconButton label="Comment options" onClick={() => setMenuOpen((value) => !value)} className="size-7">
+                  <MoreHorizontal aria-hidden="true" className="size-4" />
+                </IconButton>
+                {menuOpen ? (
+                  <div role="menu" className="absolute right-0 top-8 z-20 w-44 rounded-[12px] border border-border bg-surface p-1 shadow-floating">
+                    {comment.isOwner ? (
+                      <>
+                        <button type="button" role="menuitem" onClick={() => { setEditing(true); setMenuOpen(false); }} className="flex w-full items-center gap-2 rounded-[9px] px-2.5 py-2 text-left text-small hover:bg-surface-2">
+                          <Pencil aria-hidden="true" className="size-3.5" /> Edit
+                        </button>
+                        <button type="button" role="menuitem" onClick={() => { onDelete(); setMenuOpen(false); }} className="flex w-full items-center gap-2 rounded-[9px] px-2.5 py-2 text-left text-small text-danger hover:bg-danger-soft">
+                          <Trash2 aria-hidden="true" className="size-3.5" /> Delete
+                        </button>
+                      </>
+                    ) : (
+                      <button type="button" role="menuitem" onClick={() => { onReport(); setMenuOpen(false); }} className="flex w-full items-center gap-2 rounded-[9px] px-2.5 py-2 text-left text-small text-fg hover:bg-surface-2">
+                        <Flag aria-hidden="true" className="size-3.5" /> Report
+                      </button>
+                    )}
+                  </div>
+                ) : null}
+              </div>
             </div>
           </div>
-
-          {accepted ? (
-            <span className="mt-0.5 inline-flex items-center gap-1 rounded-chip bg-success-soft px-2 py-0.5 text-tiny font-semibold text-success">
-              <Check aria-hidden="true" className="size-3" strokeWidth={3} /> Accepted answer
-            </span>
-          ) : null}
 
           {editing ? (
             <div className="mt-2">
@@ -371,26 +404,54 @@ function CommentRow({
               </div>
             </div>
           ) : (
-            <RichText body={comment.body} className="mt-1 whitespace-pre-line break-words text-small text-fg" />
+            <div className={cn("mt-2", !isQuestion && "rounded-[12px] bg-surface-2 px-3 py-2")}>
+              <RichText body={comment.body} className="whitespace-pre-line break-words text-small leading-relaxed text-fg" />
+            </div>
           )}
 
-          <div className="mt-1.5 flex flex-wrap items-center gap-1">
-            <button type="button" onClick={onReact} aria-pressed={comment.viewer.reacted} aria-label="Heart this comment" className={cn("inline-flex min-h-8 items-center gap-1 rounded-full px-2 text-tiny", comment.viewer.reacted ? "text-danger" : "text-fg-subtle hover:bg-surface-2")}>
-              <Heart aria-hidden="true" className="size-3.5" fill={comment.viewer.reacted ? "currentColor" : "none"} /> {comment.helpfulCount > 0 ? "" : ""}
-            </button>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
             {isQuestion ? (
-              <button type="button" onClick={onHelpful} aria-pressed={comment.viewer.helpful} className={cn("inline-flex min-h-8 items-center gap-1 rounded-full px-2 text-tiny", comment.viewer.helpful ? "text-accent" : "text-fg-subtle hover:bg-surface-2")}>
-                <ThumbsUp aria-hidden="true" className="size-3.5" /> {comment.helpfulCount} helpful
+              <button
+                type="button"
+                onClick={onHelpful}
+                aria-pressed={comment.viewer.helpful}
+                className={cn(
+                  "inline-flex min-h-7 items-center gap-1.5 rounded-full px-1.5 text-tiny font-medium",
+                  accepted || comment.viewer.helpful ? "text-[#16a34a]" : "text-fg-muted hover:bg-surface-2",
+                )}
+              >
+                <ThumbsUp aria-hidden="true" className="size-3.5" />
+                <span>{comment.helpfulCount} helpful</span>
               </button>
-            ) : null}
+            ) : (
+              <button
+                type="button"
+                onClick={onReact}
+                aria-pressed={comment.viewer.reacted}
+                aria-label="Heart this comment"
+                className={cn(
+                  "inline-flex min-h-7 items-center gap-1 rounded-full px-1.5 text-tiny font-medium",
+                  comment.viewer.reacted ? "text-[#ef4444]" : "text-fg-muted hover:bg-surface-2",
+                )}
+              >
+                <Heart aria-hidden="true" className="size-3.5" fill={comment.viewer.reacted ? "currentColor" : "none"} />
+                {comment.helpfulCount > 0 ? <span className="tabular-nums">{comment.helpfulCount}</span> : null}
+              </button>
+            )}
+
             {depth === 0 ? (
-              <button type="button" onClick={() => setReplying((value) => !value)} className="min-h-8 rounded-full px-2 text-tiny font-medium text-fg-subtle hover:bg-surface-2">
+              <button type="button" onClick={() => setReplying((value) => !value)} className="min-h-7 rounded-full px-2 text-tiny font-medium text-fg-muted hover:bg-surface-2">
                 Reply
               </button>
             ) : null}
+
             {canAccept && !accepted ? (
-              <button type="button" onClick={onAccept} className="ml-auto inline-flex min-h-8 items-center gap-1 rounded-chip border border-accent/40 px-2.5 text-tiny font-semibold text-accent hover:bg-accent-soft">
-                <CheckCircle2 aria-hidden="true" className="size-3.5" /> Accept answer
+              <button
+                type="button"
+                onClick={onAccept}
+                className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-full border border-accent/60 bg-surface px-3 text-tiny font-semibold text-accent transition hover:bg-accent-soft"
+              >
+                <Check aria-hidden="true" className="size-3.5" /> Accept answer
               </button>
             ) : null}
           </div>
@@ -404,7 +465,7 @@ function CommentRow({
                 setReplyBody("");
                 setReplying(false);
               }}
-              className="mt-2 flex items-end gap-2"
+              className="mt-2.5 flex items-end gap-2"
             >
               <Avatar name={viewerName} src={viewerPhoto} size="xs" />
               <label htmlFor={`reply-${comment.id}`} className="sr-only">Reply to {comment.author?.fullName ?? "comment"}</label>
@@ -414,7 +475,7 @@ function CommentRow({
                 onChange={(event) => setReplyBody(event.target.value.slice(0, 1000))}
                 rows={1}
                 placeholder="Write a reply…"
-                className="min-h-9 flex-1 resize-none rounded-[18px] border border-border bg-surface px-3 py-1.5 text-small focus:border-accent"
+                className="min-h-9 flex-1 resize-none rounded-full border border-border bg-surface px-3.5 py-1.5 text-small focus:border-accent"
               />
               <button type="submit" className="flex size-9 items-center justify-center rounded-full bg-accent text-accent-fg" aria-label="Send reply">
                 <Send aria-hidden="true" className="size-3.5" />
@@ -424,12 +485,8 @@ function CommentRow({
 
           {comment.replies && comment.replies.length > 0 ? (
             <div className="mt-2">
-              <button type="button" onClick={() => setShowReplies((value) => !value)} className="inline-flex items-center gap-1 text-tiny font-semibold text-accent">
-                <ChevronDown aria-hidden="true" className={cn("size-3.5 transition", showReplies && "rotate-180")} />
-                {showReplies ? "Hide replies" : `View ${comment.replies.length} ${comment.replies.length === 1 ? "reply" : "replies"}`}
-              </button>
               {showReplies ? (
-                <ul className="mt-2 space-y-3">
+                <ul className="space-y-2">
                   {comment.replies.map((reply) => (
                     <li key={reply.id}>
                       <CommentRow
@@ -452,6 +509,14 @@ function CommentRow({
                   ))}
                 </ul>
               ) : null}
+              <button
+                type="button"
+                onClick={() => setShowReplies((value) => !value)}
+                className="mt-1.5 inline-flex items-center gap-1 text-tiny font-semibold text-accent hover:underline"
+              >
+                <ChevronDown aria-hidden="true" className={cn("size-3.5 transition", showReplies && "rotate-180")} />
+                {showReplies ? "Hide replies" : `View ${comment.replies.length} ${comment.replies.length === 1 ? "reply" : "replies"}`}
+              </button>
             </div>
           ) : null}
         </div>
@@ -459,3 +524,4 @@ function CommentRow({
     </div>
   );
 }
+

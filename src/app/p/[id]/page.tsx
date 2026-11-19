@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Download, ExternalLink, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Download, ExternalLink, Shield } from "lucide-react";
 import { getSession } from "@/lib/auth/session";
 import { accentCssVars } from "@/lib/domain/color";
 import { getPostDetail, getPublicPreview } from "@/lib/services/posts";
@@ -9,6 +9,7 @@ import { loadSocialViewer } from "@/lib/services/social";
 import { PostCard } from "@/components/pulse/post-card";
 import { CommentSection } from "@/components/pulse/comments";
 import { ButtonLink } from "@/components/ui/button";
+import { LogoMark, UniversityShieldMark } from "@/components/brand/logo";
 
 export const dynamic = "force-dynamic";
 
@@ -30,13 +31,14 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
     if (!viewer) notFound();
     const detail = await getPostDetail(viewer, id);
     if (!detail) notFound();
+    const titleLabel = detail.post.type === "QUESTION" ? "Question" : "Post";
     return (
       <div
         style={accentCssVars(session.user.university.accentColor) as React.CSSProperties}
-        className="min-h-dvh bg-bg pb-4"
+        className="min-h-dvh bg-bg pb-6"
       >
-        <PageHeader backHref="/pulse" backLabel="Back to Pulse" />
-        <main className="mx-auto w-full max-w-2xl">
+        <PageHeader backHref="/pulse" backLabel="Back to Pulse" title={titleLabel} />
+        <main className="mx-auto w-full max-w-feed px-0 pt-2 sm:px-4">
           <PostCard post={detail.post} expanded compact />
           <CommentSection
             post={detail.post}
@@ -58,14 +60,18 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
   return <PublicPreview postId={id} preview={preview} />;
 }
 
-function PageHeader({ backHref, backLabel }: { backHref: string; backLabel: string }) {
+function PageHeader({ backHref, backLabel, title }: { backHref: string; backLabel: string; title: string }) {
   return (
-    <header className="glass sticky top-0 z-40 border-b border-border">
-      <div className="mx-auto flex h-14 max-w-2xl items-center gap-2 px-2">
-        <Link href={backHref} aria-label={backLabel} className="flex size-11 items-center justify-center rounded-full hover:bg-surface-2">
-          <ArrowLeft aria-hidden="true" className="size-5" />
+    <header className="glass sticky top-0 z-40 border-x-0 border-t-0 border-b border-border/80">
+      <div className="mx-auto flex h-14 max-w-feed items-center gap-2 px-2">
+        <Link
+          href={backHref}
+          aria-label={backLabel}
+          className="flex size-11 items-center justify-center rounded-full text-fg transition hover:bg-surface-2"
+        >
+          <ArrowLeft aria-hidden="true" className="size-6" />
         </Link>
-        <p className="flex-1 text-center text-[0.9375rem] font-semibold text-fg">Post</p>
+        <h1 className="flex-1 text-center font-display text-h2 font-bold text-fg">{title}</h1>
         <span className="size-11" aria-hidden="true" />
       </div>
     </header>
@@ -80,56 +86,87 @@ function PublicPreview({
   preview: { kind: "preview"; firstLine: string } | { kind: "generic" };
 }) {
   return (
-    <main className="mx-auto min-h-dvh w-full max-w-lg bg-surface px-5 pb-10 pt-6 text-fg">
-      <Link href="/" className="inline-flex items-center gap-2" aria-label="Konnekt home">
-        <span className="flex size-9 items-center justify-center rounded-[10px] bg-accent text-base font-bold text-accent-fg">K</span>
-        <span className="font-display text-xl font-bold tracking-tight">Konnekt</span>
-      </Link>
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col bg-bg px-5 pb-10 pt-5 text-fg">
+      <header className="border-b border-border pb-4">
+        <Link href="/" className="inline-flex items-center gap-2.5" aria-label="Konnekt home">
+          <LogoMark className="size-9 text-accent" />
+          <span className="font-display text-h1 font-extrabold tracking-tight text-fg">Konnekt</span>
+        </Link>
+      </header>
 
-      <div className="mt-8 rounded-card border border-border bg-surface p-4 shadow-card">
+      <div className="mt-6 overflow-hidden rounded-card border border-border bg-surface p-4">
         {preview.kind === "preview" ? (
           <>
-            <p className="select-none text-body leading-relaxed text-fg blur-[6px]" aria-hidden="true">
+            <p className="select-none text-[1.0625rem] leading-relaxed text-fg blur-[4px]" aria-hidden="true">
               {preview.firstLine}
             </p>
-            <p className="mt-1 text-tiny text-fg-subtle">Only the first line is shown outside the app.</p>
+            <div className="mt-3 overflow-hidden rounded-button border border-border bg-surface-2" aria-hidden="true">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/seed/campus-facade.svg"
+                alt=""
+                width={640}
+                height={240}
+                className="h-32 w-full scale-105 object-cover blur-[5px]"
+              />
+            </div>
           </>
         ) : (
-          <div className="py-4 text-center">
-            <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-accent-soft text-accent">
-              <ShieldCheck aria-hidden="true" className="size-6" />
+          <div className="py-5 text-center">
+            <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-accent-soft text-accent-ink">
+              <Shield aria-hidden="true" className="size-6" />
             </span>
-            <p className="mt-2 text-body font-semibold text-fg">This post is only available inside Konnekt.</p>
+            <p className="mt-2.5 text-body font-semibold text-fg">This post is only available inside Konnekt.</p>
             <p className="mt-1 text-small text-fg-muted">It isn&apos;t shared publicly.</p>
           </div>
         )}
       </div>
 
-      <div className="mt-5 flex items-start gap-3 rounded-card bg-accent-soft px-4 py-3.5">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface text-accent">
-          <ShieldCheck aria-hidden="true" className="size-5" />
-        </span>
-        <p className="text-small leading-relaxed text-accent-soft-fg">
-          This post is shared with verified students on Konnekt. Open the app to see it in context.
+      <div className="mt-5 flex items-center gap-3.5 rounded-card bg-accent-soft px-4 py-3.5">
+        <UniversityShieldMark className="size-9 shrink-0" />
+        <span className="h-9 w-px shrink-0 bg-accent/25" aria-hidden="true" />
+        <p className="text-small font-medium leading-snug text-accent-soft-fg">
+          This post is shared with verified students of Nova University.
         </p>
       </div>
 
       <div className="mt-6 space-y-3">
-        <ButtonLink href={`/login?next=${encodeURIComponent(`/p/${postId}`)}`} fullWidth size="lg" leftIcon={<ExternalLink aria-hidden="true" className="size-4" />}>
+        {/* Neo-brutalist primary CTA allowed on Public Share Preview ONLY (Spec Section 5B & 7.O) */}
+        <ButtonLink
+          href={`/login?next=${encodeURIComponent(`/p/${postId}`)}`}
+          fullWidth
+          size="lg"
+          className="rounded-full border-2 border-[#12141A] shadow-[4px_4px_0_#12141A] transition-transform active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_#12141A] dark:border-fg dark:shadow-[4px_4px_0_rgba(242,243,245,0.85)]"
+          leftIcon={<ExternalLink aria-hidden="true" className="size-4" />}
+        >
           Open in Konnekt
         </ButtonLink>
-        <ButtonLink href="/install" variant="secondary" fullWidth size="lg" leftIcon={<Download aria-hidden="true" className="size-4" />}>
+        <ButtonLink
+          href="/install"
+          variant="secondary"
+          fullWidth
+          size="lg"
+          className="rounded-full"
+          leftIcon={<Download aria-hidden="true" className="size-4" />}
+        >
           Install the app
         </ButtonLink>
-        <Link href={`/login?next=${encodeURIComponent(`/p/${postId}`)}`} className="block py-2 text-center text-small font-semibold text-accent underline-offset-2 hover:underline">
+        <Link
+          href={`/login?next=${encodeURIComponent(`/p/${postId}`)}`}
+          className="flex min-h-11 items-center justify-center text-small font-semibold text-accent-ink underline underline-offset-4 hover:opacity-80"
+        >
           Log in
         </Link>
       </div>
 
-      <footer className="mt-10 flex items-center justify-center gap-4 border-t border-border pt-5 text-tiny text-fg-subtle">
-        <Link href="/legal/terms" className="hover:underline">Terms</Link>
+      <footer className="mt-auto flex items-center justify-center gap-4 border-t border-border pt-5 text-small text-fg-muted">
+        <Link href="/legal/terms" className="inline-flex min-h-11 items-center hover:text-fg hover:underline">
+          Terms
+        </Link>
         <span aria-hidden="true">·</span>
-        <Link href="/legal/privacy" className="hover:underline">Privacy</Link>
+        <Link href="/legal/privacy" className="inline-flex min-h-11 items-center hover:text-fg hover:underline">
+          Privacy
+        </Link>
       </footer>
     </main>
   );

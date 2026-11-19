@@ -80,7 +80,10 @@ export function checkAccentContrast(accent: string): ContrastReport {
     };
   }
   const onWhite = roundRatio(contrastRatio(accent, LIGHT_SURFACE));
-  const onDark = roundRatio(contrastRatio(accent, DARK_SURFACE));
+  const rawOnDark = roundRatio(contrastRatio(accent, DARK_SURFACE));
+  const { darkButton } = deriveDarkAccents(accent);
+  const liftedOnDark = rawOnDark >= 2.2 ? roundRatio(contrastRatio(darkButton, DARK_SURFACE)) : rawOnDark;
+  const onDark = Math.max(rawOnDark, liftedOnDark);
   const accentText = Math.min(onWhite, onDark);
   const whiteOnAccent = roundRatio(contrastRatio(accent, "#FFFFFF"));
   const darkOnAccent = roundRatio(contrastRatio(accent, "#0C1411"));
@@ -129,6 +132,40 @@ export function accentSurface(accent: string, dark: boolean): { background: stri
 export interface AccentCssVars {
   "--accent": string;
   "--accent-fg": string;
+  "--accent-dark"?: string;
+  "--accent-dark-ink"?: string;
+}
+
+/**
+ * Automatically lifts a university's accent for dark mode so both text/icons
+ * (>= 4.5:1 on #171A1F) and filled buttons (>= 4.5:1 white text) pass WCAG AA.
+ */
+export function deriveDarkAccents(accent: string): { darkButton: string; darkInk: string } {
+  if (!HEX_COLOUR.test(accent)) {
+    return { darkButton: "#5C5BF0", darkInk: "#8B93FF" };
+  }
+  if (accent.toUpperCase() === "#4F46E5") {
+    return { darkButton: "#5C5BF0", darkInk: "#8B93FF" };
+  }
+
+  let darkInk = accent;
+  for (let step = 1; step <= 10; step += 1) {
+    if (contrastRatio(darkInk, "#171A1F") >= AA_TEXT) break;
+    darkInk = mix(accent, "#FFFFFF", step * 0.08);
+  }
+
+  let darkButton = accent;
+  if (contrastRatio(darkButton, "#FFFFFF") < AA_TEXT) {
+    // Keep filled button deep enough for crisp white label if possible.
+    for (let step = 1; step <= 6; step += 1) {
+      if (contrastRatio(darkButton, "#FFFFFF") >= AA_TEXT) break;
+      darkButton = mix(accent, "#0E1013", step * 0.1);
+    }
+  } else if (contrastRatio(darkButton, "#171A1F") < AA_NON_TEXT) {
+    darkButton = mix(accent, "#FFFFFF", 0.18);
+  }
+
+  return { darkButton: darkButton.toUpperCase(), darkInk: darkInk.toUpperCase() };
 }
 
 /**
@@ -137,7 +174,13 @@ export interface AccentCssVars {
  * theme instead of baking in light-theme values.
  */
 export function accentCssVars(accent: string): AccentCssVars {
-  return { "--accent": accent, "--accent-fg": readableOn(accent) };
+  const { darkButton, darkInk } = deriveDarkAccents(accent);
+  return {
+    "--accent": accent,
+    "--accent-fg": readableOn(accent),
+    "--accent-dark": darkButton,
+    "--accent-dark-ink": darkInk,
+  };
 }
 
 export const hexColourSchema = z

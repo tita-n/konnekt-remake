@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowUp, CloudOff, Loader2, Plus, RefreshCw, Sun, TrendingUp } from "lucide-react";
+import { ArrowUp, Clock, CloudOff, Loader2, Plus, RefreshCw, TrendingUp, WifiOff } from "lucide-react";
 import type { FeedFilter, FeedFilterOption, FeedPage, TrendingTag } from "@/lib/posts/types";
 import { apiGet } from "@/lib/posts/client";
 import { cacheFeed, flushOutbox, listOutbox, readCachedFeed } from "@/lib/offline/store";
@@ -11,7 +11,7 @@ import { Chip } from "@/components/ui/form-controls";
 import { Skeleton, SkeletonText } from "@/components/ui/display";
 import { EmptyState, ErrorState } from "@/components/ui/feedback";
 import { useToast } from "@/components/providers/toast-provider";
-import { cn, formatCount } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { PostCard } from "./post-card";
 
 const NEW_POST_POLL_MS = 45_000;
@@ -101,7 +101,6 @@ export function PulseFeed({
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);
     };
-    // syncOutbox is stable for the life of the screen.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewerId]);
 
@@ -120,7 +119,6 @@ export function PulseFeed({
     }
   }
 
-  // Poll for new posts only while visible, focused and not in Data saver.
   useEffect(() => {
     if (!online || dataSaver) return;
     let cancelled = false;
@@ -137,7 +135,7 @@ export function PulseFeed({
         const data = (await response.json()) as { count?: number };
         setNewCount(typeof data.count === "number" ? data.count : 0);
       } catch {
-        // Polling is best effort; the next tick retries.
+        // Best effort polling.
       }
     };
     const timer = window.setInterval(check, NEW_POST_POLL_MS);
@@ -163,7 +161,7 @@ export function PulseFeed({
       const { data } = await apiGet<{ tags: TrendingTag[] }>(`/api/feed/trending?filter=${next}`);
       setTrending(data.tags);
     } catch {
-      // Trending is supplementary; the feed stays usable.
+      // Supplementary trending pills.
     }
   }
 
@@ -229,10 +227,15 @@ export function PulseFeed({
         </div>
       ) : null}
 
-      <div className="glass sticky top-14 z-30 border-b border-border/70">
-        <div className="no-scrollbar flex gap-2 overflow-x-auto px-3 py-2.5" role="group" aria-label="Filter your Pulse">
+      <div className="glass sticky top-14 z-30 border-b border-border/60">
+        <div className="no-scrollbar flex gap-2 overflow-x-auto px-3.5 py-2.5" role="group" aria-label="Filter your Pulse">
           {filters.map((option) => (
-            <Chip key={option.value} selected={filter === option.value} onClick={() => void changeFilter(option.value)} className="shrink-0">
+            <Chip
+              key={option.value}
+              selected={filter === option.value}
+              onClick={() => void changeFilter(option.value)}
+              className="min-h-8 shrink-0 rounded-full px-3.5 text-small"
+            >
               {option.label}
             </Chip>
           ))}
@@ -240,26 +243,10 @@ export function PulseFeed({
       </div>
 
       {!online ? (
-        <div className="mx-3 mt-1 flex items-center gap-2.5 rounded-[10px] bg-highlight-soft px-3.5 py-2.5 text-small text-warning" role="status">
-          <Sun aria-hidden="true" className="size-4 shrink-0" />
+        <div className="mx-3.5 mt-2 flex items-center gap-2.5 rounded-[12px] border border-warning/30 bg-warning-soft px-3.5 py-2.5 text-small font-medium text-warning" role="status">
+          <WifiOff aria-hidden="true" className="size-4 shrink-0" />
           <span>You&apos;re offline. Showing saved content.</span>
         </div>
-      ) : null}
-
-      {pending > 0 ? (
-        <button
-          type="button"
-          onClick={() => void syncOutbox()}
-          className={cn(
-            "mx-3 mt-3 flex w-[calc(100%-1.5rem)] items-center gap-2.5 rounded-card border px-3 py-2.5 text-left text-small",
-            outboxFailed ? "border-danger/30 bg-danger-soft text-danger" : "border-border bg-surface text-fg-muted",
-          )}
-        >
-          {outboxFailed ? <CloudOff aria-hidden="true" className="size-4 shrink-0" /> : <Loader2 aria-hidden="true" className="size-4 shrink-0 animate-spin" />}
-          <span className="flex-1">
-            {outboxFailed ? `${pending} ${pending === 1 ? "post" : "posts"} failed. Tap to retry.` : `Sending ${pending} ${pending === 1 ? "post" : "posts"}…`}
-          </span>
-        </button>
       ) : null}
 
       {newCount > 0 ? (
@@ -267,7 +254,7 @@ export function PulseFeed({
           <button
             type="button"
             onClick={() => void loadFirst(filter)}
-            className="inline-flex min-h-9 items-center gap-1.5 rounded-chip bg-accent px-3.5 text-small font-semibold text-accent-fg shadow-floating"
+            className="inline-flex h-9 items-center gap-1.5 rounded-full bg-accent px-4 text-small font-semibold text-accent-fg shadow-floating"
           >
             <ArrowUp aria-hidden="true" className="size-4" />
             {newCount} new {newCount === 1 ? "post" : "posts"}
@@ -275,33 +262,12 @@ export function PulseFeed({
         </div>
       ) : null}
 
-      {trending.length > 0 ? (
-        <section aria-label="Trending on campus" className="mx-3 my-2 flex items-center gap-2 overflow-hidden rounded-[10px] bg-accent-soft px-3 py-2">
-          <h2 className="flex shrink-0 items-center gap-1 text-tiny font-semibold text-accent-soft-fg">
-            <TrendingUp aria-hidden="true" className="size-3.5" />
-            Trending on campus
-          </h2>
-          <ul className="no-scrollbar flex min-w-0 flex-1 gap-1.5 overflow-x-auto">
-            {trending.map((tag) => (
-              <li key={tag.tag} className="shrink-0">
-                <Link
-                  href={`/hashtag/${tag.tag}`}
-                  className="inline-flex h-7 items-center rounded-chip border border-border bg-surface px-2.5 text-tiny font-medium text-fg hover:border-accent"
-                >
-                  #{tag.tag}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
-      <div className="space-y-2 px-3 pb-4 pt-1">
+      <div className="space-y-3 px-3.5 pb-4 pt-2">
         {loading ? (
           <FeedSkeleton />
         ) : error ? (
           <div className="rounded-card border border-border bg-surface">
-            <ErrorState title="We couldn't load this." description={error} onRetry={() => void loadFirst(filter)} />
+            <ErrorState title="We couldn't load this." description="Check your connection and try again." onRetry={() => void loadFirst(filter)} />
           </div>
         ) : showOfflineEmpty ? (
           <div className="rounded-card border border-border bg-surface">
@@ -309,7 +275,7 @@ export function PulseFeed({
               illustration="pulse"
               title="No saved posts yet"
               description="Once you've browsed your Pulse, the last page is kept here for offline moments like this."
-              action={<Button onClick={() => void loadFirst(filter)} leftIcon={<RefreshCw aria-hidden="true" className="size-4" />}>Try again</Button>}
+              action={<Button className="rounded-full px-6" onClick={() => void loadFirst(filter)} leftIcon={<RefreshCw aria-hidden="true" className="size-4" />}>Try again</Button>}
             />
           </div>
         ) : feed.posts.length === 0 ? (
@@ -317,20 +283,82 @@ export function PulseFeed({
             <EmptyState
               illustration="pulse"
               title="Nothing here yet"
-              description={filter === "all" ? "Be the first to post to your campus." : "Be the first to post to this audience."}
-              action={<ButtonLink href={`/compose?type=post`} leftIcon={<Plus aria-hidden="true" className="size-4" />}>Create a post</ButtonLink>}
+              description={filter === "all" ? "Be the first to post to your campus." : `Be the first to post to your ${filter}.`}
+              action={
+                <ButtonLink href="/compose?type=post" className="rounded-full px-6" leftIcon={<Plus aria-hidden="true" className="size-4" />}>
+                  Create a post
+                </ButtonLink>
+              }
             />
           </div>
         ) : (
-          feed.posts.map((post) => (
-            <PostCard
-              key={post.id}
-              post={post}
-              onDeleted={(id) => setFeed((current) => ({ ...current, posts: current.posts.filter((item) => item.id !== id) }))}
-              onChanged={() => void loadFirst(filter, { quietly: true })}
-            />
-          ))
+          <>
+            {feed.posts.slice(0, 2).map((post) => (
+              <PostCard
+                key={post.id}
+                post={post}
+                onDeleted={(id) => setFeed((current) => ({ ...current, posts: current.posts.filter((item) => item.id !== id) }))}
+                onChanged={() => void loadFirst(filter, { quietly: true })}
+              />
+            ))}
+
+            {trending.length > 0 ? (
+              <section aria-label="Trending on campus" className="rounded-[16px] bg-accent-soft px-3.5 py-3">
+                <h2 className="flex items-center gap-1.5 font-display text-[0.9375rem] font-bold text-fg">
+                  <TrendingUp aria-hidden="true" className="size-4 text-accent" />
+                  Trending on campus
+                </h2>
+                <ul className="no-scrollbar mt-2 flex gap-2 overflow-x-auto pb-0.5">
+                  {trending.map((tag) => (
+                    <li key={tag.tag} className="shrink-0">
+                      <Link
+                        href={`/hashtag/${tag.tag}`}
+                        className="inline-flex h-8 items-center rounded-full border border-border bg-surface px-3 text-small font-medium text-accent transition hover:border-accent"
+                      >
+                        #{tag.tag}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+
+            {feed.posts.slice(2).map((post) => (
+              <PostCard
+                key={post.id}
+                post={post}
+                onDeleted={(id) => setFeed((current) => ({ ...current, posts: current.posts.filter((item) => item.id !== id) }))}
+                onChanged={() => void loadFirst(filter, { quietly: true })}
+              />
+            ))}
+          </>
         )}
+
+        {pending > 0 ? (
+          <button
+            type="button"
+            onClick={() => void syncOutbox()}
+            className={cn(
+              "flex w-full items-center gap-2.5 rounded-[16px] border px-4 py-3.5 text-left text-small font-medium",
+              outboxFailed ? "border-danger/30 bg-danger-soft text-danger" : "border-border bg-surface text-fg-muted",
+            )}
+          >
+            {outboxFailed ? (
+              <CloudOff aria-hidden="true" className="size-4 shrink-0" />
+            ) : !online ? (
+              <Clock aria-hidden="true" className="size-4 shrink-0" />
+            ) : (
+              <Loader2 aria-hidden="true" className="size-4 shrink-0 animate-spin" />
+            )}
+            <span className="flex-1">
+              {outboxFailed
+                ? `${pending} ${pending === 1 ? "post" : "posts"} failed. Tap to retry.`
+                : !online
+                  ? "Sending..."
+                  : `Sending ${pending} ${pending === 1 ? "post" : "posts"}…`}
+            </span>
+          </button>
+        ) : null}
 
         {feed.hasMore ? (
           <div ref={sentinel} className="flex justify-center py-4">
@@ -346,23 +374,25 @@ export function PulseFeed({
 
 function FeedSkeleton() {
   return (
-    <div className="space-y-2" aria-hidden="true">
+    <div className="space-y-3" aria-hidden="true">
       {[0, 1, 2].map((index) => (
-        <div key={index} className="rounded-card border border-border bg-surface p-4">
+        <div key={index} className="rounded-[16px] border border-border bg-surface p-4">
           <div className="flex items-center gap-3">
-            <Skeleton className="size-12" rounded="rounded-full" />
+            <Skeleton className="size-11" rounded="rounded-full" />
             <div className="flex-1 space-y-2">
-              <Skeleton className="h-3.5 w-1/3" />
-              <Skeleton className="h-3 w-1/2" />
+              <Skeleton className="h-3.5 w-2/5" />
+              <Skeleton className="h-3 w-1/3" />
             </div>
           </div>
-          <div className="mt-4">
-            <SkeletonText lines={3} />
+          <div className="mt-4 space-y-2">
+            <SkeletonText lines={2} />
+            <Skeleton className="mt-2 h-24 w-full" rounded="rounded-[12px]" />
           </div>
-          <div className="mt-4 flex gap-4">
-            <Skeleton className="h-8 w-16" rounded="rounded-full" />
-            <Skeleton className="h-8 w-16" rounded="rounded-full" />
-            <Skeleton className="h-8 w-16" rounded="rounded-full" />
+          <div className="mt-4 flex justify-between gap-4">
+            <Skeleton className="h-4 w-12" rounded="rounded-full" />
+            <Skeleton className="h-4 w-12" rounded="rounded-full" />
+            <Skeleton className="h-4 w-12" rounded="rounded-full" />
+            <Skeleton className="h-4 w-12" rounded="rounded-full" />
           </div>
         </div>
       ))}

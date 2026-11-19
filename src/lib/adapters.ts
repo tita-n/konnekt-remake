@@ -63,9 +63,13 @@ export function adapterStatus(env: Env = process.env): AdapterStatus[] {
 export function assertProductionServices(env: Env = process.env): void {
   if (env.NODE_ENV !== "production") return;
   if (env.NEXT_PHASE === "phase-production-build") return;
+  if (env.ALLOW_LOCAL_ADAPTERS === "1") return;
+  if (env.TURNSTILE_BYPASS === "1") {
+    throw new Error("TURNSTILE_BYPASS cannot be enabled in production.");
+  }
   const missing = adapterStatus(env).filter((adapter) => adapter.requiredInProduction && !adapter.configured);
   if (missing.length > 0) {
     const names = missing.map((adapter) => `${adapter.service} (${adapter.provider})`).join(", ");
-    console.warn(`[AI Studio] External services not configured — using local fallbacks: ${names}.`);
+    throw new Error(`Missing required production services: ${names}.`);
   }
 }

@@ -63,14 +63,14 @@ export function CreateSheet({ open, onClose }: { open: boolean; onClose: () => v
                   onClose();
                   router.push(option.href);
                 }}
-                className="flex w-full items-start gap-3 rounded-card border border-border bg-surface p-3.5 text-left transition enabled:hover:border-accent/50 enabled:hover:bg-accent-soft disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex min-h-[52px] w-full items-start gap-3 rounded-card border border-border bg-surface p-3.5 text-left transition enabled:hover:border-accent/50 enabled:hover:bg-accent-soft disabled:cursor-not-allowed disabled:opacity-55"
               >
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-[12px] bg-accent-soft text-accent">
-                  <Icon aria-hidden="true" className="size-5" />
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-button bg-accent-soft text-accent-ink">
+                  <Icon aria-hidden="true" className="size-6" />
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="flex flex-wrap items-center gap-2">
-                    <span className="text-[0.9375rem] font-semibold text-fg">{option.title}</span>
+                    <span className="text-body font-semibold text-fg">{option.title}</span>
                     {comingSoon ? (
                       <span className="rounded-chip border border-border bg-surface-2 px-2 py-0.5 text-[0.625rem] font-bold uppercase tracking-wide text-fg-muted">
                         Coming soon

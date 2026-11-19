@@ -1,44 +1,58 @@
 /*
- * Konnekt design tokens.
- * The product language is the Nova mockups: white paper surfaces, hairline
- * borders, indigo accents, 16px cards and 12px controls. Accent colours remain
- * per-university; everything else is fixed so every campus looks like Konnekt.
+ * Konnekt design tokens (Spec Section 4).
+ * Neutral paper surfaces, hairline 1px borders, 4px spatial rhythm, and strict
+ * per-university accent isolation so every campus looks unmistakably like Konnekt.
  */
 :root {
   --bg: #ffffff;
   --surface: #ffffff;
-  --surface-2: #f6f6fa;
-  --surface-3: #ededf4;
+  --surface-2: #f6f7f9;
+  --surface-3: #eceef2;
   --fg: #12141a;
   --fg-muted: #5b6270;
-  --fg-subtle: #7b8190;
-  --border: #e7e8ef;
+  --fg-subtle: #6b7280;
+  --border: #e4e6eb;
   --border-strong: #d5d7e2;
 
-  /* Overridden at runtime with the university accent. */
+  /* Overridden at runtime with the university accent via style={accentCssVars(...)}. */
   --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-ink: #4f46e5;
   --accent-fg: #ffffff;
   --accent-soft: #eef0ff;
   --accent-soft-fg: #3730a3;
+  --verified: #2f6fed;
 
   --highlight: #f5a524;
   --highlight-soft: #fff4dc;
-  --danger: #d92d20;
+  --highlight-fg: #925400;
+
+  --danger: #dc2626;
+  --danger-btn: #dc2626;
   --danger-fg: #ffffff;
-  --danger-soft: #fef3f2;
-  --success: #067647;
+  --danger-soft: #fdecec;
+
+  --success: #15803d;
+  --success-solid: #16a34a;
+  --success-fg: #ffffff;
   --success-soft: #ecfdf3;
+
   --warning: #b54708;
   --warning-soft: #fffaeb;
   --focus: #4f46e5;
 
-  --glass-bg: rgba(255, 255, 255, 0.92);
-  --glass-border: rgba(231, 232, 239, 0.9);
-  --glass-blur: 12px;
+  --glass-bg: rgba(255, 255, 255, 0.70);
+  --glass-border: rgba(255, 255, 255, 0.60);
+  --glass-blur: 10px;
 
   --radius-card: 16px;
   --radius-button: 12px;
+  --radius-dialog: 20px;
+
   --shadow-card: none;
+  --shadow-pill: 0 4px 12px rgba(0, 0, 0, 0.14);
+  --shadow-create: 0 6px 16px color-mix(in srgb, var(--accent) 35%, transparent);
+  --shadow-modal: 0 24px 64px -20px rgba(18, 20, 26, 0.28);
 
   --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-display: var(--font-jakarta), var(--font-sans);
@@ -48,29 +62,44 @@
 
 [data-theme="dark"] {
   --bg: #0e1013;
-  --surface: #15181d;
-  --surface-2: #1c2027;
-  --surface-3: #252a33;
-  --fg: #f3f4f7;
-  --fg-muted: #a5acb8;
-  --fg-subtle: #8c94a3;
-  --border: #282d36;
+  --surface: #171a1f;
+  --surface-2: #1e2228;
+  --surface-3: #262b33;
+  --fg: #f2f3f5;
+  --fg-muted: #a3a9b6;
+  --fg-subtle: #8f96a6;
+  --border: #2a2f37;
   --border-strong: #3a414d;
-  --accent-soft: #211f45;
-  --accent-soft-fg: #c7c4ff;
+
+  /* Lifted accent tokens for dark surfaces: indigo #5C5BF0 filled buttons (4.65:1 white text AA), #8B93FF text/icons (6.65:1 AA). */
+  --accent: var(--accent-dark, #5c5bf0);
+  --accent-hover: #5558e6;
+  --accent-ink: var(--accent-dark-ink, #8b93ff);
+  --accent-fg: #ffffff;
+  --accent-soft: color-mix(in srgb, var(--accent) 16%, #171a1f);
+  --accent-soft-fg: color-mix(in srgb, var(--accent-ink) 75%, #f2f3f5);
+  --verified: #4b86f7;
+
   --highlight: #f5a524;
   --highlight-soft: #2e2413;
-  --danger: #ff8a80;
-  --danger-fg: #2a0908;
-  --danger-soft: #37130f;
-  --success: #7ad3ac;
-  --success-soft: #112b21;
+  --highlight-fg: #fbbf24;
+
+  --danger: #f87171;
+  --danger-btn: #dc2626;
+  --danger-fg: #ffffff;
+  --danger-soft: rgba(248, 113, 113, 0.16);
+
+  --success: #4ade80;
+  --success-solid: #16a34a;
+  --success-fg: #ffffff;
+  --success-soft: rgba(74, 222, 128, 0.14);
+
   --warning: #f3c26b;
   --warning-soft: #2e2413;
-  --focus: #a5b4ff;
+  --focus: var(--accent-ink);
 
-  --glass-bg: rgba(21, 24, 29, 0.9);
-  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-bg: rgba(14, 16, 19, 0.70);
+  --glass-border: rgba(255, 255, 255, 0.08);
 
   color-scheme: dark;
 }

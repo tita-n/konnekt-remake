@@ -33,20 +33,21 @@ async function sampleIdImage(): Promise<string> {
   await mkdir(dir, { recursive: true });
   const filename = `${randomUUID()}.jpg`;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="900" height="560">
-    <rect width="900" height="560" fill="#eef2ef"/>
-    <rect x="24" y="24" width="852" height="512" rx="24" fill="#ffffff" stroke="#c3cec8" stroke-width="4"/>
-    <text x="60" y="110" font-family="sans-serif" font-size="34" font-weight="700" fill="#0c1411">DEMO UNIVERSITY</text>
-    <text x="60" y="152" font-family="sans-serif" font-size="22" fill="#55645c">Student identity card · sample for local development</text>
-    <rect x="60" y="200" width="180" height="220" rx="16" fill="#dce3df"/>
-    <circle cx="150" cy="280" r="46" fill="#a5b3aa"/>
-    <rect x="96" y="342" width="108" height="52" rx="26" fill="#a5b3aa"/>
-    <text x="290" y="230" font-family="sans-serif" font-size="26" font-weight="700" fill="#0c1411">Adaeze N. Okonkwo</text>
-    <text x="290" y="272" font-family="sans-serif" font-size="21" fill="#26332c">Matric: CSC/2022/1041</text>
-    <text x="290" y="310" font-family="sans-serif" font-size="21" fill="#26332c">Computer Science · 300 level</text>
-    <text x="290" y="348" font-family="sans-serif" font-size="21" fill="#26332c">Faculty of Physical Sciences</text>
-    <text x="60" y="490" font-family="monospace" font-size="20" fill="#55645c">SAMPLE DOCUMENT — NOT A REAL ID</text>
+    <rect width="900" height="560" fill="#eef0ff"/>
+    <rect x="24" y="24" width="852" height="512" rx="24" fill="#ffffff" stroke="#d5d7e2" stroke-width="4"/>
+    <rect x="24" y="24" width="852" height="128" rx="24" fill="#4f46e5"/>
+    <text x="60" y="92" font-family="sans-serif" font-size="34" font-weight="700" fill="#ffffff">NOVA UNIVERSITY</text>
+    <text x="60" y="128" font-family="sans-serif" font-size="20" fill="#e0e7ff">Verified Student Identity Card · Sample Document</text>
+    <rect x="60" y="196" width="180" height="220" rx="16" fill="#eceef2"/>
+    <circle cx="150" cy="276" r="46" fill="#b1a6ff"/>
+    <rect x="96" y="338" width="108" height="52" rx="26" fill="#8e7cff"/>
+    <text x="284" y="232" font-family="sans-serif" font-size="28" font-weight="700" fill="#12141a">Chinedu Okafor</text>
+    <text x="284" y="276" font-family="sans-serif" font-size="22" fill="#5b6270">Matric: SWE/2023/0564</text>
+    <text x="284" y="316" font-family="sans-serif" font-size="22" fill="#5b6270">Software Engineering · 300 level</text>
+    <text x="284" y="356" font-family="sans-serif" font-size="22" fill="#5b6270">College of Engineering</text>
+    <text x="60" y="492" font-family="monospace" font-size="20" fill="#6b7280">SAMPLE DOCUMENT — FOR DEVELOPMENT VERIFICATION</text>
   </svg>`;
-  const jpeg = await sharp(Buffer.from(svg)).jpeg({ quality: 80 }).toBuffer();
+  const jpeg = await sharp(Buffer.from(svg)).jpeg({ quality: 82 }).toBuffer();
   await writeFile(path.join(dir, filename), jpeg, { mode: 0o600 });
   return `local:${filename.replace(".jpg", "")}`;
 }
@@ -61,53 +62,64 @@ interface NodeSeed {
 
 const tree: NodeSeed[] = [
   {
-    key: "college-sciences",
-    name: "College of Natural and Applied Sciences",
+    key: "college-engineering",
+    name: "Engineering",
     type: "COLLEGE",
     children: [
       {
-        key: "faculty-physical",
-        name: "Faculty of Physical Sciences",
+        key: "faculty-computing",
+        name: "Computing and Technology",
         type: "FACULTY",
         children: [
-          { key: "dept-computer", name: "Computer Science", type: "DEPARTMENT", levels: [100, 200, 300, 400, 500] },
-          { key: "dept-mathematics", name: "Mathematics", type: "DEPARTMENT", levels: [100, 200, 300, 400] },
-          { key: "dept-physics", name: "Physics", type: "DEPARTMENT", levels: [100, 200, 300, 400] },
-        ],
-      },
-      {
-        key: "faculty-biological",
-        name: "Faculty of Biological Sciences",
-        type: "FACULTY",
-        children: [
-          { key: "dept-microbiology", name: "Microbiology", type: "DEPARTMENT", levels: [100, 200, 300, 400] },
-          { key: "dept-biochemistry", name: "Biochemistry", type: "DEPARTMENT", levels: [100, 200, 300, 400] },
+          { key: "dept-swe", name: "Software Engineering", type: "DEPARTMENT", levels: [100, 200, 300, 400, 500] },
+          { key: "dept-mech", name: "Mechanical Engineering", type: "DEPARTMENT", levels: [100, 200, 300, 400, 500] },
+          { key: "dept-arch", name: "Architecture", type: "DEPARTMENT", levels: [100, 200, 300, 400, 500] },
         ],
       },
     ],
   },
   {
-    key: "college-humanities",
-    name: "College of Humanities and Social Sciences",
+    key: "college-law",
+    name: "Law",
     type: "COLLEGE",
     children: [
       {
-        key: "faculty-arts",
-        name: "Faculty of Arts",
+        key: "faculty-law",
+        name: "Faculty of Law",
         type: "FACULTY",
         children: [
-          { key: "dept-english", name: "English and Literature", type: "DEPARTMENT", levels: [100, 200, 300, 400] },
-          { key: "dept-history", name: "History and International Studies", type: "DEPARTMENT", levels: [100, 200, 300, 400] },
+          { key: "dept-law", name: "Law", type: "DEPARTMENT", levels: [100, 200, 300, 400, 500] },
         ],
       },
+    ],
+  },
+  {
+    key: "college-medicine",
+    name: "Medicine",
+    type: "COLLEGE",
+    children: [
       {
-        key: "faculty-social",
-        name: "Faculty of Social Sciences",
+        key: "faculty-clinical",
+        name: "Clinical Sciences",
         type: "FACULTY",
         children: [
-          { key: "dept-economics", name: "Economics", type: "DEPARTMENT", levels: [100, 200, 300, 400] },
+          { key: "dept-medicine", name: "Medicine", type: "DEPARTMENT", levels: [100, 200, 300, 400, 500, 600] },
+        ],
+      },
+    ],
+  },
+  {
+    key: "college-management",
+    name: "Management",
+    type: "COLLEGE",
+    children: [
+      {
+        key: "faculty-social",
+        name: "Social and Management Sciences",
+        type: "FACULTY",
+        children: [
           { key: "dept-masscomm", name: "Mass Communication", type: "DEPARTMENT", levels: [100, 200, 300, 400] },
-          { key: "dept-law", name: "Law", type: "DEPARTMENT", levels: [100, 200, 300, 400, 500, 600] },
+          { key: "dept-accounting", name: "Accounting", type: "DEPARTMENT", levels: [100, 200, 300, 400] },
         ],
       },
     ],
@@ -127,11 +139,13 @@ async function main() {
   const platformAdminEmail = process.env.SEED_PLATFORM_ADMIN_EMAIL ?? "admin@konnekt.ng";
 
   const university = await db.university.upsert({
-    where: { slug: "demo-university" },
+    where: { slug: "nova-university" },
     update: {
+      name: "Nova University",
+      shortName: "Nova",
       status: "ACTIVE",
       accentColor: ACCENT,
-      studentEmailDomains: ["student.demo.edu.ng", "demo.edu.ng"],
+      studentEmailDomains: ["student.nova.edu.ng", "nova.edu.ng"],
       idCardEnabled: true,
       vouchingEnabled: true,
       matricPattern: "^[A-Z]{2,4}/\\d{4}/\\d{3,4}$",
@@ -139,12 +153,12 @@ async function main() {
       featureFlags: { campusVoice: false, communities: false, events: false, messaging: false },
     },
     create: {
-      name: "Demo University",
-      shortName: "Demo",
-      slug: "demo-university",
+      name: "Nova University",
+      shortName: "Nova",
+      slug: "nova-university",
       accentColor: ACCENT,
       status: "ACTIVE",
-      studentEmailDomains: ["student.demo.edu.ng", "demo.edu.ng"],
+      studentEmailDomains: ["student.nova.edu.ng", "nova.edu.ng"],
       idCardEnabled: true,
       vouchingEnabled: true,
       matricPattern: "^[A-Z]{2,4}/\\d{4}/\\d{3,4}$",
@@ -153,7 +167,6 @@ async function main() {
     },
   });
 
-  // Build the academic tree, reusing nodes whose slug already exists.
   const nodeIds = new Map<string, string>();
   async function createNodes(nodes: NodeSeed[], parentId: string | null, parentPath: string, depth: number) {
     let order = 0;
@@ -223,6 +236,8 @@ async function main() {
     const user = await db.user.upsert({
       where: { email: input.email },
       update: {
+        universityId: university.id,
+        fullName: input.fullName,
         status: input.status,
         departmentNodeId: data.departmentNodeId,
         level: data.level,
@@ -254,145 +269,150 @@ async function main() {
     username: "konnekt_admin",
     fullName: "Platform Administrator",
     status: "VERIFIED",
-    departmentKey: "dept-computer",
+    departmentKey: "dept-swe",
     level: 500,
     roles: [{ role: "PLATFORM_ADMIN", universityId: null }],
   });
 
   const uniAdmin = await upsertUser({
-    email: "admin@demo.edu.ng",
-    username: "demo_admin",
-    fullName: "Bola Adewale",
+    email: "admin@nova.edu.ng",
+    username: "nova_admin",
+    fullName: "Funke Adebayo",
     status: "VERIFIED",
-    departmentKey: "dept-computer",
+    departmentKey: "dept-swe",
     level: 400,
     roles: [{ role: "UNIVERSITY_ADMIN" }],
   });
 
   const reviewer = await upsertUser({
-    email: "reviewer@demo.edu.ng",
-    username: "demo_reviewer",
-    fullName: "Ngozi Umeh",
+    email: "reviewer@nova.edu.ng",
+    username: "nova_reviewer",
+    fullName: "Bola Ogunleye",
     status: "VERIFIED",
-    departmentKey: "dept-microbiology",
+    departmentKey: "dept-law",
     level: 400,
     roles: [{ role: "REVIEWER" }],
   });
 
   const courseRep = await upsertUser({
-    email: "courserep@demo.edu.ng",
-    username: "csc_rep",
-    fullName: "Tunde Bakare",
+    email: "courserep@nova.edu.ng",
+    username: "swe_rep",
+    fullName: "Igwe Kalu",
     status: "VERIFIED",
-    departmentKey: "dept-computer",
+    departmentKey: "dept-swe",
     level: 400,
-    bio: "Course rep for Computer Science. Ask me about classes before you ask me about life.",
-    interests: ["Coding", "Football", "Music"],
+    bio: "Course rep for Software Engineering. Reach out before exam week gets chaotic.",
+    interests: ["Coding", "Design", "Football"],
     roles: [{ role: "OFFICIAL" }],
   });
 
   const verified = await upsertUser({
-    email: "student@demo.edu.ng",
-    username: "adaeze",
-    fullName: "Adaeze Okonkwo",
+    email: "student@nova.edu.ng",
+    username: "chinedu_okafor",
+    fullName: "Chinedu Okafor",
     status: "VERIFIED",
-    departmentKey: "dept-computer",
+    departmentKey: "dept-swe",
     level: 300,
-    matric: "CSC/2022/1041",
-    bio: "300 level Computer Science. Building small things for fun and pretending to study.",
-    interests: ["Coding", "Afrobeats", "Basketball", "Design"],
+    matric: "SWE/2023/0564",
+    bio: "Software Engineering 300L at Nova University. Building campus tools and trying to finish CSC 204 labs before 11pm.",
+    interests: ["Coding", "Design", "TechSummit", "Afrobeats"],
   });
 
-  // Fixed accounts for the audience matrix in end-to-end tests.
-  await upsertUser({
-    email: "levelmate@demo.edu.ng",
-    username: "adaeze_levelmate",
-    fullName: "Kamsi Eze",
+  const levelmate = await upsertUser({
+    email: "levelmate@nova.edu.ng",
+    username: "aisha_bello",
+    fullName: "Aisha Bello",
     status: "VERIFIED",
-    departmentKey: "dept-computer",
+    departmentKey: "dept-swe",
     level: 300,
-    matric: "CSC/2022/1088",
-    bio: "Same department, same level. Usually in the lab.",
+    matric: "SWE/2023/0021",
+    bio: "300L Software Engineering. Product design, robotics club, and late-night library sessions.",
+    interests: ["Design", "Coding", "Photography"],
   });
-  await upsertUser({
-    email: "otherlevel@demo.edu.ng",
-    username: "obi_400",
-    fullName: "Obi Nwankwo",
+
+  const otherLevel = await upsertUser({
+    email: "otherlevel@nova.edu.ng",
+    username: "tunde_adeyemi",
+    fullName: "Tunde Adeyemi",
     status: "VERIFIED",
-    departmentKey: "dept-computer",
+    departmentKey: "dept-swe",
     level: 400,
-    matric: "CSC/2021/0921",
+    matric: "SWE/2022/1187",
+    bio: "400L Software Engineering. Building distributed campus systems and mentoring 200L students.",
   });
-  await upsertUser({
-    email: "otherdept@demo.edu.ng",
-    username: "maths_300",
-    fullName: "Sade Ogun",
+
+  const otherDept = await upsertUser({
+    email: "otherdept@nova.edu.ng",
+    username: "ngozi_eze",
+    fullName: "Ngozi Eze",
     status: "VERIFIED",
-    departmentKey: "dept-mathematics",
+    departmentKey: "dept-mech",
     level: 300,
-    matric: "MTH/2022/3301",
+    matric: "MEC/2023/0775",
+    bio: "300L Mechanical Engineering. Formula student chassis team and football Sundays.",
   });
-  await upsertUser({
-    email: "othercollege@demo.edu.ng",
-    username: "law_300",
-    fullName: "Bello Amina",
+
+  const otherCollege = await upsertUser({
+    email: "othercollege@nova.edu.ng",
+    username: "ibrahim_musa",
+    fullName: "Ibrahim Musa",
     status: "VERIFIED",
     departmentKey: "dept-law",
     level: 300,
-    matric: "LAW/2022/7710",
+    matric: "LAW/2023/0190",
+    bio: "Law 300L. Moot court society and legal clinics.",
   });
 
   const pending = await upsertUser({
-    email: "pending@demo.edu.ng",
-    username: "emeka_pending",
-    fullName: "Emeka Nwachukwu",
+    email: "pending@nova.edu.ng",
+    username: "emeka_nwosu",
+    fullName: "Emeka Nwosu",
     status: "PENDING",
-    departmentKey: "dept-mathematics",
+    departmentKey: "dept-accounting",
     level: 200,
-    matric: "MTH/2024/2210",
+    matric: "ACC/2024/2210",
   });
 
   const rejected = await upsertUser({
-    email: "rejected@demo.edu.ng",
-    username: "halima",
-    fullName: "Halima Bello",
+    email: "rejected@nova.edu.ng",
+    username: "zainab_yusuf",
+    fullName: "Zainab Yusuf",
     status: "REJECTED",
-    departmentKey: "dept-economics",
+    departmentKey: "dept-masscomm",
     level: 100,
-    matric: "ECO/2025/3311",
+    matric: "MAC/2025/3311",
   });
 
   await upsertUser({
-    email: "suspended@demo.edu.ng",
-    username: "suspended_demo",
-    fullName: "Chinedu Obi",
+    email: "suspended@nova.edu.ng",
+    username: "suspended_nova",
+    fullName: "Kelechi Okafor",
     status: "SUSPENDED",
-    departmentKey: "dept-physics",
+    departmentKey: "dept-mech",
     level: 300,
-    matric: "PHY/2023/5521",
+    matric: "MEC/2023/5521",
   });
 
   await upsertUser({
-    email: "alumni@demo.edu.ng",
-    username: "alumni_demo",
+    email: "alumni@nova.edu.ng",
+    username: "alumni_nova",
     fullName: "Yetunde Alabi",
     status: "ALUMNI",
     departmentKey: "dept-law",
-    level: 600,
-    matric: "LAW/2019/8801",
-    bio: "Law alumna. Still lurking because campus gossip is undefeated.",
+    level: 500,
+    matric: "LAW/2020/8801",
+    bio: "Law alumna. Still checking Nova campus updates.",
   });
 
   await upsertUser({
-    email: "newstudent@demo.edu.ng",
-    username: "unverified_demo",
+    email: "newstudent@nova.edu.ng",
+    username: "unverified_nova",
     fullName: "Sadiq Yusuf",
     status: "UNVERIFIED",
-    departmentKey: "dept-english",
+    departmentKey: "dept-arch",
     level: 100,
   });
 
-  // Pending ID request for the pending student.
   const existingPending = await db.verificationRequest.findFirst({
     where: { userId: pending.id, status: "PENDING" },
   });
@@ -403,15 +423,14 @@ async function main() {
         userId: pending.id,
         universityId: university.id,
         method: "ID_CARD",
-        matricNumber: "MTH/2024/2210",
-        matricNormalized: "MTH/2024/2210",
+        matricNumber: "ACC/2024/2210",
+        matricNormalized: "ACC/2024/2210",
         idImageRef: imageRef,
         status: "PENDING",
       },
     });
   }
 
-  // Rejected request with a fixed reason.
   const existingRejected = await db.verificationRequest.findFirst({
     where: { userId: rejected.id, status: "REJECTED" },
   });
@@ -421,18 +440,17 @@ async function main() {
         userId: rejected.id,
         universityId: university.id,
         method: "ID_CARD",
-        matricNumber: "ECO/2025/3311",
-        matricNormalized: "ECO/2025/3311",
+        matricNumber: "MAC/2025/3311",
+        matricNormalized: "MAC/2025/3311",
         status: "REJECTED",
         reviewerId: reviewer.id,
         decisionReason: "MATRIC_MISMATCH",
-        decisionNote: "The matric number on the ID does not match the one submitted. Please resubmit with a clear photo.",
+        decisionNote: "The matric number on the ID card is blurry and doesn't match what you entered. Please retake in bright light.",
         decidedAt: new Date(),
       },
     });
   }
 
-  // Waitlist entries (real people would create these).
   const waitlistCount = await db.waitlistEntry.count();
   if (waitlistCount === 0) {
     await db.waitlistEntry.createMany({
@@ -450,13 +468,16 @@ async function main() {
     passwordHash: hashValue,
     moderatorId: uniAdmin.id,
     demoAuthors: [
-      { id: verified.id, fullName: "Adaeze Okonkwo", username: "adaeze", deptKey: "dept-computer", level: 300 },
-      { id: courseRep.id, fullName: "Tunde Bakare", username: "csc_rep", deptKey: "dept-computer", level: 400 },
-      { id: reviewer.id, fullName: "Ngozi Umeh", username: "demo_reviewer", deptKey: "dept-microbiology", level: 400 },
+      { id: verified.id, fullName: "Chinedu Okafor", username: "chinedu_okafor", deptKey: "dept-swe", level: 300 },
+      { id: levelmate.id, fullName: "Aisha Bello", username: "aisha_bello", deptKey: "dept-swe", level: 300 },
+      { id: otherLevel.id, fullName: "Tunde Adeyemi", username: "tunde_adeyemi", deptKey: "dept-swe", level: 400 },
+      { id: otherDept.id, fullName: "Ngozi Eze", username: "ngozi_eze", deptKey: "dept-mech", level: 300 },
+      { id: otherCollege.id, fullName: "Ibrahim Musa", username: "ibrahim_musa", deptKey: "dept-law", level: 300 },
+      { id: courseRep.id, fullName: "Igwe Kalu", username: "swe_rep", deptKey: "dept-swe", level: 400 },
+      { id: reviewer.id, fullName: "Bola Ogunleye", username: "nova_reviewer", deptKey: "dept-law", level: 400 },
     ],
   });
 
-  // A welcome audit entry proves the append-only log is wired up.
   const auditExists = await db.auditLog.findFirst({ where: { action: "seed.completed" } });
   if (!auditExists) {
     await db.auditLog.create({
@@ -466,16 +487,15 @@ async function main() {
         action: "seed.completed",
         targetType: "University",
         targetId: university.id,
-        metadata: { students: 7, reviewers: 2 },
+        metadata: { university: "Nova University", students: 55 },
       },
     });
   }
 
-  console.log("Seeded Konnekt development data");
+  console.log("Seeded Konnekt Nova University development data");
   console.table({
     university: university.name,
     slug: university.slug,
-    students: 7,
     password: PASSWORD,
     platformAdmin: platformAdminEmail,
     universityAdmin: uniAdmin.email,

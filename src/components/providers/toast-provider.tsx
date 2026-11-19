@@ -11,6 +11,8 @@ interface ToastInput {
   description?: string;
   variant?: ToastVariant;
   durationMs?: number;
+  actionLabel?: string;
+  onAction?: () => void;
 }
 
 interface ToastRecord extends ToastInput {
@@ -86,26 +88,38 @@ function ToastItem({
   return (
     <div
       className={cn(
-        "pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-card border bg-surface p-3.5 shadow-floating animate-toast-in",
+        "pointer-events-auto flex w-full max-w-sm items-center gap-3 rounded-button border bg-surface-2 px-3.5 py-3 shadow-floating animate-toast-in",
         toast.variant === "error" ? "border-danger/50" : "border-border",
       )}
     >
       <Icon
         aria-hidden="true"
         className={cn(
-          "mt-0.5 size-5 shrink-0",
-          toast.variant === "error" ? "text-danger" : toast.variant === "success" ? "text-success" : "text-accent",
+          "size-5 shrink-0",
+          toast.variant === "error" ? "text-danger" : toast.variant === "success" ? "text-success" : "text-accent-ink",
         )}
       />
       <div className="min-w-0 flex-1">
         <p className="text-[0.9375rem] font-semibold leading-snug text-fg">{toast.title}</p>
         {toast.description ? <p className="mt-0.5 text-small text-fg-muted">{toast.description}</p> : null}
       </div>
+      {toast.actionLabel && toast.onAction ? (
+        <button
+          type="button"
+          onClick={() => {
+            toast.onAction?.();
+            onDismiss();
+          }}
+          className="min-h-8 shrink-0 rounded-button px-2.5 text-small font-semibold text-accent-ink transition hover:bg-surface-3"
+        >
+          {toast.actionLabel}
+        </button>
+      ) : null}
       <button
         type="button"
         onClick={onDismiss}
         aria-label="Dismiss notification"
-        className="-m-1 rounded-full p-1 text-fg-subtle transition hover:bg-surface-2 hover:text-fg"
+        className="-m-1 inline-flex size-8 shrink-0 items-center justify-center rounded-full text-fg-subtle transition hover:bg-surface-3 hover:text-fg"
       >
         <X aria-hidden="true" className="size-4" />
       </button>

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Info } from "lucide-react";
+import { ArrowLeft, Info } from "lucide-react";
 import { requireStudent } from "@/lib/auth/guards";
 import { getHashtagPage } from "@/lib/services/posts";
 import { loadSocialViewer } from "@/lib/services/social";
@@ -34,31 +34,47 @@ export default async function HashtagPage({
 
   const base = `/hashtag/${encodeURIComponent(page.tag)}`;
   return (
-    <div>
-      <header className="border-b border-border px-4 pb-4 pt-5">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h1 className="font-display text-h1 text-fg">#{page.tag}</h1>
-            <p className="mt-1 text-small text-fg-muted">{formatCount(page.postCount)} {page.postCount === 1 ? "post" : "posts"} you can see</p>
-          </div>
-          <span className="rounded-card bg-accent-soft px-3 py-2 font-display text-2xl font-bold text-accent-soft-fg" aria-hidden="true">#</span>
-        </div>
-        <p className="mt-3 flex items-start gap-2 rounded-card bg-accent-soft px-3 py-2.5 text-small text-accent-soft-fg">
-          <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-          Showing posts from audiences you belong to. Counts include only what you can see.
-        </p>
+    <div className="pb-4">
+      <header className="sticky top-14 z-20 flex h-14 items-center border-b border-border bg-surface px-2">
+        <Link href="/pulse" aria-label="Back to Pulse" className="flex size-10 items-center justify-center rounded-full text-fg hover:bg-surface-2">
+          <ArrowLeft aria-hidden="true" className="size-5" />
+        </Link>
+        <h1 className="flex-1 truncate text-center font-display text-h2 text-fg">#{page.tag}</h1>
+        <span className="size-10" aria-hidden="true" />
       </header>
 
       <div className="px-3 pt-3">
-        <div className="flex rounded-chip border border-border bg-surface-2 p-1" role="group" aria-label="Sort hashtag posts">
+        <div className="flex h-[112px] overflow-hidden rounded-[18px] border border-border/70 bg-accent-soft">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/assets/illustrations/hashtag-banner.jpg"
+            alt={`#${page.tag} banner`}
+            width={320}
+            height={180}
+            className="h-full w-1/2 object-cover"
+          />
+          <div className="flex w-1/2 flex-col justify-center px-4">
+            <p className="truncate font-display text-[1.25rem] font-extrabold tracking-tight text-fg">#{page.tag}</p>
+            <p className="mt-0.5 text-small font-medium text-fg-muted">
+              {formatCount(page.postCount)} {page.postCount === 1 ? "post" : "posts"}
+            </p>
+          </div>
+        </div>
+
+        <p className="mt-3 flex items-center gap-2.5 rounded-[12px] bg-accent-soft px-3.5 py-2.5 text-small text-accent-soft-fg">
+          <Info aria-hidden="true" className="size-4 shrink-0 text-accent" />
+          <span>Showing posts from audiences you belong to.</span>
+        </p>
+
+        <div className="mt-3 flex overflow-hidden rounded-full border border-border bg-surface p-0.5" role="group" aria-label="Sort hashtag posts">
           {(["top", "latest"] as const).map((value) => (
             <Link
               key={value}
               href={`${base}?sort=${value}`}
               aria-current={sort === value ? "page" : undefined}
               className={cn(
-                "flex h-9 flex-1 items-center justify-center rounded-chip text-small font-semibold capitalize",
-                sort === value ? "bg-accent text-accent-fg" : "text-fg-muted",
+                "flex h-9 flex-1 items-center justify-center rounded-full text-small font-semibold capitalize transition",
+                sort === value ? "bg-accent text-accent-fg" : "text-fg-muted hover:text-fg",
               )}
             >
               {value}
@@ -67,7 +83,7 @@ export default async function HashtagPage({
         </div>
       </div>
 
-      <div className="space-y-3 px-3 py-3">
+      <div className="space-y-2.5 px-3 py-3">
         {page.posts.length === 0 ? (
           <div className="rounded-card border border-border bg-surface">
             <EmptyState illustration="search" title="No posts here yet" description={`No posts in your audiences use #${page.tag} yet.`} />
@@ -78,7 +94,7 @@ export default async function HashtagPage({
         {page.hasMore && page.nextCursor ? (
           <Link
             href={`${base}?sort=${sort}&cursor=${encodeURIComponent(page.nextCursor)}`}
-            className="flex h-11 items-center justify-center rounded-button border border-border bg-surface text-small font-semibold text-accent"
+            className="flex h-11 items-center justify-center rounded-full border border-border bg-surface text-small font-semibold text-accent"
           >
             Load more
           </Link>
@@ -87,3 +103,4 @@ export default async function HashtagPage({
     </div>
   );
 }
+

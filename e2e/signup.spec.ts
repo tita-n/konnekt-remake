@@ -35,10 +35,10 @@ test.describe("student signup journeys", () => {
   test("student email domain verifies automatically and goes straight to onboarding", async ({ page }) => {
     test.setTimeout(120_000);
     const suffix = Date.now().toString(36).slice(-6);
-    const email = `e2e_${suffix}@student.demo.edu.ng`;
+    const email = `e2e_${suffix}@student.nova.edu.ng`;
 
-    await page.goto("/signup/demo-university/email", { waitUntil: "networkidle" });
-    await page.getByLabel(/Demo student email/).fill(email);
+    await page.goto("/signup/nova-university/email", { waitUntil: "networkidle" });
+    await page.getByLabel(/Nova student email/).fill(email);
     await page.getByRole("button", { name: "Send my code" }).click();
     await expect(page.getByText(/We sent a 6-digit code/)).toBeVisible();
 
@@ -46,7 +46,7 @@ test.describe("student signup journeys", () => {
     await fillCode(page, code);
     await page.getByRole("button", { name: "Verify my student email" }).click();
 
-    await page.waitForURL(/\/signup\/demo-university\/account/, { timeout: 30_000 });
+    await page.waitForURL(/\/signup\/nova-university\/account/, { timeout: 30_000 });
     await expect(page.getByText(/student email is verified/i)).toBeVisible();
     await createAccount(page, {
       fullName: "Ada Eze",
@@ -66,13 +66,13 @@ test.describe("student signup journeys", () => {
     const email = `id_${suffix}@example.com`;
     const fullName = `Chidi Eze ${nameSuffix}`;
 
-    await page.goto("/signup/demo-university/id", { waitUntil: "networkidle" });
-    await page.getByLabel("Matric number").fill(`CSC/2026/${String(Date.now()).slice(-4)}`);
+    await page.goto("/signup/nova-university/id", { waitUntil: "networkidle" });
+    await page.getByLabel("Matric number").fill(`SWE/2026/${String(Date.now()).slice(-4)}`);
     await page.locator("#id-photo").setInputFiles("public/icons/icon-192.png");
     await expect(page.getByText(/Compressed to/)).toBeVisible({ timeout: 20_000 });
     await page.getByRole("button", { name: "Submit for review" }).click();
 
-    await page.waitForURL(/\/signup\/demo-university\/account/, { timeout: 30_000 });
+    await page.waitForURL(/\/signup\/nova-university\/account/, { timeout: 30_000 });
     await createAccount(page, {
       fullName,
       username: `id_${suffix}`,
@@ -87,11 +87,11 @@ test.describe("student signup journeys", () => {
 
     await page.waitForURL(/\/onboarding/, { timeout: 30_000 });
     const department = page.getByLabel("Department");
-    const computerScience = (await department.locator("option").allTextContents()).find((text) =>
-      text.startsWith("Computer Science"),
+    const softwareEngineering = (await department.locator("option").allTextContents()).find((text) =>
+      text.startsWith("Software Engineering"),
     );
-    expect(computerScience).toBeTruthy();
-    await department.selectOption({ label: computerScience! });
+    expect(softwareEngineering).toBeTruthy();
+    await department.selectOption({ label: softwareEngineering! });
     await page.getByLabel("Level").selectOption({ label: "300 level" });
     await page.getByRole("button", { name: "Continue" }).click();
     await expect(page.getByRole("heading", { name: "What are you into?" })).toBeVisible();
@@ -104,7 +104,7 @@ test.describe("student signup journeys", () => {
     await page.waitForURL(/\/status/, { timeout: 30_000 });
 
     await page.context().clearCookies();
-    await login(page, "admin@demo.edu.ng");
+    await login(page, "admin@nova.edu.ng");
     await page.goto("/admin/verification", { waitUntil: "networkidle" });
     await page.getByRole("link").filter({ hasText: fullName }).first().click();
     await page.getByRole("button", { name: "Approve student" }).click();
@@ -114,7 +114,7 @@ test.describe("student signup journeys", () => {
     await login(page, email, "KonnektE2E123!");
     await page.goto("/profile/me", { waitUntil: "networkidle" });
     await expect(page.getByText(fullName).first()).toBeVisible();
-    await expect(page.getByText(/Computer Science/).first()).toBeVisible();
+    await expect(page.getByText(/Software Engineering/).first()).toBeVisible();
     await expect(page.getByText(/300/).first()).toBeVisible();
   });
 });

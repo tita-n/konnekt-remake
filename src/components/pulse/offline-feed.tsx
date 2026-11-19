@@ -22,31 +22,43 @@ export function OfflineFeed() {
   }, []);
 
   return (
-    <main id="main" className="mx-auto min-h-dvh w-full max-w-2xl px-3 pb-8 pt-4">
-      <div className="flex items-start gap-2.5 rounded-card border border-warning/30 bg-warning-soft px-3 py-2.5 text-small text-warning" role="status">
-        <CloudOff aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-        <p>You&apos;re offline. Showing your saved Pulse from {cached ? timeAgo(cached.savedAt) : "this device"}.</p>
+    <main id="main" className="mx-auto min-h-dvh w-full max-w-2xl px-3 pb-10 pt-4">
+      <div
+        className="flex items-center gap-2.5 rounded-[12px] border border-[#f5d084] bg-[#fef3c7] px-3.5 py-2.5 text-small font-medium text-[#854d0e]"
+        role="status"
+      >
+        <CloudOff aria-hidden="true" className="size-4 shrink-0 text-[#a16207]" />
+        <p>
+          You&apos;re offline. Showing saved content
+          {cached ? ` from ${timeAgo(cached.savedAt)}` : ""}.
+        </p>
       </div>
 
       {cached === undefined ? (
         <p className="py-12 text-center text-small text-fg-muted">Checking saved posts…</p>
       ) : cached === null || cached.posts.length === 0 ? (
-        <div className="mt-4 rounded-card border border-border bg-surface px-5 py-10 text-center">
-          <span className="mx-auto flex size-16 items-center justify-center rounded-full bg-accent-soft text-accent">
-            <CloudOff aria-hidden="true" className="size-7" />
-          </span>
-          <h1 className="mt-4 text-h3 text-fg">Nothing saved yet</h1>
-          <p className="mt-1 text-small text-fg-muted">
+        <div className="mt-6 flex flex-col items-center rounded-[18px] border border-border bg-surface px-6 py-10 text-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/assets/illustrations/error-plug.jpg"
+            alt=""
+            className="h-36 w-auto rounded-2xl object-contain"
+          />
+          <h1 className="mt-4 font-display text-h2 text-fg">Nothing saved yet</h1>
+          <p className="mt-1.5 max-w-xs text-small text-fg-muted">
             Open your Pulse once with a connection and the last page will be kept here for moments like this.
           </p>
-          <Link href="/pulse" className="mt-5 inline-flex h-10 items-center gap-2 rounded-button border border-border px-4 text-small font-semibold text-accent">
+          <Link
+            href="/pulse"
+            className="mt-5 inline-flex h-11 items-center gap-2 rounded-full bg-accent px-6 text-small font-semibold text-accent-fg shadow-sm transition hover:bg-accent/90"
+          >
             <RefreshCw aria-hidden="true" className="size-4" /> Try again
           </Link>
         </div>
       ) : (
         <ul className="mt-4 space-y-3">
           {cached.posts.map((post) => (
-            <li key={post.id} className="rounded-card border border-border bg-surface p-4">
+            <li key={post.id} className="rounded-[18px] border border-border bg-surface p-4 shadow-card">
               <div className="flex items-center gap-2.5">
                 <Avatar name={post.author.fullName} src={post.author.photoUrl} size="sm" verified />
                 <div className="min-w-0">
@@ -68,11 +80,16 @@ export function OfflineFeed() {
       <p className="mt-6 text-center text-tiny text-fg-subtle">
         Saved content is private to this account and is deleted when you log out.
       </p>
-      <div className="mt-4 flex justify-center">
-        <Link href="/pulse" className="rounded-button bg-accent px-5 py-2.5 text-small font-semibold text-accent-fg">
-          Reconnect
-        </Link>
-      </div>
+      {cached && cached.posts.length > 0 ? (
+        <div className="mt-4 flex justify-center">
+          <Link
+            href="/pulse"
+            className="inline-flex h-11 items-center gap-2 rounded-full bg-accent px-6 text-small font-semibold text-accent-fg shadow-sm transition hover:bg-accent/90"
+          >
+            <RefreshCw aria-hidden="true" className="size-4" /> Try again
+          </Link>
+        </div>
+      ) : null}
     </main>
   );
 }

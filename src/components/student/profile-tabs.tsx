@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Bookmark } from "lucide-react";
+import { Lock } from "lucide-react";
 import type { PostView } from "@/lib/posts/types";
 import type { ProfileReply } from "@/lib/services/posts";
 import { PostCard } from "@/components/pulse/post-card";
@@ -32,7 +32,7 @@ export function ProfileTabs({
 
   return (
     <div className="mt-4">
-      <div className="flex overflow-hidden rounded-full border border-border" role="tablist" aria-label="Profile content">
+      <div className="flex overflow-hidden rounded-full border border-border bg-surface p-0.5" role="tablist" aria-label="Profile content">
         {tabs.map((item) => (
           <button
             key={item.value}
@@ -41,12 +41,12 @@ export function ProfileTabs({
             aria-selected={tab === item.value}
             onClick={() => setTab(item.value)}
             className={cn(
-              "flex h-10 flex-1 items-center justify-center gap-1.5 text-small font-semibold transition-colors",
-              tab === item.value ? "bg-accent text-accent-fg" : "bg-surface text-fg-muted hover:bg-surface-2",
+              "flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full text-small font-semibold transition-colors",
+              tab === item.value ? "bg-accent text-accent-fg" : "text-fg-muted hover:text-fg",
             )}
           >
             {item.label}
-            {item.private ? <Bookmark aria-hidden="true" className="size-3.5" /> : null}
+            {item.private ? <Lock aria-hidden="true" className="size-3.5" /> : null}
           </button>
         ))}
       </div>

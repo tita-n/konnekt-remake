@@ -18,7 +18,7 @@ const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-jakarta",
   display: "swap",
-  weight: ["600", "700", "800"],
+  weight: ["500", "600", "700", "800"],
   fallback: ["system-ui", "-apple-system", "Segoe UI", "sans-serif"],
   adjustFontFallback: true,
 });
@@ -61,7 +61,7 @@ export const viewport: Viewport = {
   maximumScale: 5,
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0f0d" },
+    { media: "(prefers-color-scheme: dark)", color: "#0e1013" },
   ],
   colorScheme: "light dark",
 };

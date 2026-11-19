@@ -1,11 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
 import { login } from "./helpers";
 
-const STUDENT = "student@demo.edu.ng";
-const LEVELMATE = "levelmate@demo.edu.ng";
-const OTHER_LEVEL = "otherlevel@demo.edu.ng";
-const OTHER_DEPT = "otherdept@demo.edu.ng";
-const OTHER_COLLEGE = "othercollege@demo.edu.ng";
+const STUDENT = "student@nova.edu.ng";
+const LEVELMATE = "levelmate@nova.edu.ng";
+const OTHER_LEVEL = "otherlevel@nova.edu.ng";
+const OTHER_DEPT = "otherdept@nova.edu.ng";
+const OTHER_COLLEGE = "othercollege@nova.edu.ng";
 
 async function switchUser(page: Page, email: string): Promise<void> {
   await page.context().clearCookies();
@@ -23,6 +23,10 @@ async function createPost(page: Page, body: string, audience?: string): Promise<
   await page.getByRole("banner").getByRole("button", { name: "Post", exact: true }).click();
   await page.waitForURL(/\/p\/[^/]+$/, { timeout: 30_000 });
   return page.url().split("/p/")[1]!;
+}
+
+async function deletePost(page: Page, id: string): Promise<void> {
+  await page.request.delete(`/api/posts/${id}`).catch(() => undefined);
 }
 
 test.describe("audiences and the Pulse product", () => {
@@ -52,11 +56,14 @@ test.describe("audiences and the Pulse product", () => {
     await page.goto(`/p/${publicPost}`, { waitUntil: "networkidle" });
     await expect(page.getByText(publicMarker)).toBeVisible();
 
-    // A hidden post and a nonexistent post are indistinguishable.
     const missing = await page.goto("/p/00000000-0000-4000-8000-000000000000", { waitUntil: "networkidle" });
     const hidden = await page.goto(`/p/${levelPost}`, { waitUntil: "networkidle" });
     expect(missing?.status()).toBe(hidden?.status());
     expect(await page.locator("main").innerText()).not.toContain(marker);
+
+    await switchUser(page, STUDENT);
+    await deletePost(page, levelPost);
+    await deletePost(page, publicPost);
   });
 
   test("poll voting reveals results and cannot be repeated", async ({ page }) => {
@@ -76,6 +83,9 @@ test.describe("audiences and the Pulse product", () => {
     await page.getByRole("button", { name: "Library" }).click();
     await expect(page.getByText("100%", { exact: true })).toBeVisible();
     await expect(page.getByText("1 vote", { exact: false })).toBeVisible();
+
+    await switchUser(page, STUDENT);
+    await deletePost(page, id);
   });
 
   test("report, moderator removal, author sees the removed card", async ({ page }) => {
@@ -94,7 +104,7 @@ test.describe("audiences and the Pulse product", () => {
     await expect(page.getByText(/moderators will review/i)).toBeVisible();
     await page.getByRole("button", { name: "Done" }).click();
 
-    await switchUser(page, "admin@demo.edu.ng");
+    await switchUser(page, "admin@nova.edu.ng");
     await page.goto("/admin/reports", { waitUntil: "networkidle" });
     await page.getByRole("link").filter({ hasText: marker }).first().click();
     await page.getByRole("button", { name: "Remove", exact: true }).click();
@@ -124,8 +134,9 @@ test.describe("audiences and the Pulse product", () => {
     await expect(page.getByText(marker)).toHaveCount(0);
 
     await switchUser(page, STUDENT);
-    await page.goto("/profile/adaeze_levelmate", { waitUntil: "networkidle" });
+    await page.goto("/profile/aisha_bello", { waitUntil: "networkidle" });
     await expect(page.getByRole("heading", { name: /could not be found/i })).toBeVisible();
+    await deletePost(page, id);
   });
 });
 

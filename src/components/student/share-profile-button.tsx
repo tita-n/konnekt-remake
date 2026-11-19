@@ -30,6 +30,7 @@ export function ShareProfileButton({ username }: { username: string }) {
     <Button
       variant="secondary"
       fullWidth
+      className="rounded-full"
       leftIcon={copied ? <Check aria-hidden="true" className="size-4" /> : <Share2 aria-hidden="true" className="size-4" />}
       onClick={() => void share()}
     >
