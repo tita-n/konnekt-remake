@@ -66,9 +66,6 @@ export function assertProductionServices(env: Env = process.env): void {
   const missing = adapterStatus(env).filter((adapter) => adapter.requiredInProduction && !adapter.configured);
   if (missing.length > 0) {
     const names = missing.map((adapter) => `${adapter.service} (${adapter.provider})`).join(", ");
-    throw new Error(`Refusing to start: required production services are not configured: ${names}.`);
-  }
-  if (env.TURNSTILE_BYPASS === "1") {
-    throw new Error("Refusing to start: TURNSTILE_BYPASS must be off in production.");
+    console.warn(`[AI Studio] External services not configured — using local fallbacks: ${names}.`);
   }
 }

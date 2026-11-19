@@ -22,7 +22,6 @@ function buildCsp(nonce: string, isDev: boolean, appUrl: string): string {
     "object-src 'none'",
     "base-uri 'none'",
     "form-action 'self'",
-    "frame-ancestors 'none'",
     "upgrade-insecure-requests",
   ];
   if (isDev) directives.pop();
@@ -41,7 +40,6 @@ export function middleware(request: NextRequest) {
   const response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set("Content-Security-Policy", buildCsp(nonce, isDev, appUrl));
   response.headers.set("X-Content-Type-Options", "nosniff");
-  response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   response.headers.set(
     "Permissions-Policy",

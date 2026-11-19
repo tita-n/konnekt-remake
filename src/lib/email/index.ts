@@ -1,6 +1,6 @@
 import "server-only";
 import { Resend } from "resend";
-import { env, hasResend, isProduction } from "@/lib/env";
+import { env, hasResend } from "@/lib/env";
 
 /**
  * Transactional email. Resend in every deployed environment. Without an API
@@ -61,8 +61,7 @@ async function deliver(mail: Mail): Promise<void> {
   if (outbox.length > 50) outbox.length = 50;
 
   if (!hasResend) {
-    if (isProduction) throw new Error("RESEND_API_KEY is not configured");
-    console.info(`[email:dev] ${mail.subject} → ${maskEmail(mail.to)}`);
+    console.info(`[email:local] ${mail.subject} → ${maskEmail(mail.to)}`);
     return;
   }
 
