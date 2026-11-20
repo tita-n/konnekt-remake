@@ -28,7 +28,13 @@ The browser never receives a secret. Public IDs and signed URLs are produced aft
 2. **Layout/page** calls a guard: `requireSessionUser`, `requireStudent`, `requireUniversityRole([...])`, or `requirePlatformAdmin`. Guards redirect for unauthenticated users, `notFound()` for authenticated-but-unauthorised users (so tenant cross-access is indistinguishable from absence).
 3. **Service** performs the operation. Every tenant-owned query goes through `tenantDb(universityId)`. Platform operations are explicit and audited.
 4. **Audit** is written for admin/security actions. For critical decisions the audit write is part of the transaction’s success path.
-5. **UI** renders with the university accent injected as CSS variables (`--accent`, `--accent-fg`); tinted surfaces derive from `color-mix` per theme.
+5. **UI** renders with the university accent injected as CSS variables (`--accent`, `--accent-fg`); tinted surfaces derive from `color-mix` per theme. Components consume view models and never query Prisma or reimplement an authorization rule. See `docs/UI-CONVENTIONS.md`.
+
+## Presentation layer
+
+`src/styles/tokens.css` owns the colour, spacing, radius, shadow and font tokens. `accentCssVars()` switches the university accent per subtree and derives a dark-theme button/ink pair that clears WCAG AA. The refined components live under `src/components/ui`, `brand`, `app` and the feature folders; `docs/UI-REFINEMENT.md` maps the screens.
+
+Public share previews are a special boundary: `src/app/p/[id]/page.tsx` calls `getPublicPreview()` for a logged-out visitor. It returns one blurred line only when the post is `PUBLIC`, and generic copy for missing, removed, deleted or narrower-audience posts. The page renders no author, avatar, media, counts or university identity and is `noindex, nofollow`.
 
 ## Data tenancy
 
@@ -106,7 +112,7 @@ Rate limits use Upstash sliding windows in production, with separate policies pe
 - `src/app/manifest.ts` describes the installable app (`/pulse`, standalone, icons, shortcuts).
 - `src/app/sw.ts` is bundled by `@serwist/next` to `/sw.js` for production only.
   - Precaches build assets and `/offline`.
-  - Navigation requests use the cached page/app shell; document fallback is `/offline`.
+  - Navigation requests are `NetworkOnly`; the document fallback is `/offline`.
   - `/api/*` is `NetworkOnly`.
   - `skipWaiting: false`; `PwaProvider` watches for a waiting worker and offers a reload.
 - `PwaProvider` registers the worker, handles update prompts; `OfflineBanner` reflects connectivity; `InstallPrompt` appears only after a second visit and can be dismissed permanently.
@@ -119,10 +125,10 @@ Rate limits use Upstash sliding windows in production, with separate policies pe
 | Unit | Vitest | matric, email domains, colour contrast, password strength, CSV parsing, status machines, slugs |
 | Integration | Vitest + real Postgres | tenant isolation (reads/writes/upserts), DB constraints, audit immutability, verification decisions, invitations |
 | E2E | Playwright | signup, onboarding, audience matrix, polls, reports/removal, blocks/mutes, shared-device logout, offline outbox, student shell, admin/platform consoles |
-| Accessibility | axe via Playwright | public pages, student shell/settings, verification queue/detail, feed and composer |
+| Accessibility | axe via Playwright | public pages, student shell/settings, verification queue/detail, feed and composer; serious/critical must be zero |
 | Performance | Lighthouse CI + EXPLAIN | production build Performance ≥90, Accessibility ≥95; feed plan in `docs/PERFORMANCE.md` |
 
-CI runs quality + integration, e2e, and Lighthouse jobs. The integration database is migrated with `prisma migrate deploy`; seeds are deterministic and idempotent.
+CI runs quality + integration, e2e, and Lighthouse jobs. The integration database is migrated with `prisma migrate deploy`; seeds are deterministic and idempotent (including `AcademicNode.parentPath`). Current local counts are 54 unit, 11 integration and 20 Playwright tests. E2E uses Nova University fixtures and cleans up durable relationships; it still shares the development database, so a dedicated `E2E_DATABASE_URL` remains a follow-up.
 
 ## Failure behaviour
 

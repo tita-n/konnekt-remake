@@ -6,10 +6,10 @@ Local development database (`konnekt_dev`) after `npm run db:seed`:
 
 | Table | Rows |
 | --- | --- |
-| `User` (verified students) | 51 + staff/demo accounts |
-| `Post` | 1,000 |
-| `Comment` | 1,000+ |
-| `Report` | 20 pending reports for the moderation queue |
+| `User` (verified students) | 52 + staff accounts |
+| `Post` | 530 (440 posts, 45 questions, 45 polls) |
+| `Comment` | 200+ |
+| `Report` | seeded reports for the moderation queue |
 
 The dataset is intentionally small enough to fit in memory and large enough to exercise the ranking index. These are single-run local measurements, not a latency SLA.
 
@@ -38,29 +38,29 @@ Prisma generates the same equality predicates from `visibleAudienceFilter`. Labe
 
 ## EXPLAIN (ANALYZE, BUFFERS)
 
-Run against the seeded 1,000 posts and a 300L Computer Science viewer:
+Run against the seeded Nova posts and a 300L Software Engineering viewer:
 
 ```text
-Limit  (cost=0.28..15.91 rows=21 width=43) (actual time=0.038..0.080 rows=21.00 loops=1)
-  Buffers: shared hit=21
+Limit  (cost=0.28..75.64 rows=21 width=42) (actual time=0.046..0.109 rows=21.00 loops=1)
+  Buffers: shared hit=22
   ->  Index Scan Backward using "Post_universityId_status_rankAt_id_idx" on "Post"
-        (cost=0.28..338.27 rows=454 width=43) (actual time=0.036..0.074 rows=21.00 loops=1)
+        (cost=0.28..617.53 rows=172 width=42) (actual time=0.043..0.103 rows=21.00 loops=1)
         Index Cond: (("universityId" = '...'::text) AND (status = 'ACTIVE'::"PostStatus"))
         Filter: (("audienceKind" = 'PUBLIC'::"AudienceKind") OR
                  ("audiencePath" = '{...}'::text[]) OR ...)
         Index Searches: 1
-        Buffers: shared hit=21
+        Buffers: shared hit=22
 Planning:
-  Buffers: shared hit=250
-Planning Time: 0.937 ms
-Execution Time: 0.116 ms
+  Buffers: shared hit=252
+Planning Time: 0.935 ms
+Execution Time: 0.148 ms
 ```
 
 What matters:
 
 - `Index Scan Backward` on `Post_universityId_status_rankAt_id_idx` — no sort node.
 - The limit stops after 21 matching rows; the audience predicate is a filter on that scan.
-- **21 shared buffers** for the page; no sequential scan.
+- **22 shared buffers** for the page; no sequential scan.
 
 ## Indexes
 

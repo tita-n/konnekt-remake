@@ -12,7 +12,7 @@ Konnekt is a PWA-only social network for **verified students at Nigerian univers
 - **Moderation with an audit trail.** Report a post or comment once, review the queue as an admin/moderator, keep, warn, remove or suspend, and see an append-only activity log. Strikes expire after 90 days; three active strikes flag an account for human review, never an automatic ban.
 - **Blocks and mutes.** Blocks are symmetric and invisible in both directions: posts, comments and profiles behave as if they do not exist. Mutes hide an author from the muter’s feed only.
 - **Honest offline.** The service worker caches static assets and `/offline` only, never `/api/*` or signed-in HTML. Pulse keeps the last feed page in per-account IndexedDB. Offline posts enter an outbox and send once after reconnect; logout deletes Cache Storage, IndexedDB and account-scoped local storage.
-- **Seed data.** 51 verified students across colleges, faculties, departments and levels, and **1,000 posts** with comments, reactions, polls, reports and moderation history.
+- **Seed data.** 52 students across the Nova University academic tree, with 440 posts, 45 questions, 45 polls, comments, reactions, reports and moderation history.
 
 ### Phase 0 foundation
 
@@ -37,7 +37,7 @@ Requirements: Node 20.11+ (22 recommended), PostgreSQL 15+.
 npm install
 cp .env.example .env            # fill in DATABASE_URL and AUTH_SECRET at minimum
 npm run db:migrate              # applies Prisma migrations
-npm run db:seed                 # demo university, staff, 51 students, 1,000 posts
+npm run db:seed                 # Nova University, staff, 52 students and Pulse content
 npm run dev                     # http://localhost:3000
 ```
 
@@ -55,22 +55,22 @@ All demo accounts use the password `KonnektDemo123!`:
 | Account | Role |
 | --- | --- |
 | `admin@konnekt.ng` | Platform admin |
-| `admin@demo.edu.ng` | University admin (Demo University) |
-| `reviewer@demo.edu.ng` | Reviewer (verification queue only) |
-| `courserep@demo.edu.ng` | Official (can vouch) |
-| `student@demo.edu.ng` | Verified student, 300L Computer Science (`adaeze`) |
-| `levelmate@demo.edu.ng` | Same department and level (`adaeze_levelmate`) |
-| `otherlevel@demo.edu.ng` | Same department, 400L (`obi_400`) |
-| `otherdept@demo.edu.ng` | Same faculty, another department (`maths_300`) |
-| `othercollege@demo.edu.ng` | Another college (`law_300`) |
-| `pending@demo.edu.ng` | Account with a request in review |
-| `rejected@demo.edu.ng` | Declined verification |
-| `suspended@demo.edu.ng` | Suspended account |
-| `alumni@demo.edu.ng` | Alumni |
+| `admin@nova.edu.ng` | University admin (Nova University, `nova_admin`) |
+| `reviewer@nova.edu.ng` | Reviewer, verification queue only (`nova_reviewer`) |
+| `courserep@nova.edu.ng` | Official, can vouch (`swe_rep`) |
+| `student@nova.edu.ng` | Verified student, 300L Software Engineering (`chinedu_okafor`) |
+| `levelmate@nova.edu.ng` | Same department and level (`aisha_bello`) |
+| `otherlevel@nova.edu.ng` | Same department, 400L (`tunde_adeyemi`) |
+| `otherdept@nova.edu.ng` | Same faculty, another department (`ngozi_eze`) |
+| `othercollege@nova.edu.ng` | Another college (`ibrahim_musa`) |
+| `pending@nova.edu.ng` | Account with a request in review (`emeka_nwosu`) |
+| `rejected@nova.edu.ng` | Declined verification (`zainab_yusuf`) |
+| `suspended@nova.edu.ng` | Suspended account (`suspended_nova`) |
+| `alumni@nova.edu.ng` | Alumni (`alumni_nova`) |
 
-Demo University: slug `demo-university`, accent `#147A57`, matric pattern `^[A-Z]{2,4}/\d{4}/\d{3,4}$`, student domains `student.demo.edu.ng` and `demo.edu.ng`.
+Nova University: slug `nova-university`, accent `#4F46E5`, matric pattern `^[A-Z]{2,4}/\d{4}/\d{3,4}$`, student domains `student.nova.edu.ng` and `nova.edu.ng`.
 
-The seed refuses to run against production (`prisma/seed-guard.ts`). Seeding twice is safe: it resets only the demo tenant’s Phase 1 social data.
+The seed refuses to run against production (`prisma/seed-guard.ts`). Seeding twice is safe: it resets only the Nova tenant’s Phase 1 social data.
 
 ## Scripts
 
@@ -85,6 +85,7 @@ The seed refuses to run against production (`prisma/seed-guard.ts`). Seeding twi
 | `npm run test:e2e` | Playwright + axe (starts the dev server) |
 | `npm run db:migrate` / `db:deploy` / `db:seed` | Prisma workflows |
 | `npm run icons` | Regenerate PWA icons from the flat mark |
+| `npm run shots` | Capture the local design-review screenshots |
 | `npm run lighthouse` | Lighthouse CI against `LHCI_URL` or `http://localhost:3100` |
 
 Integration tests need a migrated test database:
@@ -99,9 +100,9 @@ npm run test:integration
 
 - `tsc --noEmit`: clean.
 - `npm run lint`: clean.
-- Unit: 46 passed. Integration: 11 passed (tenant isolation, DB constraints, append-only audit, verification decisions, invitations).
+- Unit: 54 passed. Integration: 11 passed (tenant isolation, DB constraints, append-only audit, verification decisions, invitations).
 - Playwright: **20 passed** — signup (student-email and ID-card), onboarding, audience isolation, polls, reports/moderation, blocks/mutes, shared-device logout, offline outbox, student shell, admin/platform consoles and axe scans.
-- Feed plan on the 1,000-post seed: `Index Scan Backward` on `Post_universityId_status_rankAt_id_idx`, **0.116 ms**, **21 shared buffers** for the first 21 rows. Full plan in [`docs/PERFORMANCE.md`](./docs/PERFORMANCE.md).
+- Feed plan on the seeded Pulse dataset: `Index Scan Backward` on `Post_universityId_status_rankAt_id_idx`, **0.148 ms**, **22 shared buffers** for the first 21 rows. Full plan in [`docs/PERFORMANCE.md`](./docs/PERFORMANCE.md).
 - Lighthouse 12 (Phase 0 production build, local): **Performance 97, Accessibility 100, Best Practices 100, SEO 90**. Lighthouse 12 removed the PWA category; installability is verified through DevTools installability checks instead.
 
 ## Deploy
@@ -114,6 +115,9 @@ The app targets Vercel + Neon. `.github/workflows/deploy.yml` is manual and expe
 - [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — request flow, tenancy, auth, social visibility, moderation, media and PWA.
 - [`docs/PERFORMANCE.md`](./docs/PERFORMANCE.md) — seed dataset, indexes, EXPLAIN output and pagination strategy.
 - [`docs/ENV.md`](./docs/ENV.md) — every environment variable, adapter and production requirement.
+- [`docs/UI-REFINEMENT.md`](./docs/UI-REFINEMENT.md) — the refined visual system and what changed.
+- [`docs/UI-CONVENTIONS.md`](./docs/UI-CONVENTIONS.md) — presentation, accessibility and test conventions.
+- [`docs/UI-SYNC-AUDIT.md`](./docs/UI-SYNC-AUDIT.md) — UI-sync audit, security reverts, invariant matrix and verification.
 - [`design/phase-1-components.html`](./design/phase-1-components.html) — Phase 1 component states using the Phase 0 tokens.
 
 ## Phase boundaries
