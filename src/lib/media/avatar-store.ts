@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { v2 as cloudinary } from "cloudinary";
-import { env, hasCloudinary } from "@/lib/env";
+import { env, hasCloudinary, isProduction } from "@/lib/env";
 
 /**
  * Avatars are public images (unlike ID cards). Cloudinary in deployed
@@ -11,6 +11,7 @@ import { env, hasCloudinary } from "@/lib/env";
  */
 export async function putPublicAvatar(buffer: Buffer): Promise<string> {
   if (!hasCloudinary) {
+    if (isProduction) throw new Error("Avatar storage is not configured");
     const dir = path.join(process.cwd(), "public", "uploads", "avatars");
     await mkdir(dir, { recursive: true });
     const name = `${randomUUID()}.webp`;

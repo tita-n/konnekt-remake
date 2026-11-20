@@ -1,7 +1,7 @@
 import "server-only";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
-import { env, hasRedis } from "@/lib/env";
+import { env, hasRedis, isProduction } from "@/lib/env";
 
 /**
  * Sliding-window rate limits. Redis in deployed environments; an in-process
@@ -113,6 +113,11 @@ export async function rateLimit(name: PolicyName, identifier: string): Promise<L
 async function limitInternal(name: PolicyName, policy: Policy, identifier: string): Promise<LimitResult> {
   const limiter = limiterFor(name, policy);
   if (!limiter) {
+    if (isProduction) {
+      // Should be unreachable: env validation requires Redis in production.
+      console.error("[security] rate limiter unavailable in production; denying request");
+      return { success: false, remaining: 0, resetSeconds: 60 };
+    }
     return memoryLimit(`${name}:${identifier}`, policy);
   }
   try {
@@ -124,7 +129,9 @@ async function limitInternal(name: PolicyName, policy: Policy, identifier: strin
     };
   } catch (error) {
     console.error("[security] rate limiter error", error instanceof Error ? error.message : "unknown");
-    return memoryLimit(`${name}:${identifier}`, policy);
+    return isProduction
+      ? { success: false, remaining: 0, resetSeconds: 60 }
+      : memoryLimit(`${name}:${identifier}`, policy);
   }
 }
 

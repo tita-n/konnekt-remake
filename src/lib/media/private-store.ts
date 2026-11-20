@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { v2 as cloudinary } from "cloudinary";
-import { env, hasCloudinary } from "@/lib/env";
+import { env, hasCloudinary, isProduction } from "@/lib/env";
 
 /**
  * Private image storage for ID cards.
@@ -29,6 +29,7 @@ function configureCloudinary() {
 
 export async function putPrivateImage(buffer: Buffer, folder: string): Promise<string> {
   if (!configureCloudinary()) {
+    if (isProduction) throw new Error("Private image storage is not configured");
     await mkdir(LOCAL_DIR, { recursive: true });
     const id = `local:${randomUUID()}`;
     await writeFile(path.join(LOCAL_DIR, `${id.slice(6)}.jpg`), buffer, { mode: 0o600 });
