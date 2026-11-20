@@ -127,8 +127,11 @@ test.describe("audiences and the Pulse product", () => {
     await switchUser(page, LEVELMATE);
     await page.goto(`/p/${id}`, { waitUntil: "networkidle" });
     await page.getByRole("button", { name: "Post options" }).click();
+    const blockRequest = page.waitForResponse(
+      (response) => response.url().endsWith("/api/relationships") && response.request().method() === "POST",
+    );
     await page.getByRole("menuitem", { name: /Block @/ }).click();
-    await page.waitForTimeout(1_500);
+    expect((await blockRequest).ok()).toBe(true);
     await page.goto(`/p/${id}`, { waitUntil: "networkidle" });
     await expect(page.getByText(/isn't available/i).first()).toBeVisible();
     await expect(page.getByText(marker)).toHaveCount(0);
@@ -136,6 +139,16 @@ test.describe("audiences and the Pulse product", () => {
     await switchUser(page, STUDENT);
     await page.goto("/profile/aisha_bello", { waitUntil: "networkidle" });
     await expect(page.getByRole("heading", { name: /could not be found/i })).toBeVisible();
+
+    // Blocks are durable; remove it so later specs and reruns start clean.
+    await switchUser(page, LEVELMATE);
+    const csrf = (await page.context().cookies()).find((cookie) => cookie.name === "konnekt_csrf")?.value;
+    const unblock = await page.request.post("/api/relationships", {
+      data: { action: "block", username: "chinedu_okafor" },
+      headers: { "x-konnekt-csrf": csrf ?? "" },
+    });
+    expect(unblock.ok()).toBe(true);
+    await switchUser(page, STUDENT);
     await deletePost(page, id);
   });
 });

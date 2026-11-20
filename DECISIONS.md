@@ -98,6 +98,45 @@ The service worker is NetworkOnly for `/api/*` and navigations. Offline Pulse re
 
 `rankAt` plus `id` gives a stable total order and a `(rankAt, id)` keyset cursor. The feed index is `(universityId, status, rankAt, id)`, so the first page is an index scan and later pages continue from the same key. Audience filtering is applied to the index scan rather than forcing a sort. The measured plan is recorded in `docs/PERFORMANCE.md`.
 
+## UI sync audit
+
+### Presentation stays separate from platform security
+
+The UI sync was accepted as a visual and seed change, not as a development-mode
+shortcut. A mock Prisma client/failover, relaxed production env validation,
+fail-open rate limiting, optional Turnstile, production local-disk media/email
+fallbacks and a weakened CSP were reverted. Development conveniences belong
+behind explicit development branches, never in the default client or the
+production boot path.
+
+### The public preview is intentionally minimal
+
+A logged-out `/p/[id]` renders a blurred first line only for a `PUBLIC` post.
+Narrower audiences render generic copy. No author, avatar, count, media or
+university name is rendered, and the response stays `noindex, nofollow`. A
+share preview must not become a side channel for content or identity.
+
+### Nova University replaces the Demo tenant
+
+The seed now models one fictional Nigerian campus, Nova University, with 52
+students, 440 posts, 45 questions and 45 polls. The production seed guard is
+unchanged. Academic nodes persist `parentPath`; this was missing in the UI
+sync and made a second seed collide on the new Law college/department names.
+
+### The design showcase is not a product surface
+
+The `/design` gallery is retained as a presentation artifact. Its dynamic
+preview route calls `notFound()` in production and is not linked from the app.
+The unrequested `/admin/audit` screen was removed rather than becoming a new
+feature.
+
+### Accessibility is part of the definition of done
+
+Serious/critical axe violations block release. The sync's selected-chip and
+answered-badge contrast failures were fixed at the token/component level, not
+suppressed in the test. The report radio keeps a real native input, and poll
+auxiliary labels avoid colliding with the option field names.
+
 ## Limitations and open items
 
 - **No staging deployment.** The environment had no Vercel/Neon/Resend/Cloudinary/Upstash/Sentry credentials. The deploy workflow is written and manual; apply migrations and run `deploy.yml` once secrets exist. Lighthouse and installability were verified against a local production build.
@@ -108,4 +147,6 @@ The service worker is NetworkOnly for `/api/*` and navigations. Offline Pulse re
 - **Sentry is initialised by configuration only.** Without a DSN nothing is sent; production env validation does not require it.
 - **No staging deployment for Phase 1 either.** No Vercel/Neon/Resend/Cloudinary/Upstash/Turnstile/Sentry credentials were available. The production build, seed, full unit/integration/Playwright suites and local EXPLAIN plans were verified; deployment awaits secrets.
 - **Post images use the same Cloudinary adapter as avatars.** Authenticated ID assets remain private; post media is public by design. A dedicated media pipeline for video or large galleries is out of Phase 1.
-- **Feed performance is measured on the local 1,000-post dataset.** The plan, not an absolute latency promise, is the portable result; production p95 should be rechecked after real traffic and Neon warm-up.
+- **Feed performance is measured on the local seeded dataset.** The plan, not an absolute latency promise, is the portable result; production p95 should be rechecked after real traffic and Neon warm-up.
+- **E2E still shares the development database.** Timestamped markers and explicit cleanup (including durable blocks) keep runs repeatable, but a separate seeded `E2E_DATABASE_URL` remains the stronger CI setup.
+- **Dependency advisories are pre-existing.** `npm audit --omit=dev` reports 26 advisories (1 critical, 7 high, 18 moderate) in the baseline lockfile, including Sentry and transitive Prisma/sharp packages. They require a separate reviewed upgrade.

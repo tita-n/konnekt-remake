@@ -100,16 +100,6 @@ function PublicPreview({
             <p className="select-none text-[1.0625rem] leading-relaxed text-fg blur-[4px]" aria-hidden="true">
               {preview.firstLine}
             </p>
-            <div className="mt-3 overflow-hidden rounded-button border border-border bg-surface-2" aria-hidden="true">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/seed/campus-facade.svg"
-                alt=""
-                width={640}
-                height={240}
-                className="h-32 w-full scale-105 object-cover blur-[5px]"
-              />
-            </div>
           </>
         ) : (
           <div className="py-5 text-center">
@@ -126,7 +116,7 @@ function PublicPreview({
         <UniversityShieldMark className="size-9 shrink-0" />
         <span className="h-9 w-px shrink-0 bg-accent/25" aria-hidden="true" />
         <p className="text-small font-medium leading-snug text-accent-soft-fg">
-          This post is shared with verified students of Nova University.
+          This post is shared with verified students on Konnekt.
         </p>
       </div>
 

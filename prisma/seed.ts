@@ -175,20 +175,24 @@ async function main() {
       const existing = await db.academicNode.findFirst({
         where: { universityId: university.id, parentId, slug },
       });
-      const record =
-        existing ??
-        (await db.academicNode.create({
-          data: {
-            universityId: university.id,
-            parentId,
-            type: node.type,
-            name: node.name,
-            slug,
-            path: parentPath,
-            sortOrder: order,
-            levels: node.levels ?? [],
-          },
-        }));
+      const record = existing
+        ? await db.academicNode.update({
+            where: { id: existing.id },
+            data: { path: parentPath, parentPath, sortOrder: order, levels: node.levels ?? [] },
+          })
+        : await db.academicNode.create({
+            data: {
+              universityId: university.id,
+              parentId,
+              type: node.type,
+              name: node.name,
+              slug,
+              path: parentPath,
+              parentPath,
+              sortOrder: order,
+              levels: node.levels ?? [],
+            },
+          });
       nodeIds.set(node.key, record.id);
       order += 1;
       if (node.children?.length) {

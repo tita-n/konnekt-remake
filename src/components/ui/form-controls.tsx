@@ -337,10 +337,10 @@ export function Chip({ selected = false, children, className, icon, ...props }: 
       aria-pressed={selected}
       className={cn(
         "inline-flex min-h-9 items-center gap-1.5 rounded-chip border px-3 text-small font-medium transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
+        className,
         selected
           ? "border-accent bg-accent text-accent-fg"
           : "border-border bg-surface text-fg hover:border-border-strong hover:bg-surface-2",
-        className,
       )}
       {...props}
     >

@@ -14,7 +14,6 @@ export interface TurnstileResult {
  */
 export async function verifyTurnstile(token: string | null | undefined, remoteIp?: string | null): Promise<TurnstileResult> {
   if (env.TURNSTILE_BYPASS && !isProduction) return { success: true, errorCodes: [] };
-  if (!env.TURNSTILE_SECRET_KEY && !env.NEXT_PUBLIC_TURNSTILE_SITE_KEY) return { success: true, errorCodes: [] };
   if (!token) return { success: false, errorCodes: ["missing-input-response"] };
   if (!env.TURNSTILE_SECRET_KEY) return { success: false, errorCodes: ["missing-secret"] };
 

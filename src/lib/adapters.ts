@@ -63,13 +63,12 @@ export function adapterStatus(env: Env = process.env): AdapterStatus[] {
 export function assertProductionServices(env: Env = process.env): void {
   if (env.NODE_ENV !== "production") return;
   if (env.NEXT_PHASE === "phase-production-build") return;
-  if (env.ALLOW_LOCAL_ADAPTERS === "1") return;
-  if (env.TURNSTILE_BYPASS === "1") {
-    throw new Error("TURNSTILE_BYPASS cannot be enabled in production.");
-  }
   const missing = adapterStatus(env).filter((adapter) => adapter.requiredInProduction && !adapter.configured);
   if (missing.length > 0) {
     const names = missing.map((adapter) => `${adapter.service} (${adapter.provider})`).join(", ");
-    throw new Error(`Missing required production services: ${names}.`);
+    throw new Error(`Refusing to start: required production services are not configured: ${names}.`);
+  }
+  if (env.TURNSTILE_BYPASS === "1") {
+    throw new Error("Refusing to start: TURNSTILE_BYPASS must be off in production.");
   }
 }
