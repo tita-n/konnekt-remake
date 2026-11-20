@@ -454,7 +454,7 @@ export function Composer({
                         ) : null}
                         <button
                           type="button"
-                          aria-label={pollOptions.length > 2 ? `Remove option ${index + 1}` : `Clear option ${index + 1}`}
+                          aria-label={pollOptions.length > 2 ? `Remove answer ${index + 1}` : `Clear answer ${index + 1}`}
                           onClick={() => {
                             if (pollOptions.length > 2) {
                               setPollOptions((current) => current.filter((_, position) => position !== index));

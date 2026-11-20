@@ -1037,7 +1037,7 @@ export function ReportSheet({
                 return (
                   <label
                     key={option.value}
-                    className="flex min-h-11 cursor-pointer items-center justify-between gap-3 px-1 py-2 text-[0.9375rem] text-fg transition hover:bg-surface-2/60"
+                    className="relative flex min-h-11 cursor-pointer items-center justify-between gap-3 px-1 py-2 text-[0.9375rem] text-fg transition hover:bg-surface-2/60"
                   >
                     <span>{option.label}</span>
                     <input
@@ -1046,7 +1046,7 @@ export function ReportSheet({
                       value={option.value}
                       checked={selected}
                       onChange={() => setReason(option.value)}
-                      className="sr-only"
+                      className="absolute inset-0 size-full cursor-pointer appearance-none opacity-0"
                     />
                     <span
                       aria-hidden="true"

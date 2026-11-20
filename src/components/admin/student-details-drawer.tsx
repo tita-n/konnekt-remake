@@ -310,11 +310,6 @@ export function StudentDetailsDrawer({
             Reinstate
           </button>
         </div>
-        <div className="mt-3 text-center">
-          <Link href="/admin/audit" className="inline-flex min-h-10 items-center text-small font-semibold text-accent-ink underline underline-offset-4 hover:opacity-80">
-            View audit log
-          </Link>
-        </div>
       </div>
 
       {/* Suspend dialog */}

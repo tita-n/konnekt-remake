@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Flag, ShieldAlert, TriangleAlert } from "lucide-react";
+import { ArrowLeft, ShieldAlert, TriangleAlert } from "lucide-react";
 import { requireUniversityRole } from "@/lib/auth/guards";
 import { getStudentModerationHistory } from "@/lib/services/moderation";
 import { ReinstateForm } from "@/components/admin/reinstate-form";
@@ -114,9 +114,6 @@ export default async function StudentModerationPage({ params }: { params: Promis
             {canReinstate && history.user.status === "SUSPENDED" ? (
               <div className="mt-3"><ReinstateForm studentId={history.user.id} /></div>
             ) : null}
-            <Link href="/admin/audit" className="mt-3 inline-flex min-h-10 items-center gap-1 text-small font-semibold text-accent-ink hover:underline">
-              <Flag aria-hidden="true" className="size-3.5" /> View audit log
-            </Link>
           </section>
           <p className="text-tiny leading-relaxed text-fg-subtle">
             Reporters stay anonymous. Authors see the removal reason on the post and can link to the community rules.
