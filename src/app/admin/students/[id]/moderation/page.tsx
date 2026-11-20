@@ -24,27 +24,36 @@ export default async function StudentModerationPage({ params }: { params: Promis
         <ArrowLeft aria-hidden="true" className="size-4" /> Reports
       </Link>
 
-      <header className="flex flex-wrap items-start gap-4 rounded-[18px] border border-border bg-surface p-5 shadow-card">
-        <AdminAvatar name={history.user.fullName} src={history.user.photoUrl} size={64} />
+      <header className="flex flex-wrap items-start gap-4 rounded-card border border-border bg-surface p-5">
+        <AdminAvatar name={history.user.fullName} seed={history.user.username} src={history.user.photoUrl} size={64} />
         <div className="min-w-0 flex-1">
           <h1 className="font-display text-h1 text-fg">{history.user.fullName}</h1>
           <p className="text-small text-fg-muted">
             @{history.user.username} · {history.user.departmentName ?? "Department hidden"}{" "}
             {history.user.level ? `· ${history.user.level} Level` : ""}
           </p>
-          <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[#dcfce7] px-2.5 py-0.5 text-tiny font-semibold text-[#15803d]">
-            <span className="size-1.5 rounded-full bg-[#16a34a]" aria-hidden="true" />
+          <span
+            className={
+              history.user.status === "SUSPENDED"
+                ? "mt-2 inline-flex items-center gap-1.5 rounded-chip bg-danger-soft px-2.5 py-0.5 text-tiny font-semibold text-danger"
+                : "mt-2 inline-flex items-center gap-1.5 rounded-chip bg-success-soft px-2.5 py-0.5 text-tiny font-semibold text-success"
+            }
+          >
+            <span
+              className={`size-1.5 rounded-full ${history.user.status === "SUSPENDED" ? "bg-danger" : "bg-success-solid"}`}
+              aria-hidden="true"
+            />
             {history.user.status === "VERIFIED" ? "Active" : history.user.status.toLowerCase()}
           </span>
         </div>
-        <div className="grid grid-cols-2 divide-x divide-accent/15 rounded-[14px] border border-accent/10 bg-accent-soft/75 px-4 py-3">
+        <div className="grid grid-cols-2 divide-x divide-accent/15 rounded-[14px] border border-accent/15 bg-accent-soft px-4 py-3">
           <div className="pr-4 text-center">
             <p className="text-tiny font-medium text-fg-muted">Reports against</p>
-            <p className="mt-0.5 font-display text-h2 tabular-nums text-accent">{history.reportsAgainst}</p>
+            <p className="mt-0.5 font-display text-h2 tabular-nums text-accent-ink">{history.reportsAgainst}</p>
           </div>
           <div className="pl-4 text-center">
             <p className="text-tiny font-medium text-fg-muted">Strikes</p>
-            <p className="mt-0.5 font-display text-h2 tabular-nums text-accent">{history.activeStrikes} of 3</p>
+            <p className="mt-0.5 font-display text-h2 tabular-nums text-accent-ink">{history.activeStrikes} of 3</p>
           </div>
         </div>
       </header>
@@ -105,7 +114,7 @@ export default async function StudentModerationPage({ params }: { params: Promis
             {canReinstate && history.user.status === "SUSPENDED" ? (
               <div className="mt-3"><ReinstateForm studentId={history.user.id} /></div>
             ) : null}
-            <Link href="/admin/audit" className="mt-3 inline-flex items-center gap-1 text-small font-semibold text-accent hover:underline">
+            <Link href="/admin/audit" className="mt-3 inline-flex min-h-10 items-center gap-1 text-small font-semibold text-accent-ink hover:underline">
               <Flag aria-hidden="true" className="size-3.5" /> View audit log
             </Link>
           </section>

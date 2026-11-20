@@ -30,13 +30,13 @@ import { cn, formatDate } from "@/lib/utils";
 function statusPillStyle(status: string): { label: string; badge: string; dot: string } {
   switch (status) {
     case "VERIFIED":
-      return { label: "Active", badge: "bg-[#dcfce7] text-[#15803d]", dot: "bg-[#16a34a]" };
+      return { label: "Active", badge: "bg-success-soft text-success", dot: "bg-success-solid" };
     case "SUSPENDED":
-      return { label: "Suspended", badge: "bg-[#fee2e2] text-[#dc2626]", dot: "bg-[#dc2626]" };
+      return { label: "Suspended", badge: "bg-danger-soft text-danger", dot: "bg-danger" };
     case "PENDING":
-      return { label: "Pending", badge: "bg-[#fef3c7] text-[#b45309]", dot: "bg-[#d97706]" };
+      return { label: "Pending", badge: "bg-highlight-soft text-highlight-fg", dot: "bg-highlight" };
     case "ALUMNI":
-      return { label: "Alumni", badge: "bg-accent-soft text-accent", dot: "bg-accent" };
+      return { label: "Alumni", badge: "bg-accent-soft text-accent-ink", dot: "bg-accent" };
     default:
       return { label: status.charAt(0) + status.slice(1).toLowerCase(), badge: "bg-surface-2 text-fg-muted", dot: "bg-fg-subtle" };
   }
@@ -44,9 +44,9 @@ function statusPillStyle(status: string): { label: string; badge: string; dot: s
 
 function historyReasonPill(reasonLabel: string): string {
   const lower = reasonLabel.toLowerCase();
-  if (lower.includes("harass") || lower.includes("violen")) return "bg-[#fee2e2] text-[#dc2626]";
-  if (lower.includes("hate") || lower.includes("abuse")) return "bg-[#fef3c7] text-[#b45309]";
-  return "bg-accent-soft text-accent";
+  if (lower.includes("harass") || lower.includes("violen")) return "bg-danger-soft text-danger";
+  if (lower.includes("hate") || lower.includes("abuse")) return "bg-highlight-soft text-highlight-fg";
+  return "bg-accent-soft text-accent-ink";
 }
 
 export function StudentDetailsDrawer({
@@ -118,17 +118,17 @@ export function StudentDetailsDrawer({
   return (
     <aside
       aria-label="Student details"
-      className="flex h-full w-full flex-col border-l border-border bg-surface shadow-modal lg:w-[420px] xl:w-[440px]"
+      className="flex h-full w-full flex-col border-l border-border bg-surface shadow-modal lg:w-[500px] xl:w-[520px]"
     >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border px-5 py-4">
-        <h2 className="font-display text-[1.1875rem] font-bold tracking-tight text-fg">Student details</h2>
+        <h2 className="font-display text-h2 font-bold tracking-tight text-fg">Student details</h2>
         {onClose ? (
           <button
             type="button"
             onClick={onClose}
             aria-label="Close student details"
-            className="flex size-8 items-center justify-center rounded-full text-fg-muted hover:bg-surface-2 hover:text-fg"
+            className="flex size-10 items-center justify-center rounded-full text-fg-muted hover:bg-surface-2 hover:text-fg"
           >
             <X aria-hidden="true" className="size-5" />
           </button>
@@ -136,7 +136,7 @@ export function StudentDetailsDrawer({
           <Link
             href={closeHref}
             aria-label="Close student details"
-            className="flex size-8 items-center justify-center rounded-full text-fg-muted hover:bg-surface-2 hover:text-fg"
+            className="flex size-10 items-center justify-center rounded-full text-fg-muted hover:bg-surface-2 hover:text-fg"
           >
             <X aria-hidden="true" className="size-5" />
           </Link>
@@ -147,7 +147,7 @@ export function StudentDetailsDrawer({
       <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5">
         {/* Identity */}
         <div className="flex items-start gap-4">
-          <Avatar name={history.user.fullName} src={history.user.photoUrl} size="xl" />
+          <Avatar name={history.user.fullName} seed={history.user.username} src={history.user.photoUrl} size="xl" />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
               <h3 className="truncate font-display text-[1.125rem] font-bold text-fg">{history.user.fullName}</h3>
@@ -198,7 +198,7 @@ export function StudentDetailsDrawer({
                 {statusMeta.label}
               </span>
               {!previewOnly ? (
-                <Link href={`/admin/students/${history.user.id}`} className="text-tiny font-semibold text-accent hover:underline">
+                <Link href={`/admin/students/${history.user.id}`} className="text-tiny font-semibold text-accent-ink hover:underline">
                   Full record
                 </Link>
               ) : null}
@@ -207,12 +207,12 @@ export function StudentDetailsDrawer({
         </div>
 
         {/* Lavender 2-column metrics banner */}
-        <div className="grid grid-cols-2 divide-x divide-accent/15 rounded-[14px] border border-accent/10 bg-accent-soft/75 px-3 py-3">
+        <div className="grid grid-cols-2 divide-x divide-accent/15 rounded-[14px] border border-accent/15 bg-accent-soft px-3 py-3">
           <div className="flex items-start gap-2.5 pr-3">
-            <Flag aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-accent" />
+            <Flag aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-accent-ink" />
             <div>
               <p className="text-tiny font-medium text-fg-muted">Reports against:</p>
-              <p className="mt-0.5 font-display text-[1.125rem] font-bold tabular-nums text-accent">
+              <p className="mt-0.5 font-display text-[1.125rem] font-bold tabular-nums text-accent-ink">
                 {history.reportsAgainst}
               </p>
             </div>
@@ -221,7 +221,7 @@ export function StudentDetailsDrawer({
             <AlertTriangle aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-fg-muted" />
             <div>
               <p className="text-tiny font-medium text-fg-muted">Strikes:</p>
-              <p className="mt-0.5 font-display text-[1.125rem] font-bold tabular-nums text-accent">
+              <p className="mt-0.5 font-display text-[1.125rem] font-bold tabular-nums text-accent-ink">
                 {history.activeStrikes} of 3
               </p>
             </div>
@@ -295,7 +295,7 @@ export function StudentDetailsDrawer({
               setReason("");
               setSuspendOpen(true);
             }}
-            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full bg-[#dc2626] px-4 text-small font-semibold text-white transition hover:bg-[#b91c1c] disabled:cursor-not-allowed disabled:opacity-45"
+            className="inline-flex h-11 items-center justify-center gap-1.5 rounded-button bg-danger-btn px-4 text-small font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45"
           >
             <Ban aria-hidden="true" className="size-4" />
             Suspend
@@ -304,14 +304,14 @@ export function StudentDetailsDrawer({
             type="button"
             disabled={!canReinstate}
             onClick={() => setReinstateOpen(true)}
-            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full border border-border bg-surface px-4 text-small font-semibold text-accent transition hover:bg-accent-soft/45 disabled:cursor-not-allowed disabled:opacity-45"
+            className="inline-flex h-11 items-center justify-center gap-1.5 rounded-button border border-border bg-surface px-4 text-small font-semibold text-accent-ink transition hover:bg-accent-soft/45 disabled:cursor-not-allowed disabled:opacity-45"
           >
             <Check aria-hidden="true" className="size-4" />
             Reinstate
           </button>
         </div>
         <div className="mt-3 text-center">
-          <Link href="/admin/audit" className="text-small font-semibold text-accent underline underline-offset-4 hover:text-accent/80">
+          <Link href="/admin/audit" className="inline-flex min-h-10 items-center text-small font-semibold text-accent-ink underline underline-offset-4 hover:opacity-80">
             View audit log
           </Link>
         </div>

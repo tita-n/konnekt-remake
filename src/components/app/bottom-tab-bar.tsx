@@ -172,7 +172,7 @@ export function DesktopLeftRail({ unreadInbox = 0 }: { unreadInbox?: number }) {
 export function DesktopTrendingRail({
   tags,
 }: {
-  tags: Array<{ tag: string; count: number }>;
+  tags: Array<{ tag: string; postCount?: number; count?: number }>;
 }) {
   return (
     <aside className="hidden lg:block" aria-label="Campus highlights">
@@ -184,17 +184,20 @@ export function DesktopTrendingRail({
           </div>
           {tags.length > 0 ? (
             <ul className="mt-3 space-y-1.5">
-              {tags.slice(0, 8).map((item) => (
-                <li key={item.tag}>
-                  <Link
-                    href={`/hashtag/${encodeURIComponent(item.tag)}`}
-                    className="flex min-h-10 items-center justify-between gap-2 rounded-button bg-surface px-3 py-2 text-small transition hover:border-border-strong"
-                  >
-                    <span className="truncate font-semibold text-accent-ink">#{item.tag}</span>
-                    <span className="shrink-0 text-tiny tabular-nums text-fg-muted">{item.count}</span>
-                  </Link>
-                </li>
-              ))}
+              {tags.slice(0, 8).map((item) => {
+                const n = item.postCount ?? item.count ?? 0;
+                return (
+                  <li key={item.tag}>
+                    <Link
+                      href={`/hashtag/${encodeURIComponent(item.tag)}`}
+                      className="flex min-h-10 items-center justify-between gap-2 rounded-button bg-surface px-3 py-2 text-small transition hover:border-border-strong"
+                    >
+                      <span className="truncate font-semibold text-accent-ink">#{item.tag}</span>
+                      {n > 0 ? <span className="shrink-0 text-tiny tabular-nums text-fg-muted">{n}</span> : null}
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           ) : (
             <p className="mt-2.5 text-small text-fg-muted">Tags from campus discussions appear here.</p>

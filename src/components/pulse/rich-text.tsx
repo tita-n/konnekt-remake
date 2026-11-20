@@ -22,7 +22,7 @@ export function RichText({ body, className }: { body: string; className?: string
         <Link
           key={key++}
           href={`/hashtag/${raw.slice(1).toLowerCase()}`}
-          className="font-medium text-accent underline-offset-2 hover:underline"
+          className="font-medium text-accent-ink underline-offset-2 hover:underline"
         >
           {raw}
         </Link>,
@@ -35,7 +35,7 @@ export function RichText({ body, className }: { body: string; className?: string
         <Link
           key={key++}
           href={`/profile/${handle.slice(1).toLowerCase()}`}
-          className="font-medium text-accent underline-offset-2 hover:underline"
+          className="font-medium text-accent-ink underline-offset-2 hover:underline"
         >
           {handle}
         </Link>,

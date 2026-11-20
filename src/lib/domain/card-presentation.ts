@@ -74,11 +74,11 @@ export function hashAvatarSeed(seed: string): number {
 
 export function deriveClayAvatarTraits(seed: string): ClayAvatarTraits {
   const h = hashAvatarSeed(seed);
-  const skin = SKIN_PALETTES[h % SKIN_PALETTES.length];
-  const bgTint = BG_TINTS[(h >>> 3) % BG_TINTS.length];
-  const shirt = SHIRT_PALETTES[(h >>> 6) % SHIRT_PALETTES.length];
-  const hairStyle = HAIR_STYLES[(h >>> 9) % HAIR_STYLES.length];
-  const accessory = ACCESSORIES[(h >>> 13) % ACCESSORIES.length];
+  const skin = SKIN_PALETTES[h % SKIN_PALETTES.length]!;
+  const bgTint = BG_TINTS[(h >>> 3) % BG_TINTS.length]!;
+  const shirt = SHIRT_PALETTES[(h >>> 6) % SHIRT_PALETTES.length]!;
+  const hairStyle = HAIR_STYLES[(h >>> 9) % HAIR_STYLES.length]!;
+  const accessory = ACCESSORIES[(h >>> 13) % ACCESSORIES.length]!;
   const smile: ClayAvatarTraits["smile"] = ((h >>> 17) & 1) === 0 ? "warm" : "grin";
   const hairColor = hairStyle === "hijab" || hairStyle === "headwrap" ? shirt.shirtAccent : "#1D1B22";
 

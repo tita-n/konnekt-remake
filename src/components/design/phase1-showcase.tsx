@@ -5,20 +5,16 @@ import { useState } from "react";
 import {
   ArrowLeft,
   CloudOff,
-  GraduationCap,
-  Hash,
+  Flag,
   Home,
   Layers,
-  Lock,
-  Search,
   Settings,
-  ShieldCheck,
   TrendingUp,
   Users,
-  Flag,
   ClipboardCheck,
-  BookOpen,
 } from "lucide-react";
+import { LogoMark, UniversityShieldMark } from "@/components/brand/logo";
+import { ClayIllustration } from "@/components/ui/clay-illustrations";
 import type { CommentView, DraftView, PostView } from "@/lib/posts/types";
 import type { ReportDetail, ReportQueueItem, RestrictedStudentView, StudentModerationHistory } from "@/lib/services/moderation";
 import type { ProfileView as ProfileData } from "@/lib/services/profile";
@@ -78,7 +74,7 @@ const DEMO_POSTS: PostView[] = [
     media: [
       {
         id: "m-1",
-        url: "/assets/illustrations/nova-campus-banner.jpg",
+        url: "/seed/campus-quad.svg",
         width: 1200,
         height: 675,
         alt: "Students celebrating outside Nova University building",
@@ -327,7 +323,7 @@ const DEMO_DRAFTS: DraftView[] = [
       media: [
         {
           publicId: "demo",
-          url: "/assets/illustrations/nova-campus-banner.jpg",
+          url: "/seed/campus-quad.svg",
           width: 800,
           height: 500,
           alt: "Campus banner",
@@ -452,7 +448,7 @@ const DEMO_REPORT_DETAIL: ReportDetail = {
     activeStrikes: 1,
     media: [
       {
-        url: "/assets/illustrations/nova-campus-banner.jpg",
+        url: "/seed/campus-quad.svg",
         width: 1200,
         height: 675,
       },
@@ -563,16 +559,16 @@ export function Phase1Showcase() {
             <div className="space-y-3 p-3">
               <PostCard post={DEMO_POSTS[0]!} />
               <PostCard post={DEMO_POSTS[1]!} />
-              <section className="rounded-[18px] border border-accent/15 bg-accent-soft/65 px-3.5 py-3">
-                <p className="flex items-center gap-1.5 text-small font-bold text-fg">
-                  <TrendingUp aria-hidden="true" className="size-4 text-accent" />
+              <section className="rounded-card bg-accent-soft px-3.5 py-3">
+                <p className="flex items-center gap-1.5 text-small font-semibold text-fg">
+                  <TrendingUp aria-hidden="true" className="size-4 text-accent-ink" />
                   Trending on campus
                 </p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {["#ExamTimetable", "#TechSummit", "#HostelWater", "#FootballFinals"].map((tag) => (
                     <span
                       key={tag}
-                      className="rounded-full border border-accent/20 bg-surface px-3 py-1 text-tiny font-semibold text-accent"
+                      className="rounded-chip border border-border bg-surface px-3 py-1 text-tiny font-semibold text-accent-ink"
                     >
                       {tag}
                     </span>
@@ -672,14 +668,13 @@ export function Phase1Showcase() {
               />
             </div>
 
-            <div className="flex flex-col items-center rounded-[24px] border border-border bg-surface px-6 py-10 text-center shadow-card">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/assets/illustrations/unavailable-envelope.jpg" alt="" className="h-36 w-auto rounded-2xl object-contain" />
+            <div className="flex flex-col items-center rounded-card border border-border bg-surface px-6 py-10 text-center">
+              <ClayIllustration kind="unavailableEnvelope" />
               <h3 className="mt-4 font-display text-h2 text-fg">This post isn&apos;t available</h3>
               <p className="mt-1.5 max-w-xs text-small text-fg-muted">
                 It may have been deleted, or it isn&apos;t shared with you.
               </p>
-              <span className="mt-5 inline-flex h-11 items-center rounded-full bg-accent px-6 text-small font-semibold text-accent-fg">
+              <span className="mt-5 inline-flex h-11 items-center rounded-button bg-accent px-6 text-small font-semibold text-accent-fg">
                 Back to Pulse
               </span>
             </div>
@@ -694,30 +689,30 @@ export function Phase1Showcase() {
               <h3 className="mb-3 font-display text-h3 text-fg">Pulse Loading Skeletons</h3>
               <div className="space-y-3">
                 {[0, 1].map((idx) => (
-                  <div key={idx} className="rounded-[18px] border border-border bg-surface p-4">
+                  <div key={idx} className="rounded-card border border-border bg-surface p-4">
                     <Skeleton className="h-4 w-1/2" />
                     <SkeletonText lines={3} className="mt-3" />
                   </div>
                 ))}
               </div>
             </Card>
-            <div className="rounded-[18px] border border-border bg-surface">
+            <div className="rounded-card border border-border bg-surface">
               <EmptyState
                 illustration="pulse"
                 title="Nothing here yet"
                 description="Be the first to post to your level."
                 action={
-                  <Link href="/compose" className="inline-flex h-11 items-center rounded-full bg-accent px-6 text-small font-semibold text-accent-fg">
+                  <Link href="/compose" className="inline-flex h-11 items-center rounded-button bg-accent px-6 text-small font-semibold text-accent-fg">
                     + Create a post
                   </Link>
                 }
               />
             </div>
-            <div className="rounded-[18px] border border-border bg-surface">
+            <div className="rounded-card border border-border bg-surface">
               <ErrorState description="Check your connection and try again." onRetry={() => undefined} />
             </div>
-            <div className="flex items-center gap-2.5 rounded-[12px] border border-[#f5d084] bg-[#fef3c7] px-3.5 py-2.5 text-small font-medium text-[#854d0e]">
-              <CloudOff aria-hidden="true" className="size-4 shrink-0 text-[#a16207]" />
+            <div className="flex min-h-9 items-center gap-2.5 rounded-[12px] border border-warning/30 bg-highlight-soft px-3.5 py-2 text-small font-medium text-highlight-fg">
+              <CloudOff aria-hidden="true" className="size-4 shrink-0" />
               You&apos;re offline. Showing saved content.
             </div>
           </div>
@@ -761,7 +756,7 @@ export function Phase1Showcase() {
               />
             </div>
 
-            <div className="overflow-hidden rounded-[24px] border border-border bg-surface shadow-card">
+            <div className="overflow-hidden rounded-card border border-border bg-surface">
               <header className="flex h-12 items-center justify-between border-b border-border px-3">
                 <ArrowLeft aria-hidden="true" className="size-5 text-fg" />
                 <p className="font-display text-[1rem] font-bold text-fg">#TechSummit</p>
@@ -769,8 +764,8 @@ export function Phase1Showcase() {
               </header>
               <div className="grid sm:grid-cols-[1.15fr_1fr]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/assets/illustrations/hashtag-banner.jpg" alt="" className="h-36 w-full object-cover" />
-                <div className="flex flex-col justify-center bg-accent-soft/75 p-4">
+                <img src="/seed/tech-summit.svg" alt="" className="h-36 w-full object-cover" />
+                <div className="flex flex-col justify-center bg-accent-soft p-4">
                   <p className="font-display text-h2 text-fg">#TechSummit</p>
                   <p className="mt-0.5 text-small text-fg-muted">42 posts at Nova University</p>
                 </div>
@@ -783,13 +778,11 @@ export function Phase1Showcase() {
       {activeTab === "admin" ? (
         <div className="space-y-6">
           {/* Split Admin Reports Preview */}
-          <div className="grid gap-5 rounded-[24px] border border-border bg-bg p-5 shadow-card xl:grid-cols-[220px_300px_1fr]">
-            <aside className="hidden flex-col justify-between rounded-[18px] border border-border bg-surface p-3 xl:flex">
+          <div className="grid gap-5 rounded-card border border-border bg-bg p-5 xl:grid-cols-[220px_300px_1fr]">
+            <aside className="hidden flex-col justify-between rounded-card border border-border bg-surface p-3 xl:flex">
               <div className="space-y-1">
                 <div className="mb-4 flex items-center gap-2 px-2 py-1">
-                  <span className="flex size-8 items-center justify-center rounded-[9px] rounded-bl-[3px] bg-accent font-display text-sm font-extrabold text-accent-fg">
-                    K
-                  </span>
+                  <LogoMark className="size-8" />
                   <span className="font-display text-h3 font-bold text-fg">Konnekt</span>
                 </div>
                 {[
@@ -803,8 +796,8 @@ export function Phase1Showcase() {
                   <div
                     key={item.label}
                     className={cn(
-                      "flex items-center justify-between rounded-xl px-3 py-2 text-small font-semibold",
-                      item.active ? "bg-accent-soft text-accent" : "text-fg-muted",
+                      "flex items-center justify-between rounded-button px-3 py-2 text-small font-semibold",
+                      item.active ? "bg-accent-soft text-accent-ink" : "text-fg-muted",
                     )}
                   >
                     <span className="flex items-center gap-2">
@@ -812,7 +805,7 @@ export function Phase1Showcase() {
                       {item.label}
                     </span>
                     {item.badge ? (
-                      <span className="rounded-full bg-[#dc2626] px-2 py-0.5 text-[0.6875rem] font-bold text-white">
+                      <span className="rounded-chip bg-danger-btn px-2 py-0.5 text-[0.6875rem] font-bold text-white">
                         {item.badge}
                       </span>
                     ) : null}
@@ -820,9 +813,7 @@ export function Phase1Showcase() {
                 ))}
               </div>
               <div className="flex items-center gap-2 border-t border-border pt-3 text-tiny font-semibold text-fg">
-                <span className="flex size-7 items-center justify-center rounded-lg bg-accent-soft text-accent">
-                  <BookOpen aria-hidden="true" className="size-3.5" />
-                </span>
+                <UniversityShieldMark shortName="NU" className="size-7" />
                 Nova University
               </div>
             </aside>
@@ -830,23 +821,23 @@ export function Phase1Showcase() {
             <div className="space-y-3">
               <h3 className="font-display text-h2 text-fg">Reports</h3>
               <div className="flex gap-2">
-                <span className="rounded-full bg-accent px-3.5 py-1.5 text-tiny font-semibold text-accent-fg">Pending (12)</span>
-                <span className="rounded-full border border-border bg-surface px-3.5 py-1.5 text-tiny font-semibold text-fg-muted">Resolved (48)</span>
+                <span className="rounded-chip bg-accent px-3.5 py-1.5 text-tiny font-semibold text-accent-fg">Pending (12)</span>
+                <span className="rounded-chip border border-border bg-surface px-3.5 py-1.5 text-tiny font-semibold text-fg-muted">Resolved (48)</span>
               </div>
               {DEMO_REPORT_QUEUE.map((item, idx) => (
                 <div
                   key={item.id}
                   className={cn(
-                    "rounded-[16px] border p-3.5",
+                    "rounded-card border p-3.5",
                     idx === 0 ? "border-accent bg-surface ring-1 ring-accent" : "border-border bg-surface",
                   )}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5">
-                      <span className={cn("rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold", idx === 0 ? "bg-[#fee2e2] text-[#dc2626]" : "bg-[#fef3c7] text-[#b45309]")}>
+                      <span className={cn("rounded-chip px-2 py-0.5 text-[0.6875rem] font-semibold", idx === 0 ? "bg-danger-soft text-danger" : "bg-highlight-soft text-highlight-fg")}>
                         {idx === 0 ? "High" : "Medium"}
                       </span>
-                      <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[0.6875rem] font-semibold text-accent">
+                      <span className="rounded-chip bg-accent-soft px-2 py-0.5 text-[0.6875rem] font-semibold text-accent-ink">
                         {item.reasonLabel}
                       </span>
                     </div>

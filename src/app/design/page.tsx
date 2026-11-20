@@ -18,7 +18,7 @@ export default async function DesignPage({
     <main id="main" className="mx-auto max-w-7xl px-4 py-8">
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-tiny font-bold uppercase tracking-[0.14em] text-accent">Konnekt design system</p>
+          <p className="text-tiny font-bold uppercase tracking-[0.14em] text-accent-ink">Konnekt design system</p>
           <h1 className="mt-1 font-display text-display text-fg">Every screen, every state</h1>
           <p className="mt-2 max-w-xl text-body text-fg-muted">
             Development-only gallery rendering the real components and tokens used across the application.

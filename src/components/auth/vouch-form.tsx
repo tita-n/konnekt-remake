@@ -81,7 +81,7 @@ export function VouchForm({
       />
 
       <p className="flex items-start gap-2 rounded-card bg-surface-2 px-3.5 py-3 text-small text-fg-muted">
-        <ShieldCheck aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-accent" />
+        <ShieldCheck aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-accent-ink" />
         Your chosen person gets one email with your name and username. Nothing is posted anywhere.
       </p>
 

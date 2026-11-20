@@ -31,7 +31,7 @@ export default async function PlatformOverviewPage() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-small font-semibold text-accent">Konnekt platform</p>
+          <p className="text-small font-semibold text-accent-ink">Konnekt platform</p>
           <h1 className="mt-0.5 text-h1 text-fg">Everything, at a glance</h1>
           <p className="mt-1 text-small text-fg-muted">Campus spaces, queues and the health of the foundation.</p>
         </div>
@@ -59,7 +59,7 @@ export default async function PlatformOverviewPage() {
         <Card>
           <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3.5">
             <h2 className="text-h3 text-fg">Campus spaces</h2>
-            <Link href="/platform/universities" className="text-small font-semibold text-accent hover:underline">Open list</Link>
+            <Link href="/platform/universities" className="text-small font-semibold text-accent-ink hover:underline">Open list</Link>
           </div>
           <ul className="divide-y divide-border">
             {overview.byUniversity.slice(0, 8).map((university) => (
@@ -84,7 +84,7 @@ export default async function PlatformOverviewPage() {
         <div className="space-y-4">
           <Card className="p-4">
             <div className="flex items-center gap-2">
-              <HeartPulse aria-hidden="true" className="size-4 text-accent" />
+              <HeartPulse aria-hidden="true" className="size-4 text-accent-ink" />
               <h2 className="text-h3 text-fg">System health</h2>
             </div>
             <p className="mt-1 text-small text-fg-muted">

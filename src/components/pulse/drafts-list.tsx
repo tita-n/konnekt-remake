@@ -35,7 +35,7 @@ export function DraftsList({ initialDrafts }: { initialDrafts: DraftView[] }) {
   if (drafts.length === 0) {
     return (
       <div className="rounded-card border border-border bg-surface">
-        <EmptyState illustration="default" title="No drafts yet" description="Start a post and step away — your words will be waiting here." />
+        <EmptyState illustration="drafts" title="No drafts yet" description="Start a post and step away — your words will be waiting here." />
       </div>
     );
   }
@@ -60,7 +60,7 @@ export function DraftsList({ initialDrafts }: { initialDrafts: DraftView[] }) {
             }}
             className={cn(
               "relative overflow-hidden rounded-[16px] border border-border",
-              isSwiped ? "bg-[#dc2626]" : "bg-surface",
+              isSwiped ? "bg-danger-btn" : "bg-surface",
             )}
           >
             {isSwiped ? (
@@ -69,7 +69,7 @@ export function DraftsList({ initialDrafts }: { initialDrafts: DraftView[] }) {
                 disabled={deleting === draft.id}
                 onClick={() => void remove(draft.id)}
                 aria-label="Confirm delete draft"
-                className="absolute inset-y-0 right-0 flex w-24 flex-col items-center justify-center gap-1 bg-[#dc2626] text-xs font-semibold text-white hover:bg-[#b91c1c] disabled:opacity-60"
+                className="absolute inset-y-0 right-0 flex w-24 flex-col items-center justify-center gap-1 bg-danger-btn text-xs font-semibold text-white hover:brightness-95 disabled:opacity-60"
               >
                 <Trash2 aria-hidden="true" className="size-5" />
                 <span>Delete</span>
@@ -84,7 +84,7 @@ export function DraftsList({ initialDrafts }: { initialDrafts: DraftView[] }) {
             >
               <div className="flex items-start justify-between gap-2">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-3 py-1 text-tiny font-semibold text-accent-soft-fg">
-                  <Users aria-hidden="true" className="size-3.5 text-accent" />
+                  <Users aria-hidden="true" className="size-3.5 text-accent-ink" />
                   {draft.audience.label ?? "Choose audience"}
                 </span>
                 <div className="relative">
@@ -93,7 +93,7 @@ export function DraftsList({ initialDrafts }: { initialDrafts: DraftView[] }) {
                     aria-label="Draft options"
                     aria-expanded={menuId === draft.id}
                     onClick={() => setMenuId((current) => (current === draft.id ? null : draft.id))}
-                    className="flex size-8 items-center justify-center rounded-full text-fg-muted hover:bg-surface-2"
+                    className="-mr-2 -mt-1 flex size-10 items-center justify-center rounded-full text-fg-muted hover:bg-surface-2"
                   >
                     <MoreHorizontal aria-hidden="true" className="size-5" />
                   </button>
@@ -144,7 +144,7 @@ export function DraftsList({ initialDrafts }: { initialDrafts: DraftView[] }) {
                     aria-label="Delete draft"
                     disabled={deleting === draft.id}
                     onClick={() => void remove(draft.id)}
-                    className="flex size-8 items-center justify-center rounded-full text-fg-muted hover:bg-danger-soft hover:text-danger disabled:opacity-50"
+                    className="-mr-2 flex size-10 items-center justify-center rounded-full text-fg-muted hover:bg-danger-soft hover:text-danger disabled:opacity-50"
                   >
                     <Trash2 aria-hidden="true" className="size-4" />
                   </button>

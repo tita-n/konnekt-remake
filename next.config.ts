@@ -17,6 +17,7 @@ const withSerwist = withSerwistInit({
 const nextConfig: NextConfig = {
   output: "standalone",
   reactStrictMode: true,
+  devIndicators: false,
   outputFileTracingRoot: __dirname,
   poweredByHeader: false,
   experimental: {

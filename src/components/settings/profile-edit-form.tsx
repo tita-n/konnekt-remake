@@ -129,14 +129,14 @@ export function ProfileEditForm({
               };
               input.click();
             }}
-            className="inline-flex items-center gap-1.5 text-small font-semibold text-accent underline-offset-2 hover:underline"
+            className="inline-flex items-center gap-1.5 text-small font-semibold text-accent-ink underline-offset-2 hover:underline"
           >
             <Camera aria-hidden="true" className="size-4" />
             Change photo
           </button>
           <p className="mt-0.5 text-small text-fg-subtle">Square crop, compressed for slow connections.</p>
         </div>
-        {uploading ? <Loader2 aria-hidden="true" className="ml-auto size-5 animate-spin text-accent" /> : null}
+        {uploading ? <Loader2 aria-hidden="true" className="ml-auto size-5 animate-spin text-accent-ink" /> : null}
       </div>
 
       <form

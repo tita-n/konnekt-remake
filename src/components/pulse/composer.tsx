@@ -8,6 +8,7 @@ import {
   BarChart2,
   Camera,
   ChevronDown,
+  ChevronUp,
   Clock,
   Globe,
   GraduationCap,
@@ -301,7 +302,7 @@ export function Composer({
     <div className="min-h-dvh bg-surface text-fg">
       <header className="sticky top-0 z-40 border-b border-border bg-surface">
         <div className="mx-auto flex h-14 max-w-2xl items-center gap-2 px-3">
-          <Link href="/pulse" aria-label="Close composer" className="flex size-10 items-center justify-center rounded-full text-fg hover:bg-surface-2">
+          <Link href="/pulse" aria-label="Close composer" className="flex size-11 items-center justify-center rounded-full text-fg hover:bg-surface-2">
             <X aria-hidden="true" className="size-5" />
           </Link>
           <div className="min-w-0 flex-1 text-center">
@@ -321,7 +322,7 @@ export function Composer({
       <main className="mx-auto flex min-h-[calc(100dvh-3.5rem)] w-full max-w-2xl flex-col px-4 pb-6 pt-4">
         <div className="flex-1">
           <div className="flex items-start gap-3">
-            <Avatar name={viewer.fullName} src={viewer.photoUrl} size="md" className="mt-0.5" />
+            <Avatar name={viewer.fullName} seed={viewer.username} src={viewer.photoUrl} size="md" className="mt-0.5" />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
                 <p className="truncate text-[0.9375rem] font-bold text-fg">{viewer.fullName}</p>
@@ -333,9 +334,9 @@ export function Composer({
                 onClick={() => { setAudienceDraft(audienceId); setAudienceOpen(true); }}
                 className="mt-2.5 inline-flex h-8 items-center gap-1.5 rounded-full bg-accent-soft px-3.5 text-small font-semibold text-accent-soft-fg transition hover:bg-accent-soft/80"
               >
-                <Users aria-hidden="true" className="size-3.5 text-accent" />
+                <Users aria-hidden="true" className="size-3.5 text-accent-ink" />
                 <span>Posting to: {audience?.label ?? "your audience"}</span>
-                <ChevronDown aria-hidden="true" className="size-3.5 text-accent" />
+                <ChevronDown aria-hidden="true" className="size-3.5 text-accent-ink" />
               </button>
             </div>
           </div>
@@ -344,12 +345,13 @@ export function Composer({
             <div className="mt-5 space-y-4">
               <div>
                 <label htmlFor="question-title" className="block text-small font-medium text-fg-muted">Ask a clear question</label>
-                <input
+                <textarea
                   id="question-title"
+                  rows={2}
                   value={questionTitle}
-                  onChange={(event) => setQuestionTitle(event.target.value.slice(0, 140))}
+                  onChange={(event) => setQuestionTitle(event.target.value.replaceAll("\n", " ").slice(0, 140))}
                   placeholder="Does anyone have the CSC 204 past questions?"
-                  className="mt-1.5 h-12 w-full rounded-[12px] border border-border bg-surface px-3.5 text-[0.9375rem] font-medium text-fg placeholder:text-fg-subtle focus:border-accent"
+                  className="mt-1.5 w-full resize-none rounded-[12px] border border-border bg-surface px-3.5 py-2.5 text-[0.9375rem] font-medium leading-snug text-fg placeholder:text-fg-subtle focus:border-accent"
                 />
               </div>
 
@@ -363,7 +365,7 @@ export function Composer({
                         type="button"
                         aria-label="Clear topic"
                         onClick={() => { setTopicTag(""); setEditingTopic(true); }}
-                        className="rounded-full p-0.5 text-accent hover:bg-surface/60"
+                        className="rounded-full p-0.5 text-accent-ink hover:bg-surface/60"
                       >
                         <X aria-hidden="true" className="size-3.5" />
                       </button>
@@ -399,8 +401,8 @@ export function Composer({
                   placeholder="Add more details (optional)…"
                   className="mt-1.5 min-h-[120px] w-full resize-none rounded-[12px] border border-border bg-surface p-3.5 text-[0.9375rem] leading-relaxed text-fg placeholder:text-fg-subtle focus:border-accent"
                 />
-                <p className={cn("mt-1 text-right text-tiny tabular-nums", body.length > 480 ? "text-warning" : "text-fg-subtle")}>
-                  {body.length} / 500
+                <p className={cn("mt-1 text-right text-tiny tabular-nums", body.length > 1900 ? "text-warning" : "text-fg-subtle")}>
+                  {body.length} / 2000
                 </p>
               </div>
             </div>
@@ -421,7 +423,7 @@ export function Composer({
                 <legend className="text-small font-medium text-fg-muted">Poll options</legend>
                 <div className="mt-1.5 space-y-2">
                   {pollOptions.map((option, index) => (
-                    <div key={index} className="flex items-center gap-2 rounded-[12px] border border-border bg-surface px-2.5 focus-within:border-accent">
+                    <div key={index} className="flex items-center gap-1.5 rounded-[12px] border border-border bg-surface px-2 focus-within:border-accent">
                       <GripVertical aria-hidden="true" className="size-4 shrink-0 text-fg-subtle" />
                       <input
                         aria-label={`Option ${index + 1}`}
@@ -432,20 +434,39 @@ export function Composer({
                         placeholder={index === 0 ? "University Library" : index === 1 ? "Faculty Reading Room" : "Another option"}
                         className="h-11 min-w-0 flex-1 border-0 bg-transparent text-[0.9375rem] text-fg placeholder:text-fg-subtle focus:outline-none"
                       />
-                      <button
-                        type="button"
-                        aria-label={pollOptions.length > 2 ? `Remove option ${index + 1}` : `Clear option ${index + 1}`}
-                        onClick={() => {
-                          if (pollOptions.length > 2) {
-                            setPollOptions((current) => current.filter((_, position) => position !== index));
-                          } else {
-                            setPollOptions((current) => current.map((value, position) => (position === index ? "" : value)));
-                          }
-                        }}
-                        className="flex size-7 items-center justify-center rounded-full text-fg-subtle hover:bg-surface-2 hover:text-fg"
-                      >
-                        <X aria-hidden="true" className="size-4" />
-                      </button>
+                      <div className="flex shrink-0 items-center">
+                        {pollOptions.length > 2 && index > 0 ? (
+                          <button
+                            type="button"
+                            aria-label={`Move option ${index + 1} up`}
+                            onClick={() =>
+                              setPollOptions((current) => {
+                                if (index === 0) return current;
+                                const copy = [...current];
+                                [copy[index - 1], copy[index]] = [copy[index]!, copy[index - 1]!];
+                                return copy;
+                              })
+                            }
+                            className="flex size-8 items-center justify-center rounded-full text-fg-subtle hover:bg-surface-2 hover:text-fg"
+                          >
+                            <ChevronUp aria-hidden="true" className="size-3.5" />
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          aria-label={pollOptions.length > 2 ? `Remove option ${index + 1}` : `Clear option ${index + 1}`}
+                          onClick={() => {
+                            if (pollOptions.length > 2) {
+                              setPollOptions((current) => current.filter((_, position) => position !== index));
+                            } else {
+                              setPollOptions((current) => current.map((value, position) => (position === index ? "" : value)));
+                            }
+                          }}
+                          className="flex size-8 items-center justify-center rounded-full text-fg-subtle hover:bg-surface-2 hover:text-fg"
+                        >
+                          <X aria-hidden="true" className="size-4" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -499,8 +520,8 @@ export function Composer({
                 placeholder="What's happening on campus?"
                 className="min-h-36 w-full resize-none border-0 bg-transparent px-0 py-3 text-[1.0625rem] leading-relaxed text-fg placeholder:text-fg-subtle focus:outline-none focus-visible:outline-none"
               />
-              <p className={cn("mt-1 text-right text-tiny tabular-nums", body.length > 480 ? "text-warning" : "text-fg-subtle")}>
-                {body.length} / 500
+              <p className={cn("mt-1 text-right text-tiny tabular-nums", body.length > 1900 ? "text-warning" : "text-fg-subtle")}>
+                {body.length} / 2000
               </p>
             </div>
           )}
@@ -515,7 +536,7 @@ export function Composer({
                   ? (suggestions.items as Array<{ username: string; fullName: string; photoUrl: string | null }>).map((person) => (
                       <li key={person.username}>
                         <button type="button" onClick={() => applySuggestion(person.username)} className="flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-surface-2">
-                          <Avatar name={person.fullName} src={person.photoUrl} size="xs" />
+                          <Avatar name={person.fullName} seed={person.username} src={person.photoUrl} size="xs" />
                           <span className="min-w-0">
                             <span className="block truncate text-small font-semibold text-fg">{person.fullName}</span>
                             <span className="block truncate text-tiny text-fg-subtle">@{person.username}</span>
@@ -607,7 +628,7 @@ export function Composer({
               aria-label={mode === "POLL" ? "Switch to post" : "Create poll"}
               className={cn(
                 "flex h-11 items-center justify-center rounded-[10px] hover:bg-surface-2",
-                mode === "POLL" ? "text-accent" : "text-fg",
+                mode === "POLL" ? "text-accent-ink" : "text-fg",
               )}
             >
               <BarChart2 aria-hidden="true" className="size-5" />
@@ -674,7 +695,7 @@ export function Composer({
                   selected ? "border-accent/40 bg-accent-soft" : "border-border bg-surface hover:bg-surface-2",
                 )}
               >
-                <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-full", selected ? "text-accent" : "text-fg")}>
+                <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-full", selected ? "text-accent-ink" : "text-fg")}>
                   <ScopeIcon aria-hidden="true" className="size-5" />
                 </span>
                 <span className="min-w-0 flex-1">

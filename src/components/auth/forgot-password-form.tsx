@@ -22,10 +22,10 @@ export function ForgotPasswordForm({ siteKey }: { siteKey: string }) {
   if (state.ok) {
     return (
       <div className="flex flex-col items-center gap-3 rounded-card border border-border bg-surface p-6 text-center" role="status">
-        <MailCheck aria-hidden="true" className="size-9 text-accent" />
+        <MailCheck aria-hidden="true" className="size-9 text-accent-ink" />
         <p className="text-[0.9375rem] font-semibold text-fg">Check your inbox</p>
         <p className="text-small text-fg-muted">{state.message}</p>
-        <Link href="/login" className="mt-1 text-small font-semibold text-accent underline-offset-2 hover:underline">
+        <Link href="/login" className="mt-1 text-small font-semibold text-accent-ink underline-offset-2 hover:underline">
           Back to log in
         </Link>
       </div>

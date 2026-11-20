@@ -101,7 +101,7 @@ const config: Config = {
         "fade-up": { from: { opacity: "0", transform: "translateY(6px)" }, to: { opacity: "1", transform: "translateY(0)" } },
       },
       animation: {
-        "sheet-in": "sheet-in 240ms cubic-bezier(0.2,0.9,0.2,1.15)",
+        "sheet-in": "sheet-in 220ms cubic-bezier(0.22,1,0.36,1)",
         "fade-in": "fade-in 180ms ease-out",
         "toast-in": "toast-in 200ms ease-out",
         "pop-in": "pop-in 160ms ease-out",

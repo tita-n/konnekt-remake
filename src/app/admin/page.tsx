@@ -35,7 +35,7 @@ export default async function AdminOverviewPage() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-small font-semibold text-accent">{user.university.shortName}</p>
+          <p className="text-small font-semibold text-accent-ink">{user.university.shortName}</p>
           <h1 className="mt-0.5 text-h1 text-fg">University console</h1>
           <p className="mt-1 text-small text-fg-muted">
             {isAdmin ? "Verification, students and the shape of your campus space." : "The verification queue for your university."}
@@ -68,7 +68,7 @@ export default async function AdminOverviewPage() {
               <h2 className="text-h3 text-fg">Next in the queue</h2>
               <p className="text-small text-fg-muted">Requests are shown oldest first.</p>
             </div>
-            <Link href="/admin/verification" className="text-small font-semibold text-accent hover:underline">
+            <Link href="/admin/verification" className="text-small font-semibold text-accent-ink hover:underline">
               See all
             </Link>
           </div>

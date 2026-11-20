@@ -148,7 +148,7 @@ export default async function VerificationQueuePage({
                     <td className="px-4 py-3 text-fg-muted">{formatDate(request.createdAt)}</td>
                     <td className="px-4 py-3"><RequestStatusBadge status={request.status} /></td>
                     <td className="px-4 py-3 text-right">
-                      <Link href={`/admin/verification/${request.id}`} className="font-semibold text-accent hover:underline">
+                      <Link href={`/admin/verification/${request.id}`} className="font-semibold text-accent-ink hover:underline">
                         Review
                       </Link>
                     </td>

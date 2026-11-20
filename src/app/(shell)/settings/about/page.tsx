@@ -41,7 +41,7 @@ export default async function AboutPage() {
               { href: "/legal/community-rules", label: "Community Rules", icon: Users },
             ].map((item) => (
               <li key={item.href}>
-                <Link href={item.href} className="flex items-center gap-2.5 py-2.5 text-small font-medium text-fg hover:text-accent">
+                <Link href={item.href} className="flex items-center gap-2.5 py-2.5 text-small font-medium text-fg hover:text-accent-ink">
                   <item.icon aria-hidden="true" className="size-4 text-fg-subtle" />
                   {item.label}
                   <ExternalLink aria-hidden="true" className="ml-auto size-3.5 text-fg-subtle" />
@@ -55,7 +55,7 @@ export default async function AboutPage() {
           <h2 className="text-h3 text-fg">Support</h2>
           <p className="mt-1 text-small text-fg-muted">
             Email{" "}
-            <a href="mailto:support@konnekt.ng" className="font-semibold text-accent underline-offset-2 hover:underline">
+            <a href="mailto:support@konnekt.ng" className="font-semibold text-accent-ink underline-offset-2 hover:underline">
               support@konnekt.ng
             </a>{" "}
             or speak to an admin at {user.university.name}.

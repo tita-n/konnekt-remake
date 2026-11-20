@@ -121,9 +121,9 @@ export function ResubmitForms({
               className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-card border border-dashed border-border-strong bg-surface px-4 py-6 text-center transition hover:border-accent"
             >
               {compressing ? (
-                <Loader2 aria-hidden="true" className="size-5 animate-spin text-accent" />
+                <Loader2 aria-hidden="true" className="size-5 animate-spin text-accent-ink" />
               ) : (
-                <ImageUp aria-hidden="true" className="size-5 text-accent" />
+                <ImageUp aria-hidden="true" className="size-5 text-accent-ink" />
               )}
               <span className="text-small font-semibold text-fg">
                 {compressing ? "Compressing…" : blob ? "Choose a different photo" : "Choose a photo"}
@@ -177,7 +177,7 @@ export function ResubmitForms({
             error={vouchState.field === "matricNumber" ? vouchState.error : null}
           />
           <p className="flex items-start gap-2 rounded-card bg-surface-2 px-3.5 py-3 text-small text-fg-muted">
-            <Users aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-accent" />
+            <Users aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-accent-ink" />
             They&apos;ll get an email and can approve from their verification queue.
           </p>
           <FormMessage error={vouchState.error} />

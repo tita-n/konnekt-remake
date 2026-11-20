@@ -46,7 +46,7 @@ export default async function AccountSettingsPage() {
                   <div className="min-w-0">
                     <p className="truncate text-small font-medium text-fg">
                       {deviceLabel(session.userAgent)}
-                      {isCurrent ? <span className="ml-2 text-tiny font-semibold text-accent">This device</span> : null}
+                      {isCurrent ? <span className="ml-2 text-tiny font-semibold text-accent-ink">This device</span> : null}
                     </p>
                     <p className="text-tiny text-fg-subtle">
                       Active {timeAgo(session.lastSeenAt)} · expires {timeAgo(session.expiresAt).replace(" ago", "")}

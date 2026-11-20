@@ -19,13 +19,13 @@ const STATUSES = ["ALL", "VERIFIED", "SUSPENDED", "PENDING", "ALUMNI", "UNVERIFI
 function tableStatusBadge(status: UserStatus) {
   switch (status) {
     case "VERIFIED":
-      return { label: "Active", badge: "bg-[#dcfce7] text-[#15803d]", dot: "bg-[#16a34a]" };
+      return { label: "Active", badge: "bg-success-soft text-success", dot: "bg-success-solid" };
     case "SUSPENDED":
-      return { label: "Suspended", badge: "bg-[#fee2e2] text-[#dc2626]", dot: "bg-[#dc2626]" };
+      return { label: "Suspended", badge: "bg-danger-soft text-danger", dot: "bg-danger" };
     case "PENDING":
-      return { label: "Pending", badge: "bg-[#fef3c7] text-[#b45309]", dot: "bg-[#d97706]" };
+      return { label: "Pending", badge: "bg-highlight-soft text-highlight-fg", dot: "bg-highlight" };
     case "ALUMNI":
-      return { label: "Alumni", badge: "bg-accent-soft text-accent", dot: "bg-accent" };
+      return { label: "Alumni", badge: "bg-accent-soft text-accent-ink", dot: "bg-accent" };
     default:
       return { label: status.charAt(0) + status.slice(1).toLowerCase(), badge: "bg-surface-2 text-fg-muted", dot: "bg-fg-subtle" };
   }
@@ -183,7 +183,7 @@ export default async function StudentsPage({
                           href={buildHref({ nextSelected: student.id })}
                           className="flex items-center gap-3 focus:outline-none"
                         >
-                          <Avatar name={student.fullName} src={student.photoUrl} size="sm" />
+                          <Avatar name={student.fullName} seed={student.username} src={student.photoUrl} size="sm" />
                           <span className="min-w-0">
                             <span className="flex items-center gap-1 font-semibold text-fg">
                               <span className="truncate">{student.fullName}</span>

@@ -60,7 +60,7 @@ export function PwaProvider() {
       role="status"
       className="fixed inset-x-3 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-50 mx-auto flex max-w-md items-center gap-3 rounded-card border border-border bg-surface p-3 shadow-floating"
     >
-      <RefreshCw aria-hidden="true" className="size-5 shrink-0 text-accent" />
+      <RefreshCw aria-hidden="true" className="size-5 shrink-0 text-accent-ink" />
       <p className="min-w-0 flex-1 text-small font-semibold text-fg">
         A new version of Konnekt is ready.
       </p>

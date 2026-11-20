@@ -25,7 +25,7 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
         {children}
         <nav aria-label="Legal documents" className="mt-10 flex flex-wrap gap-x-4 gap-y-2 border-t border-border pt-5 text-small">
           {links.map((link) => (
-            <Link key={link.href} href={link.href} className="font-medium text-accent underline-offset-2 hover:underline">
+            <Link key={link.href} href={link.href} className="font-medium text-accent-ink underline-offset-2 hover:underline">
               {link.label}
             </Link>
           ))}

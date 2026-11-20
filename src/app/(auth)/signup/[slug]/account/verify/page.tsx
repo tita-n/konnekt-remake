@@ -40,7 +40,7 @@ export default async function VerifyAccountPage({ params }: { params: Promise<{ 
         <SignupCodeForm />
         <p className="mt-6 text-center text-small text-fg-muted">
           Wrong email?{" "}
-          <Link href={`/signup/${slug}/account`} className="font-semibold text-accent underline-offset-2 hover:underline">
+          <Link href={`/signup/${slug}/account`} className="font-semibold text-accent-ink underline-offset-2 hover:underline">
             Go back and edit it
           </Link>
         </p>

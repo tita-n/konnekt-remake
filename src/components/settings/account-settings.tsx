@@ -44,7 +44,7 @@ export function AccountSettings({
     <div className="space-y-5">
       <section className="rounded-card border border-border bg-surface p-4">
         <h2 className="flex items-center gap-2 text-h3 text-fg">
-          <Mail aria-hidden="true" className="size-4 text-accent" />
+          <Mail aria-hidden="true" className="size-4 text-accent-ink" />
           Email
         </h2>
         <p className="mt-1 flex flex-wrap items-center gap-2 text-small text-fg-muted">
@@ -59,7 +59,7 @@ export function AccountSettings({
 
         {emailStep === "idle" ? (
           <details className="mt-3">
-            <summary className="cursor-pointer text-small font-semibold text-accent">Change email</summary>
+            <summary className="cursor-pointer text-small font-semibold text-accent-ink">Change email</summary>
             <form action={emailAction} className="mt-3 space-y-3">
               <TextField label="New email" name="email" type="email" required autoComplete="email" />
               <PasswordField label="Your password" name="password" required autoComplete="current-password" />
@@ -91,7 +91,7 @@ export function AccountSettings({
 
       <section className="rounded-card border border-border bg-surface p-4">
         <h2 className="flex items-center gap-2 text-h3 text-fg">
-          <KeyRound aria-hidden="true" className="size-4 text-accent" />
+          <KeyRound aria-hidden="true" className="size-4 text-accent-ink" />
           Username
         </h2>
         <form action={usernameAction} className="mt-3 space-y-3">

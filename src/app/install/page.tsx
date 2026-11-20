@@ -18,19 +18,19 @@ export default function InstallPage() {
       </p>
       <div className="mt-6 space-y-3">
         <div className="rounded-card border border-border p-4">
-          <h2 className="flex items-center gap-2 text-h3"><Smartphone aria-hidden="true" className="size-4 text-accent" /> On your phone</h2>
+          <h2 className="flex items-center gap-2 text-h3"><Smartphone aria-hidden="true" className="size-4 text-accent-ink" /> On your phone</h2>
           <p className="mt-1 text-small text-fg-muted">
             Open Konnekt in Chrome or Safari, then choose <strong className="text-fg">Add to Home Screen</strong> from the browser menu.
           </p>
         </div>
         <div className="rounded-card border border-border p-4">
-          <h2 className="flex items-center gap-2 text-h3"><Download aria-hidden="true" className="size-4 text-accent" /> On your computer</h2>
+          <h2 className="flex items-center gap-2 text-h3"><Download aria-hidden="true" className="size-4 text-accent-ink" /> On your computer</h2>
           <p className="mt-1 text-small text-fg-muted">
             Look for the install icon in the address bar, or choose <strong className="text-fg">Install Konnekt</strong> from the browser menu.
           </p>
         </div>
         <div className="rounded-card border border-border p-4">
-          <h2 className="flex items-center gap-2 text-h3"><WifiOff aria-hidden="true" className="size-4 text-accent" /> Works on weak networks</h2>
+          <h2 className="flex items-center gap-2 text-h3"><WifiOff aria-hidden="true" className="size-4 text-accent-ink" /> Works on weak networks</h2>
           <p className="mt-1 text-small text-fg-muted">
             Your last feed is saved privately on this device. Logging out wipes it completely, so shared phones stay private.
           </p>

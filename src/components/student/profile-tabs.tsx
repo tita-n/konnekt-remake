@@ -32,23 +32,26 @@ export function ProfileTabs({
 
   return (
     <div className="mt-4">
-      <div className="flex overflow-hidden rounded-full border border-border bg-surface p-0.5" role="tablist" aria-label="Profile content">
-        {tabs.map((item) => (
-          <button
-            key={item.value}
-            type="button"
-            role="tab"
-            aria-selected={tab === item.value}
-            onClick={() => setTab(item.value)}
-            className={cn(
-              "flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full text-small font-semibold transition-colors",
-              tab === item.value ? "bg-accent text-accent-fg" : "text-fg-muted hover:text-fg",
-            )}
-          >
-            {item.label}
-            {item.private ? <Lock aria-hidden="true" className="size-3.5" /> : null}
-          </button>
-        ))}
+      <div className="flex border-b border-border" role="tablist" aria-label="Profile content">
+        {tabs.map((item) => {
+          const active = tab === item.value;
+          return (
+            <button
+              key={item.value}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => setTab(item.value)}
+              className={cn(
+                "flex min-h-11 flex-1 items-center justify-center gap-1.5 border-b-2 text-small font-semibold transition-colors",
+                active ? "border-accent text-accent-ink" : "border-transparent text-fg-muted hover:text-fg",
+              )}
+            >
+              {item.label}
+              {item.private ? <Lock aria-hidden="true" className="size-3.5" /> : null}
+            </button>
+          );
+        })}
       </div>
 
       <div className="mt-3">
@@ -58,7 +61,7 @@ export function ProfileTabs({
               <EmptyState title="No posts yet" description={isSelf ? "Your posts will appear here." : "This student hasn't posted yet."} compact />
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {initialPosts.map((post) => <PostCard key={post.id} post={post} />)}
             </div>
           )
@@ -68,7 +71,7 @@ export function ProfileTabs({
               <EmptyState title="No replies yet" description={isSelf ? "Comments and answers you write will appear here." : "This student hasn't replied yet."} compact />
             </div>
           ) : (
-            <ul className="space-y-2">
+            <ul className="space-y-2.5">
               {replies.map((reply) => (
                 <li key={reply.id}>
                   <Link href={`/p/${reply.postId}#comments`} className="block rounded-card border border-border bg-surface p-3.5 hover:border-border-strong">
@@ -84,10 +87,10 @@ export function ProfileTabs({
           )
         ) : bookmarks.length === 0 ? (
           <div className="rounded-card border border-border bg-surface">
-            <EmptyState title="No bookmarks yet" description="Your private saved posts will appear here." compact />
+            <EmptyState illustration="bookmarks" title="No bookmarks yet" description="Your private saved posts will appear here." compact />
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {bookmarks.map((post) => <PostCard key={post.id} post={post} />)}
           </div>
         )}

@@ -99,10 +99,10 @@ export function ReportActionForm({ reportId, previewOnly = false }: { reportId: 
             aria-pressed={decision === "REMOVE"}
             onClick={() => { setDecision("REMOVE"); setSuspendMenuOpen(false); }}
             className={cn(
-              "inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-[10px] border px-3 text-small font-semibold transition",
+              "inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-button border px-3 text-small font-semibold transition",
               decision === "REMOVE"
-                ? "border-[#dc2626] bg-[#dc2626] text-white shadow-sm"
-                : "border-danger/30 bg-surface text-danger hover:bg-danger-soft",
+                ? "border-danger bg-danger-soft text-danger"
+                : "border-danger/30 bg-surface text-danger hover:bg-danger-soft/60",
             )}
           >
             <Trash2 aria-hidden="true" className="size-4" />
@@ -114,9 +114,9 @@ export function ReportActionForm({ reportId, previewOnly = false }: { reportId: 
             aria-pressed={decision === "KEEP"}
             onClick={() => { setDecision("KEEP"); setSuspendMenuOpen(false); }}
             className={cn(
-              "inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-[10px] border px-3 text-small font-semibold transition",
+              "inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-button border px-3 text-small font-semibold transition",
               decision === "KEEP"
-                ? "border-accent bg-accent-soft text-accent"
+                ? "border-accent bg-accent-soft text-accent-ink"
                 : "border-border bg-surface text-fg hover:bg-surface-2",
             )}
           >
@@ -129,9 +129,9 @@ export function ReportActionForm({ reportId, previewOnly = false }: { reportId: 
             aria-pressed={decision === "WARN"}
             onClick={() => { setDecision("WARN"); setSuspendMenuOpen(false); }}
             className={cn(
-              "inline-flex h-10 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-[10px] border px-3 text-small font-semibold transition",
+              "inline-flex h-11 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-button border px-3 text-small font-semibold transition",
               decision === "WARN"
-                ? "border-accent bg-accent-soft text-accent"
+                ? "border-accent bg-accent-soft text-accent-ink"
                 : "border-border bg-surface text-fg hover:bg-surface-2",
             )}
           >
@@ -149,9 +149,9 @@ export function ReportActionForm({ reportId, previewOnly = false }: { reportId: 
                 setSuspendMenuOpen((current) => !current);
               }}
               className={cn(
-                "inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[10px] border px-3 text-small font-semibold transition",
+                "inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-button border px-3 text-small font-semibold transition",
                 decision === "SUSPEND"
-                  ? "border-accent bg-accent-soft text-accent"
+                  ? "border-accent bg-accent-soft text-accent-ink"
                   : "border-border bg-surface text-fg hover:bg-surface-2",
               )}
             >
@@ -164,7 +164,7 @@ export function ReportActionForm({ reportId, previewOnly = false }: { reportId: 
               <div
                 role="menu"
                 aria-label="Suspension length"
-                className="absolute right-0 top-11 z-20 w-36 overflow-hidden rounded-[12px] border border-border bg-surface p-1 shadow-floating"
+                className="absolute right-0 top-12 z-20 w-36 overflow-hidden rounded-[12px] border border-border bg-surface p-1 shadow-floating"
               >
                 {DURATIONS.map((item) => (
                   <button
@@ -179,7 +179,7 @@ export function ReportActionForm({ reportId, previewOnly = false }: { reportId: 
                     }}
                     className={cn(
                       "flex w-full items-center justify-between rounded-[8px] px-3 py-2 text-left text-small font-medium",
-                      duration === item.value ? "bg-accent-soft text-accent font-semibold" : "text-fg hover:bg-surface-2",
+                      duration === item.value ? "bg-accent-soft text-accent-ink font-semibold" : "text-fg hover:bg-surface-2",
                     )}
                   >
                     <span>{item.label}</span>

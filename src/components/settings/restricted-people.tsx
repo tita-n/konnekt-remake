@@ -77,8 +77,8 @@ export function RestrictedPeople({
             </p>
             <ul className="space-y-2">
               {list.map((student) => (
-                <li key={student.id} className="flex items-center gap-3 rounded-[16px] border border-border bg-surface p-3">
-                  <Avatar name={student.fullName} src={student.photoUrl} size="md" />
+                <li key={student.id} className="flex items-center gap-3 rounded-card border border-border bg-surface p-3 shadow-card">
+                  <Avatar name={student.fullName} seed={student.username} src={student.photoUrl} size="md" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-small font-bold text-fg">{student.fullName}</p>
                     <p className="truncate text-tiny text-fg-muted">
@@ -90,7 +90,7 @@ export function RestrictedPeople({
                     type="button"
                     disabled={busy === student.id}
                     onClick={() => void release(student)}
-                    className="h-9 shrink-0 rounded-full border border-accent px-4 text-small font-semibold text-accent transition hover:bg-accent-soft disabled:opacity-50"
+                    className="min-h-10 shrink-0 rounded-full border border-accent px-4 text-small font-semibold text-accent-ink transition hover:bg-accent-soft disabled:opacity-50"
                   >
                     {tab === "blocked" ? "Unblock" : "Unmute"}
                   </button>
@@ -101,8 +101,8 @@ export function RestrictedPeople({
         )}
       </div>
 
-      <p className="mt-4 flex items-start gap-2.5 rounded-[12px] bg-accent-soft px-3.5 py-3 text-small leading-relaxed text-accent-soft-fg">
-        <Lock aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-accent" />
+      <p className="mt-4 flex items-start gap-2.5 rounded-button bg-accent-soft px-3.5 py-3 text-small leading-relaxed text-accent-soft-fg">
+        <Lock aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-accent-ink" />
         {tab === "blocked" ? "Blocked people can't see your posts or interact with you." : "Muted people are hidden only from your feed — they can still see yours."}
       </p>
     </div>

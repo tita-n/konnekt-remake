@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" fill="none">
+  <rect width="640" height="400" rx="24" fill="#EEF0FF"/>
+  <rect x="24" y="24" width="592" height="352" rx="20" fill="#FFFFFF" stroke="#D5D7E2" stroke-width="2"/>
+  <rect x="24" y="24" width="592" height="72" rx="20" fill="#4F46E5"/>
+  <rect x="24" y="72" width="592" height="24" fill="#4F46E5"/>
+  <rect x="52" y="42" width="38" height="38" rx="10" fill="#FFFFFF" fill-opacity="0.18"/>
+  <path d="M71 50 L84 55 V66 C84 73 78 78 71 80 C64 78 58 73 58 66 V55 Z" fill="#FFFFFF"/>
+  <text x="106" y="60" fill="#FFFFFF" font-family="system-ui, sans-serif" font-size="18" font-weight="700">NOVA UNIVERSITY</text>
+  <text x="106" y="80" fill="#E0E7FF" font-family="system-ui, sans-serif" font-size="12" font-weight="600" letter-spacing="1.2">OFFICIAL STUDENT IDENTITY CARD</text>
+  <rect x="52" y="128" width="136" height="164" rx="14" fill="#F6F7F9" stroke="#E4E6EB" stroke-width="2"/>
+  <circle cx="120" cy="186" r="34" fill="#D5D7E2"/>
+  <path d="M74 274 C74 244 95 228 120 228 C145 228 166 244 166 274" fill="#9CA3AF"/>
+  <text x="216" y="152" fill="#5B6270" font-family="system-ui, sans-serif" font-size="12" font-weight="600">FULL NAME</text>
+  <text x="216" y="176" fill="#12141A" font-family="system-ui, sans-serif" font-size="22" font-weight="700">Ngozi Eze</text>
+  <text x="216" y="212" fill="#5B6270" font-family="system-ui, sans-serif" font-size="12" font-weight="600">MATRICULATION NUMBER</text>
+  <text x="216" y="236" fill="#4F46E5" font-family="monospace" font-size="20" font-weight="700">NU/23/0775</text>
+  <text x="216" y="272" fill="#5B6270" font-family="system-ui, sans-serif" font-size="12" font-weight="600">DEPARTMENT · LEVEL</text>
+  <text x="216" y="294" fill="#12141A" font-family="system-ui, sans-serif" font-size="16" font-weight="600">Mass Communication · 300 Level</text>
+  <rect x="52" y="318" width="536" height="32" rx="8" fill="#F6F7F9"/>
+  <text x="68" y="339" fill="#5B6270" font-family="monospace" font-size="12">VALID THROUGH 2027 · VERIFIED BY REGISTRAR</text>
+</svg>

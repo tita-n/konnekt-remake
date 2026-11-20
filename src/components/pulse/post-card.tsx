@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   BarChart3,
@@ -30,6 +30,7 @@ import type { PostMediaView, PostView } from "@/lib/posts/types";
 import { ApiError, apiDelete, apiPatch, apiPost } from "@/lib/posts/client";
 import { REPORT_REASON_OPTIONS, type ReportReasonValue } from "@/lib/posts/report-reasons";
 import { pollTimeRemaining, truncatePostBody } from "@/lib/posts/card-presentation";
+import { formatCompactCount } from "@/lib/domain/card-presentation";
 import { Avatar, VerifiedTick } from "@/components/ui/display";
 import { Button, IconButton } from "@/components/ui/button";
 import { BottomSheet, Dialog } from "@/components/ui/overlays";
@@ -69,9 +70,15 @@ export function PostCard({
   const [showFull, setShowFull] = useState(expanded);
   const [viewerIndex, setViewerIndex] = useState(0);
   const [viewerMenu, setViewerMenu] = useState(false);
+  const [viewerZoomed, setViewerZoomed] = useState(false);
+  const [repostedByMe, setRepostedByMe] = useState(false);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => setLocal(post), [post]);
+  useEffect(() => {
+    setLocal(post);
+    setViewerZoomed(false);
+  }, [post]);
 
   const removed = local.status !== "ACTIVE";
   const isSimpleRepost = local.type === "REPOST" && Boolean(local.repostOf) && !local.body.trim();
@@ -123,6 +130,7 @@ export function PostCard({
         repostOfId: local.id,
         idempotencyKey: crypto.randomUUID(),
       });
+      setRepostedByMe(true);
       setLocal((current) => ({ ...current, repostCount: current.repostCount + 1 }));
       toast({ title: "Reposted", description: "It keeps the original audience." });
       onChanged?.();
@@ -137,7 +145,7 @@ export function PostCard({
       await navigator.clipboard.writeText(url);
       toast({ title: "Link copied" });
     } catch {
-      window.prompt("Copy this link", url);
+      toast({ title: "Copy failed", description: "Copy the link from your address bar.", variant: "error" });
     }
     setMenuOpen(false);
     setShareOpen(false);
@@ -215,15 +223,16 @@ export function PostCard({
   return (
     <article
       className={cn(
-        "post-card relative rounded-[16px] border border-border bg-surface",
-        compact && "rounded-none border-x-0 border-t-0",
+        "post-card relative rounded-card border border-border bg-surface shadow-card",
+        local.type === "QUESTION" && !removed && "border-l-[3px] border-l-accent",
+        compact && "rounded-none border-x-0 border-t-0 shadow-none",
       )}
       aria-label={`Post by ${local.author.fullName}`}
     >
       {removed ? (
         <div className="px-4 pt-3.5 pb-2">
           <div className="flex items-start gap-3 rounded-[14px] bg-surface-2 px-4 py-3.5">
-            <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full border border-accent/40 text-accent">
+            <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full border border-accent/40 text-accent-ink">
               <Info aria-hidden="true" className="size-4" />
             </span>
             <div className="min-w-0">
@@ -233,7 +242,7 @@ export function PostCard({
               {local.isOwner && local.moderationReason && local.moderationReason !== "This post was removed by a moderator." ? (
                 <p className="mt-1 text-small text-fg-muted">Reason: {local.moderationReason}</p>
               ) : null}
-              <Link href="/legal/community-rules" className="mt-1 inline-block text-small font-semibold text-accent underline underline-offset-2 hover:opacity-80">
+              <Link href="/legal/community-rules" className="mt-1 inline-block text-small font-semibold text-accent-ink underline underline-offset-2 hover:opacity-80">
                 Learn more
               </Link>
             </div>
@@ -263,7 +272,7 @@ export function PostCard({
 
           <div className={cn("flex items-start gap-3 px-4", local.type === "REPOST" && local.repostOf ? "pt-2" : "pt-3.5")}>
             <Link href={`/profile/${displayAuthor.username}`} aria-label={`${displayAuthor.fullName}'s profile`}>
-              <Avatar name={displayAuthor.fullName} src={displayAuthor.photoUrl} size="md" />
+              <Avatar name={displayAuthor.fullName} seed={displayAuthor.username} src={displayAuthor.photoUrl} size="md" />
             </Link>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
@@ -275,15 +284,12 @@ export function PostCard({
               <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-small text-fg-subtle">
                 <span className="truncate">@{displayAuthor.username}</span>
                 <span aria-hidden="true">·</span>
-                <span>{timeAgo(displayCreatedAt)}</span>
+                <span className="whitespace-nowrap">{timeAgo(displayCreatedAt)}</span>
                 {editedRecently(local) ? (
-                  <>
-                    <span aria-hidden="true">·</span>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 text-[0.6875rem] font-semibold text-accent">
-                      <Pencil aria-hidden="true" className="size-2.5" />
-                      Edited
-                    </span>
-                  </>
+                  <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-accent-soft px-2 py-0.5 text-[0.6875rem] font-semibold text-accent-ink">
+                    <Pencil aria-hidden="true" className="size-2.5" />
+                    Edited
+                  </span>
                 ) : null}
               </div>
               <p className="mt-0.5 flex items-center gap-1.5 text-tiny text-fg-subtle">
@@ -295,7 +301,7 @@ export function PostCard({
             </div>
 
             <div className="shrink-0">
-              <IconButton label="Post options" aria-haspopup="dialog" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)} className="-mr-1.5 -mt-1 size-9 text-fg-muted">
+              <IconButton label="Post options" aria-haspopup="dialog" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)} className="-mr-2 -mt-1 size-11 text-fg-muted">
                 <MoreHorizontal aria-hidden="true" className="size-5" />
               </IconButton>
             </div>
@@ -314,9 +320,9 @@ export function PostCard({
                   </span>
                 ) : null}
                 {local.acceptedCommentId ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[#16a34a] px-2.5 py-0.5 text-tiny font-semibold text-white">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-success-solid px-2.5 py-0.5 text-tiny font-semibold text-white">
                     <Check aria-hidden="true" className="size-3" strokeWidth={3} />
-                    Accepted answer
+                    Answered
                   </span>
                 ) : null}
               </div>
@@ -325,11 +331,11 @@ export function PostCard({
             {local.type === "POLL" ? (
               <div className="mb-1.5 flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-2.5 py-0.5 text-tiny font-semibold text-accent-soft-fg">
-                  <BarChart3 aria-hidden="true" className="size-3.5 text-accent" />
+                  <BarChart3 aria-hidden="true" className="size-3.5 text-accent-ink" />
                   Poll
                 </span>
                 {poll?.hasVoted ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[#16a34a] px-2.5 py-0.5 text-tiny font-semibold text-white">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-success-soft px-2.5 py-0.5 text-tiny font-semibold text-success">
                     <Check aria-hidden="true" className="size-3" strokeWidth={3} />
                     You voted
                   </span>
@@ -346,13 +352,20 @@ export function PostCard({
                     )}
                   </h2>
                   {body && (expanded || local.questionTitle !== body) ? (
-                    <RichText body={body} className="mt-1 whitespace-pre-line break-words text-[0.9375rem] leading-relaxed text-fg" />
+                    <>
+                      <RichText body={body} className="mt-1 whitespace-pre-line break-words text-[0.9375rem] leading-relaxed text-fg" />
+                      {isLong ? (
+                        <button type="button" onClick={() => setShowFull((value) => !value)} className="mt-1 text-small font-semibold text-accent-ink hover:underline">
+                          {showFull ? "Show less" : "Read more"}
+                        </button>
+                      ) : null}
+                    </>
                   ) : null}
                 </div>
                 {showQuestionInlineCta ? (
                   <Link
                     href={`/p/${local.id}#comments`}
-                    className="mt-0.5 inline-flex h-8 shrink-0 items-center rounded-full border border-accent/60 bg-surface px-3.5 text-small font-semibold text-accent transition hover:bg-accent-soft"
+                    className="mt-0.5 inline-flex h-8 shrink-0 items-center rounded-full border border-accent bg-surface px-3.5 text-small font-semibold text-accent-ink transition hover:bg-accent-soft"
                   >
                     I can help
                   </Link>
@@ -363,7 +376,7 @@ export function PostCard({
                 <div className="min-w-0 flex-1">
                   <RichText body={body} className="whitespace-pre-line break-words text-[0.9375rem] leading-relaxed text-fg" />
                   {isLong ? (
-                    <button type="button" onClick={() => setShowFull((value) => !value)} className="mt-1 text-small font-semibold text-accent hover:underline">
+                    <button type="button" onClick={() => setShowFull((value) => !value)} className="mt-1 text-small font-semibold text-accent-ink hover:underline">
                       {showFull ? "Show less" : "Read more"}
                     </button>
                   ) : null}
@@ -371,7 +384,7 @@ export function PostCard({
                 {showQuestionInlineCta ? (
                   <Link
                     href={`/p/${local.id}#comments`}
-                    className="inline-flex h-8 shrink-0 items-center rounded-full border border-accent/60 bg-surface px-3.5 text-small font-semibold text-accent transition hover:bg-accent-soft"
+                    className="inline-flex h-8 shrink-0 items-center rounded-full border border-accent bg-surface px-3.5 text-small font-semibold text-accent-ink transition hover:bg-accent-soft"
                   >
                     I can help
                   </Link>
@@ -398,9 +411,9 @@ export function PostCard({
             ) : null}
 
             {local.type === "REPOST" && local.repostOf && local.body.trim() ? (
-              <Link href={`/p/${local.repostOf.id}`} className="mt-3 block rounded-[14px] border border-border bg-surface p-3.5 transition hover:border-border-strong">
+              <Link href={`/p/${local.repostOf.id}`} className="mt-3 block rounded-[14px] border border-border bg-surface-2 p-3.5 transition hover:border-border-strong">
                 <div className="flex items-center gap-2">
-                  <Avatar name={local.repostOf.author.fullName} src={local.repostOf.author.photoUrl} size="xs" />
+                  <Avatar name={local.repostOf.author.fullName} seed={local.repostOf.author.username} src={local.repostOf.author.photoUrl} size="xs" />
                   <div className="min-w-0">
                     <div className="flex items-center gap-1">
                       <span className="truncate text-small font-semibold text-fg">{local.repostOf.author.fullName}</span>
@@ -418,7 +431,7 @@ export function PostCard({
             ) : null}
 
             {local.media.length > 0 ? (
-              <MediaGrid media={local.media} onOpen={(index) => { setViewerIndex(index); setViewerOpen(true); }} />
+              <MediaGrid media={local.media} onOpen={(index) => { setViewerIndex(index); setViewerZoomed(false); setViewerOpen(true); }} />
             ) : null}
 
             {poll ? (
@@ -432,21 +445,21 @@ export function PostCard({
           </div>
 
           {expanded ? (
-            <div className="mx-4 mt-2.5 flex items-center justify-between gap-3 border-y border-border py-2.5 text-small text-fg-muted">
-              <p className="min-w-0 truncate">
-                <span className="font-semibold text-fg">{formatCount(local.reactionCount)}</span> reactions
-                <span aria-hidden="true"> · </span>
-                <span className="font-semibold text-fg">{formatCount(local.commentCount)}</span> comments
-                <span aria-hidden="true"> · </span>
-                <span className="font-semibold text-fg">{formatCount(local.repostCount)}</span> reposts
+            <div className="mx-4 mt-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-y border-border py-2.5 text-tiny text-fg-muted sm:text-small">
+              <p className="flex flex-wrap items-center gap-x-1.5">
+                <span><span className="font-semibold text-fg">{formatCount(local.reactionCount)}</span> reactions</span>
+                <span aria-hidden="true">·</span>
+                <span><span className="font-semibold text-fg">{formatCount(local.commentCount)}</span> comments</span>
+                <span aria-hidden="true">·</span>
+                <span><span className="font-semibold text-fg">{formatCount(local.repostCount)}</span> reposts</span>
               </p>
-              <button type="button" onClick={() => void openReactions()} className="inline-flex shrink-0 items-center gap-0.5 font-semibold text-accent hover:underline">
+              <button type="button" onClick={() => void openReactions()} className="inline-flex shrink-0 items-center gap-0.5 font-semibold text-accent-ink hover:underline">
                 Who reacted <ChevronRight aria-hidden="true" className="size-4" />
               </button>
             </div>
           ) : null}
 
-          <div className="flex items-center justify-between gap-0.5 px-2.5 pb-1.5 pt-1">
+          <div className="flex items-center justify-between gap-0.5 px-2.5 pb-1 pt-0.5">
             <ActionButton
               label={`${local.commentCount} comments`}
               href={`/p/${local.id}#comments`}
@@ -456,11 +469,15 @@ export function PostCard({
             <button
               type="button"
               onClick={() => void repost()}
-              className="inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-[10px] text-small font-medium text-fg-muted transition hover:bg-surface-2 hover:text-fg"
+              aria-pressed={repostedByMe}
+              className={cn(
+                "inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-[10px] text-small font-medium transition hover:bg-surface-2",
+                repostedByMe ? "text-success" : "text-fg-muted hover:text-fg",
+              )}
               aria-label={`Repost (${local.repostCount})`}
             >
               <Repeat2 aria-hidden="true" className="size-[18px]" />
-              {local.repostCount > 0 ? <span className="tabular-nums">{formatCount(local.repostCount)}</span> : null}
+              {local.repostCount > 0 ? <span className="tabular-nums">{formatCompactCount(local.repostCount)}</span> : null}
             </button>
             <button
               type="button"
@@ -468,14 +485,18 @@ export function PostCard({
               aria-pressed={local.viewer.reacted}
               aria-label={local.viewer.reacted ? "Remove heart" : "React with a heart"}
               className={cn(
-                "inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-[10px] text-small font-medium transition hover:bg-surface-2",
-                local.viewer.reacted ? "text-[#e11d48]" : "text-fg-muted hover:text-fg",
+                "inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-[10px] text-small font-medium transition hover:bg-surface-2",
+                local.viewer.reacted ? "text-danger" : "text-fg-muted hover:text-fg",
               )}
             >
-              <Heart aria-hidden="true" className="size-[18px]" fill={local.viewer.reacted ? "currentColor" : "none"} />
+              <Heart
+                aria-hidden="true"
+                className={cn("size-[18px]", local.viewer.reacted && "animate-heart-pop")}
+                fill={local.viewer.reacted ? "currentColor" : "none"}
+              />
               {local.reactionCount > 0 ? (
                 <span className="tabular-nums" onClick={(event) => { event.stopPropagation(); void openReactions(); }}>
-                  {formatCount(local.reactionCount)}
+                  {formatCompactCount(local.reactionCount)}
                 </span>
               ) : null}
             </button>
@@ -485,8 +506,8 @@ export function PostCard({
               aria-pressed={local.viewer.bookmarked}
               aria-label={local.viewer.bookmarked ? "Remove bookmark" : "Bookmark"}
               className={cn(
-                "inline-flex min-h-9 flex-1 items-center justify-center rounded-[10px] transition hover:bg-surface-2",
-                local.viewer.bookmarked ? "text-accent" : "text-fg-muted hover:text-fg",
+                "inline-flex min-h-11 flex-1 items-center justify-center rounded-[10px] transition hover:bg-surface-2",
+                local.viewer.bookmarked ? "text-accent-ink" : "text-fg-muted hover:text-fg",
               )}
             >
               <Bookmark aria-hidden="true" className="size-[18px]" fill={local.viewer.bookmarked ? "currentColor" : "none"} />
@@ -610,7 +631,7 @@ export function PostCard({
               {people.map((person) => (
                 <li key={person.username}>
                   <Link href={`/profile/${person.username}`} className="flex items-center gap-3 py-2.5">
-                    <Avatar name={person.fullName} src={person.photoUrl} size="sm" />
+                    <Avatar name={person.fullName} seed={person.username} src={person.photoUrl} size="sm" />
                     <span className="min-w-0">
                       <span className="block truncate text-small font-semibold text-fg">{person.fullName}</span>
                       <span className="block truncate text-tiny text-fg-subtle">@{person.username}</span>
@@ -631,15 +652,36 @@ export function PostCard({
           aria-label="Image viewer"
           tabIndex={-1}
           className="fixed inset-0 z-[100] flex flex-col bg-black text-white"
+          onTouchStart={(event) => {
+            const t = event.touches[0];
+            if (t) touchStart.current = { x: t.clientX, y: t.clientY };
+          }}
+          onTouchEnd={(event) => {
+            if (!touchStart.current) return;
+            const t = event.changedTouches[0];
+            if (!t) return;
+            const dx = t.clientX - touchStart.current.x;
+            const dy = t.clientY - touchStart.current.y;
+            touchStart.current = null;
+            if (dy > 90 && Math.abs(dx) < 60) {
+              setViewerOpen(false);
+            } else if (dx < -50 && viewerIndex < local.media.length - 1) {
+              setViewerZoomed(false);
+              setViewerIndex((index) => index + 1);
+            } else if (dx > 50 && viewerIndex > 0) {
+              setViewerZoomed(false);
+              setViewerIndex((index) => index - 1);
+            }
+          }}
           onKeyDown={(event) => {
             if (event.key === "Escape") setViewerOpen(false);
-            if (event.key === "ArrowLeft") setViewerIndex((index) => Math.max(0, index - 1));
-            if (event.key === "ArrowRight") setViewerIndex((index) => Math.min(local.media.length - 1, index + 1));
+            if (event.key === "ArrowLeft") { setViewerZoomed(false); setViewerIndex((index) => Math.max(0, index - 1)); }
+            if (event.key === "ArrowRight") { setViewerZoomed(false); setViewerIndex((index) => Math.min(local.media.length - 1, index + 1)); }
           }}
         >
           <div className="relative mx-auto flex h-16 w-full max-w-2xl items-center px-4 pt-3">
             <div className="flex h-11 w-full items-center gap-2 rounded-full border border-white/25 bg-white/10 px-2 backdrop-blur-md">
-              <button type="button" onClick={() => setViewerOpen(false)} aria-label="Close image viewer" className="flex size-9 items-center justify-center rounded-full text-white hover:bg-white/15">
+              <button type="button" onClick={() => setViewerOpen(false)} aria-label="Close image viewer" className="flex size-10 items-center justify-center rounded-full text-white hover:bg-white/15">
                 <X aria-hidden="true" className="size-5" />
               </button>
               <p className="flex-1 text-center text-small font-semibold tabular-nums text-white">
@@ -650,7 +692,7 @@ export function PostCard({
                 onClick={() => setViewerMenu((value) => !value)}
                 aria-label="Image options"
                 aria-expanded={viewerMenu}
-                className="flex size-9 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25"
+                className="flex size-10 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25"
               >
                 <MoreHorizontal aria-hidden="true" className="size-5" />
               </button>
@@ -679,13 +721,13 @@ export function PostCard({
             ) : null}
           </div>
 
-          <div className="relative flex min-h-0 flex-1 items-center justify-center px-3 py-4">
+          <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden px-3 py-4">
             {viewerIndex > 0 ? (
               <button
                 type="button"
-                onClick={() => setViewerIndex((index) => index - 1)}
+                onClick={() => { setViewerZoomed(false); setViewerIndex((index) => index - 1); }}
                 aria-label="Previous image"
-                className="absolute left-4 z-10 flex size-10 items-center justify-center rounded-full bg-black/45 text-white/95 backdrop-blur-sm hover:bg-black/70"
+                className="absolute left-4 z-10 flex size-11 items-center justify-center rounded-full bg-black/50 text-white/95 backdrop-blur-sm hover:bg-black/75"
               >
                 <ChevronRight aria-hidden="true" className="size-5 rotate-180" />
               </button>
@@ -696,14 +738,19 @@ export function PostCard({
               alt={local.media[viewerIndex]?.alt ?? "Post image"}
               width={local.media[viewerIndex]?.width}
               height={local.media[viewerIndex]?.height}
-              className="max-h-full max-w-full object-contain"
+              onDoubleClick={() => setViewerZoomed((value) => !value)}
+              onClick={() => { if (viewerZoomed) setViewerZoomed(false); }}
+              className={cn(
+                "max-h-full max-w-full cursor-zoom-in object-contain transition-transform duration-200",
+                viewerZoomed && "scale-150 cursor-zoom-out",
+              )}
             />
             {viewerIndex < local.media.length - 1 ? (
               <button
                 type="button"
-                onClick={() => setViewerIndex((index) => index + 1)}
+                onClick={() => { setViewerZoomed(false); setViewerIndex((index) => index + 1); }}
                 aria-label="Next image"
-                className="absolute right-4 z-10 flex size-10 items-center justify-center rounded-full bg-black/45 text-white/95 backdrop-blur-sm hover:bg-black/70"
+                className="absolute right-4 z-10 flex size-11 items-center justify-center rounded-full bg-black/50 text-white/95 backdrop-blur-sm hover:bg-black/75"
               >
                 <ChevronRight aria-hidden="true" className="size-5" />
               </button>
@@ -718,8 +765,8 @@ export function PostCard({
                   type="button"
                   aria-label={`Show image ${index + 1}`}
                   aria-current={index === viewerIndex}
-                  onClick={() => setViewerIndex(index)}
-                  className={cn("size-2 rounded-full transition", index === viewerIndex ? "bg-white" : "bg-white/40")}
+                  onClick={() => { setViewerZoomed(false); setViewerIndex(index); }}
+                  className={cn("size-2.5 rounded-full transition", index === viewerIndex ? "bg-white" : "bg-white/40")}
                 />
               ))}
             </div>
@@ -735,10 +782,10 @@ function ActionButton({ label, href, icon, count }: { label: string; href: strin
     <Link
       href={href}
       aria-label={label}
-      className="inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-[10px] text-small font-medium text-fg-muted transition hover:bg-surface-2 hover:text-fg"
+      className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-[10px] text-small font-medium text-fg-muted transition hover:bg-surface-2 hover:text-fg"
     >
       {icon}
-      {count > 0 ? <span className="tabular-nums">{formatCount(count)}</span> : null}
+      {count > 0 ? <span className="tabular-nums">{formatCompactCount(count)}</span> : null}
     </Link>
   );
 }
@@ -781,7 +828,7 @@ function MediaGrid({ media, onOpen }: { media: PostMediaView[]; onOpen: (index: 
   if (media.length === 1) {
     const item = media[0]!;
     return (
-      <button type="button" onClick={() => onOpen(0)} className="mt-2.5 block w-full overflow-hidden rounded-[14px] border border-border" aria-label="Open image viewer">
+      <button type="button" onClick={() => onOpen(0)} className="mt-2.5 block w-full overflow-hidden rounded-[12px] border border-border" aria-label="Open image viewer">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={item.url}
@@ -790,33 +837,47 @@ function MediaGrid({ media, onOpen }: { media: PostMediaView[]; onOpen: (index: 
           height={item.height}
           loading="lazy"
           decoding="async"
-          className="h-auto max-h-[380px] w-full bg-surface-2 object-cover"
+          className="h-auto max-h-[360px] w-full bg-surface-2 object-cover"
         />
       </button>
     );
   }
+  const visible = media.slice(0, 4);
+  const extraCount = media.length > 4 ? media.length - 4 : 0;
   return (
-    <div className={cn("mt-2.5 grid gap-1.5 overflow-hidden rounded-[14px]", media.length === 2 ? "grid-cols-2" : "grid-cols-2")}>
-      {media.map((item, index) => (
-        <button
-          key={item.id}
-          type="button"
-          onClick={() => onOpen(index)}
-          className="relative aspect-[4/3] overflow-hidden rounded-[10px] bg-surface-2"
-          aria-label={`Open image ${index + 1}`}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={item.url}
-            alt={item.alt ?? "Image attached to post"}
-            width={item.width}
-            height={item.height}
-            loading="lazy"
-            decoding="async"
-            className="size-full object-cover"
-          />
-        </button>
-      ))}
+    <div className="mt-2.5 grid grid-cols-2 gap-1 overflow-hidden rounded-[12px] border border-border bg-surface-2">
+      {visible.map((item, index) => {
+        const isThreeFirst = media.length === 3 && index === 0;
+        const showMoreOverlay = extraCount > 0 && index === 3;
+        return (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => onOpen(index)}
+            className={cn(
+              "relative overflow-hidden bg-surface-2",
+              isThreeFirst ? "row-span-2 h-full min-h-[220px]" : "aspect-square",
+            )}
+            aria-label={showMoreOverlay ? `Open image 4 of ${media.length}` : `Open image ${index + 1}`}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={item.url}
+              alt={item.alt ?? "Image attached to post"}
+              width={item.width}
+              height={item.height}
+              loading="lazy"
+              decoding="async"
+              className="size-full object-cover"
+            />
+            {showMoreOverlay ? (
+              <span className="absolute inset-0 flex items-center justify-center bg-black/55 font-display text-[1.25rem] font-bold text-white backdrop-blur-[1px]">
+                +{extraCount}
+              </span>
+            ) : null}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -869,7 +930,7 @@ function PollBox({ post, onVoted }: { post: PostView; onVoted: (next: PostView) 
               type="button"
               disabled={voting}
               onClick={() => void vote(option.id)}
-              className="flex min-h-10 w-full items-center gap-3 rounded-[10px] border border-border bg-surface px-3 py-2 text-left text-small font-medium text-fg transition hover:border-accent hover:bg-accent-soft disabled:opacity-60"
+              className="flex min-h-11 w-full items-center gap-3 rounded-button border border-border bg-surface px-3.5 py-2 text-left text-small font-medium text-fg transition hover:border-accent hover:bg-accent-soft disabled:opacity-60"
             >
               <span aria-hidden="true" className="flex size-4 shrink-0 items-center justify-center rounded-full border border-border-strong bg-surface" />
               <span className="truncate">{option.text}</span>
@@ -877,17 +938,18 @@ function PollBox({ post, onVoted }: { post: PostView; onVoted: (next: PostView) 
           );
         }
         return (
-          <div key={option.id} className="relative overflow-hidden rounded-[8px] bg-surface-2">
+          <div key={option.id} className="relative overflow-hidden rounded-button bg-surface-2">
             <span
               aria-hidden="true"
               className={cn(
-                "absolute inset-y-0 left-0 rounded-r-[6px] transition-[width] duration-300",
+                "absolute inset-y-0 left-0 rounded-r-[8px] transition-[width] duration-[400ms] ease-out",
                 chosen ? "bg-accent/25" : "bg-accent/15",
               )}
               style={{ width: `${option.percent}%` }}
             />
-            <div className={cn("relative flex min-h-9 items-center justify-between gap-3 px-3 py-1.5 text-small", chosen ? "font-semibold text-fg" : "font-medium text-fg")}>
+            <div className={cn("relative flex min-h-11 items-center justify-between gap-3 px-3.5 py-2 text-small", chosen ? "font-bold text-fg" : "font-medium text-fg")}>
               <span className="flex min-w-0 items-center gap-1.5">
+                {chosen ? <Check aria-hidden="true" className="size-4 shrink-0 text-accent-ink" strokeWidth={2.5} /> : null}
                 <span className="truncate">{option.text}</span>
                 {chosen ? <span className="sr-only"> Your vote</span> : null}
               </span>
@@ -1033,7 +1095,7 @@ export function ReportSheet({
         </div>
       ) : (
         <div className="pb-3 pt-2 text-center">
-          <span className="mx-auto flex size-14 items-center justify-center rounded-full bg-[#16a34a] text-white">
+          <span className="mx-auto flex size-14 items-center justify-center rounded-full bg-success-solid text-white">
             <Check aria-hidden="true" className="size-7" strokeWidth={3} />
           </span>
           <h3 className="mt-3 font-display text-[1.125rem] font-bold leading-snug text-fg">
@@ -1066,7 +1128,7 @@ export function ReportSheet({
                 toast({ title: "Report received" });
                 onClose();
               }}
-              className="mt-1 min-h-10 w-full text-center text-small font-semibold text-accent hover:underline"
+              className="mt-1 min-h-11 w-full text-center text-small font-semibold text-accent-ink hover:underline"
             >
               Done
             </button>

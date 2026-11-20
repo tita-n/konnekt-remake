@@ -5,6 +5,7 @@ import { CreditCard, Mail, ShieldCheck, Users } from "lucide-react";
 import { findActiveUniversityBySlug } from "@/lib/services/universities";
 import { accentCssVars } from "@/lib/domain/color";
 import { AuthShell } from "@/components/auth/auth-shell";
+import { UniversityShieldMark } from "@/components/brand/logo";
 import { Stepper } from "@/components/ui/navigation";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -32,9 +33,7 @@ export default async function ChooseVerificationPage({ params }: { params: Promi
           // eslint-disable-next-line @next/next/no-img-element
           <img src={university.logoUrl} alt="" width={44} height={44} className="size-11 rounded-[13px] object-cover" />
         ) : (
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-[13px] bg-accent text-small font-bold text-accent-fg">
-            {university.shortName.slice(0, 2).toUpperCase()}
-          </span>
+          <UniversityShieldMark className="size-11 shrink-0" />
         )}
         <div className="min-w-0">
           <p className="truncate text-[0.9375rem] font-semibold text-fg">{university.name}</p>
@@ -96,7 +95,7 @@ export default async function ChooseVerificationPage({ params }: { params: Promi
         {university.studentEmailDomains.length > 0 && university.idCardEnabled ? (
           <p className="mt-5 rounded-card bg-surface-2 px-3.5 py-3 text-small text-fg-muted">
             Can&apos;t get into your school email?{" "}
-            <Link href={`/signup/${university.slug}/id`} className="font-semibold text-accent underline-offset-2 hover:underline">
+            <Link href={`/signup/${university.slug}/id`} className="font-semibold text-accent-ink underline-offset-2 hover:underline">
               Use your ID card instead
             </Link>
             .
@@ -132,7 +131,7 @@ function MethodCard({
         href={href}
         className="group flex items-start gap-3.5 rounded-card border border-border bg-surface p-4 transition hover:border-border-strong hover:bg-surface-2/40"
       >
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-[12px] bg-accent-soft text-accent">{icon}</span>
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-[12px] bg-accent-soft text-accent-ink">{icon}</span>
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center gap-2">
             <span className="text-[0.9375rem] font-semibold text-fg">{title}</span>

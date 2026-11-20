@@ -44,7 +44,7 @@ export default async function AdminAuditPage() {
 
       {logs.length === 0 ? (
         <Card className="px-6 py-12 text-center">
-          <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-accent-soft text-accent">
+          <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-accent-soft text-accent-ink">
             <ScrollText aria-hidden="true" className="size-5" />
           </span>
           <p className="mt-3 font-display text-h3 text-fg">No audit entries yet</p>
@@ -80,7 +80,7 @@ export default async function AdminAuditPage() {
                       )}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3">
-                      <span className="rounded-full bg-accent-soft px-2.5 py-0.5 text-tiny font-semibold text-accent">
+                      <span className="rounded-full bg-accent-soft px-2.5 py-0.5 text-tiny font-semibold text-accent-ink">
                         {entry.action.replaceAll(".", " · ")}
                       </span>
                     </td>

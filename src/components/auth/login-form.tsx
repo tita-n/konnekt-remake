@@ -42,7 +42,7 @@ export function LoginForm({ siteKey, next }: { siteKey: string; next?: string })
           error={state.field === "password" ? state.error : null}
         />
         <div className="mt-1.5 text-right">
-          <Link href="/forgot-password" className="text-small font-semibold text-accent underline-offset-2 hover:underline">
+          <Link href="/forgot-password" className="text-small font-semibold text-accent-ink underline-offset-2 hover:underline">
             Forgot password?
           </Link>
         </div>

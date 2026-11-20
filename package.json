@@ -22,6 +22,7 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:e2e": "playwright test",
     "icons": "node scripts/gen-icons.mjs",
+    "shots": "node scripts/shots.mjs",
     "lighthouse": "lhci autorun"
   },
   "prisma": {

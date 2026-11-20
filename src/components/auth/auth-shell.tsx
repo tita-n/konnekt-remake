@@ -27,7 +27,7 @@ export function AuthShell({
           {backLabel}
         </Link>
       ) : null}
-      {eyebrow ? <p className="mb-1.5 text-tiny font-bold uppercase tracking-[0.12em] text-accent">{eyebrow}</p> : null}
+      {eyebrow ? <p className="mb-1.5 text-tiny font-bold uppercase tracking-[0.12em] text-accent-ink">{eyebrow}</p> : null}
       <h1 className="text-h1 text-fg">{title}</h1>
       {description ? <div className="mt-2 text-body text-fg-muted">{description}</div> : null}
       <div className="mt-6">{children}</div>

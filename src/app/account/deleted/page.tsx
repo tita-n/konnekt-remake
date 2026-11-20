@@ -54,7 +54,7 @@ export default async function DeletedPendingPage() {
         </div>
         <p className="mt-4 text-center text-small text-fg-muted">
           Need help? Email{" "}
-          <a href="mailto:support@konnekt.ng" className="font-semibold text-accent underline-offset-2 hover:underline">
+          <a href="mailto:support@konnekt.ng" className="font-semibold text-accent-ink underline-offset-2 hover:underline">
             support@konnekt.ng
           </a>{" "}
           with your username, @{user.username}.

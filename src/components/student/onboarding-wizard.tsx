@@ -125,7 +125,7 @@ export function OnboardingWizard({
                   };
                   input.click();
                 }}
-                className="inline-flex items-center gap-1.5 text-small font-semibold text-accent underline-offset-2 hover:underline"
+                className="inline-flex items-center gap-1.5 text-small font-semibold text-accent-ink underline-offset-2 hover:underline"
               >
                 <Camera aria-hidden="true" className="size-4" />
                 {photoUrl ? "Change photo" : "Add a photo"}
@@ -133,7 +133,7 @@ export function OnboardingWizard({
               <p className="mt-0.5 text-small text-fg-subtle">Optional. Your initials work fine too.</p>
               {photoError ? <p className="mt-1 text-small text-danger">{photoError}</p> : null}
             </div>
-            {uploading ? <Loader2 aria-hidden="true" className="ml-auto size-5 animate-spin text-accent" /> : null}
+            {uploading ? <Loader2 aria-hidden="true" className="ml-auto size-5 animate-spin text-accent-ink" /> : null}
           </div>
 
           <SelectField
@@ -186,9 +186,11 @@ export function OnboardingWizard({
 
           <FormMessage error={profileState.error && !profileState.field ? profileState.error : null} />
 
-          <Button type="submit" size="lg" fullWidth loading={savingProfile} loadingLabel="Saving…">
-            Continue
-          </Button>
+          <div className="sticky bottom-0 z-10 -mx-5 border-t border-border/80 bg-bg/95 px-5 py-3.5 backdrop-blur-sm sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0">
+            <Button type="submit" size="lg" fullWidth loading={savingProfile} loadingLabel="Saving…">
+              Continue
+            </Button>
+          </div>
         </form>
       ) : (
         <form action={interestsAction} className="mt-6 space-y-4">
@@ -223,16 +225,18 @@ export function OnboardingWizard({
             <span className="text-fg-muted">
               {selected.length} selected · minimum 3
             </span>
-            <button type="button" onClick={() => setStep(0)} className="font-semibold text-accent underline-offset-2 hover:underline">
+            <button type="button" onClick={() => setStep(0)} className="font-semibold text-accent-ink underline-offset-2 hover:underline">
               Back to profile
             </button>
           </div>
 
           <FormMessage error={interestsState.error} />
 
-          <Button type="submit" size="lg" fullWidth loading={savingInterests} loadingLabel="Finishing…" disabled={selected.length < 3}>
-            {selected.length < 3 ? "Pick at least 3 interests" : "Finish and enter Konnekt"}
-          </Button>
+          <div className="sticky bottom-0 z-10 -mx-5 border-t border-border/80 bg-bg/95 px-5 py-3.5 backdrop-blur-sm sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0">
+            <Button type="submit" size="lg" fullWidth loading={savingInterests} loadingLabel="Finishing…" disabled={selected.length < 3}>
+              {selected.length < 3 ? "Pick at least 3 interests" : "Finish and enter Konnekt"}
+            </Button>
+          </div>
         </form>
       )}
 

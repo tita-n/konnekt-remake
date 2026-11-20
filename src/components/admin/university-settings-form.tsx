@@ -1,10 +1,11 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { AlertCircle, Check, ImagePlus, Loader2, ShieldCheck } from "lucide-react";
+import { AlertCircle, Bell, Check, ImagePlus, Loader2, Search, ShieldCheck } from "lucide-react";
 import { universitySettingsAction } from "@/app/admin/actions";
 import { emptyFormState } from "@/lib/action-state";
-import { checkAccentContrast, readableOn } from "@/lib/domain/color";
+import { accentCssVars, checkAccentContrast, readableOn } from "@/lib/domain/color";
+import { UniversityShieldMark } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import type { UniversitySettings } from "@/lib/services/admin";
 
@@ -16,12 +17,15 @@ function readCookie(name: string): string | null {
 export function UniversitySettingsForm({ settings }: { settings: UniversitySettings }) {
   const [state, formAction, pending] = useActionState(universitySettingsAction, emptyFormState);
   const [accent, setAccent] = useState(settings.accentColor);
+  const [shortName, setShortName] = useState(settings.shortName);
   const [logoUrl, setLogoUrl] = useState(settings.logoUrl);
+  const [previewTheme, setPreviewTheme] = useState<"light" | "dark">("light");
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [pattern, setPattern] = useState(settings.matricPattern);
   const [matricProbe, setMatricProbe] = useState("");
   const contrast = checkAccentContrast(accent);
+  const previewVars = ( /^#[0-9a-fA-F]{6}$/.test(accent) ? accentCssVars(accent) : accentCssVars("#4f46e5") ) as React.CSSProperties;
 
   let patternValid = true;
   let probeMatches = false;
@@ -66,7 +70,15 @@ export function UniversitySettingsForm({ settings }: { settings: UniversitySetti
             </div>
             <div>
               <label htmlFor="uni-short" className="mb-1 block text-small font-semibold text-fg">Short name</label>
-              <input id="uni-short" name="shortName" defaultValue={settings.shortName} required maxLength={24} className="h-10 w-full rounded-input border border-border bg-surface px-3 text-small" />
+              <input
+                id="uni-short"
+                name="shortName"
+                value={shortName}
+                onChange={(event) => setShortName(event.target.value)}
+                required
+                maxLength={24}
+                className="h-10 w-full rounded-input border border-border bg-surface px-3 text-small text-fg"
+              />
             </div>
             <div>
               <label htmlFor="uni-accent" className="mb-1 block text-small font-semibold text-fg">Accent colour</label>
@@ -171,7 +183,7 @@ export function UniversitySettingsForm({ settings }: { settings: UniversitySetti
                   Always on when domains are configured. Add your student email domains below.
                 </span>
               </span>
-              <ShieldCheck aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-accent" />
+              <ShieldCheck aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-accent-ink" />
             </label>
             <div>
               <label htmlFor="uni-domains" className="mb-1 block text-small font-semibold text-fg">Student email domains</label>
@@ -179,8 +191,8 @@ export function UniversitySettingsForm({ settings }: { settings: UniversitySetti
                 id="uni-domains"
                 name="studentEmailDomains"
                 defaultValue={settings.studentEmailDomains.join(", ")}
-                placeholder="student.demo.edu.ng, demo.edu.ng"
-                className="h-10 w-full rounded-input border border-border bg-surface px-3 text-small"
+                placeholder="student.nova.edu.ng, nova.edu.ng"
+                className="h-10 w-full rounded-input border border-border bg-surface px-3 text-small text-fg"
               />
               <p className="mt-1 text-[0.75rem] text-fg-subtle">Comma or space separated. Only these addresses can auto-verify.</p>
             </div>
@@ -226,6 +238,62 @@ export function UniversitySettingsForm({ settings }: { settings: UniversitySetti
       </div>
 
       <div className="space-y-4">
+        <section className="rounded-card border border-border bg-surface p-4">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-h3 text-fg">Mobile branding preview</h2>
+            <div className="inline-flex rounded-chip border border-border bg-surface-2 p-0.5 text-tiny font-semibold">
+              <button
+                type="button"
+                onClick={() => setPreviewTheme("light")}
+                className={`rounded-chip px-2.5 py-1 transition ${previewTheme === "light" ? "bg-surface text-fg" : "text-fg-muted"}`}
+              >
+                Light
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreviewTheme("dark")}
+                className={`rounded-chip px-2.5 py-1 transition ${previewTheme === "dark" ? "bg-surface text-fg" : "text-fg-muted"}`}
+              >
+                Dark
+              </button>
+            </div>
+          </div>
+          <div
+            data-theme={previewTheme}
+            style={previewVars}
+            className="mt-3 overflow-hidden rounded-[14px] border border-border bg-bg text-fg"
+          >
+            <div className="flex h-12 items-center justify-between border-b border-border bg-surface px-3">
+              <div className="flex items-center gap-2">
+                <UniversityShieldMark logoUrl={logoUrl} shortName={shortName} className="size-6" />
+                <span className="font-display text-small font-bold">{shortName || "Uni"}</span>
+              </div>
+              <div className="flex items-center gap-2 text-fg-muted">
+                <Search aria-hidden="true" className="size-4" />
+                <Bell aria-hidden="true" className="size-4" />
+              </div>
+            </div>
+            <div className="space-y-2.5 p-3">
+              <div className="flex items-center gap-2">
+                <span className="rounded-chip bg-accent px-3 py-1 text-tiny font-semibold text-accent-fg">
+                  All posts
+                </span>
+                <span className="rounded-chip border border-border bg-surface px-3 py-1 text-tiny font-medium text-fg-muted">
+                  My Level
+                </span>
+              </div>
+              <div className="flex items-center gap-2 pt-1">
+                <span className="inline-flex h-9 flex-1 items-center justify-center rounded-button bg-accent px-3 text-tiny font-semibold text-accent-fg">
+                  Primary button
+                </span>
+                <span className="inline-flex h-9 flex-1 items-center justify-center rounded-button border border-accent px-3 text-tiny font-semibold text-accent-ink">
+                  Secondary
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="rounded-card border border-border bg-surface p-4">
           <h2 className="text-h3 text-fg">Labels</h2>
           <p className="mt-1 text-small text-fg-muted">Match your university&apos;s language.</p>

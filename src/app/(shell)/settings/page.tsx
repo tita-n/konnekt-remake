@@ -52,7 +52,7 @@ export default async function SettingsPage() {
           {sections.map((section) => (
             <li key={section.href}>
               <Link href={section.href} className="flex items-center gap-3 px-4 py-3.5 transition hover:bg-surface-2">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-[11px] bg-accent-soft text-accent">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-[11px] bg-accent-soft text-accent-ink">
                   <section.icon aria-hidden="true" className="size-[18px]" />
                 </span>
                 <span className="min-w-0 flex-1">

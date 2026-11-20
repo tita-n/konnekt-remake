@@ -35,7 +35,7 @@ export default async function LoginPage({
       <LoginForm siteKey={turnstileSiteKey()} next={safeNextPath(params.next) ?? undefined} />
       <p className="mt-6 text-center text-small text-fg-muted">
         New to Konnekt?{" "}
-        <Link href="/signup" className="font-semibold text-accent underline-offset-2 hover:underline">
+        <Link href="/signup" className="font-semibold text-accent-ink underline-offset-2 hover:underline">
           Get started
         </Link>
       </p>

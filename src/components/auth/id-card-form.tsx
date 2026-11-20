@@ -126,12 +126,12 @@ export function IdCardForm({
         >
           {compressing ? (
             <>
-              <Loader2 aria-hidden="true" className="size-6 animate-spin text-accent" />
+              <Loader2 aria-hidden="true" className="size-6 animate-spin text-accent-ink" />
               <span className="text-small text-fg-muted">Compressing for your data…</span>
             </>
           ) : (
             <>
-              <ImageUp aria-hidden="true" className="size-6 text-accent" />
+              <ImageUp aria-hidden="true" className="size-6 text-accent-ink" />
               <span className="text-small font-semibold text-fg">
                 {file ? "Choose a different photo" : "Take or choose a photo"}
               </span>
@@ -162,7 +162,7 @@ export function IdCardForm({
 
       <div className="rounded-card bg-surface-2 px-3.5 py-3 text-small text-fg-muted">
         <p className="flex items-start gap-2">
-          <ShieldCheck aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-accent" />
+          <ShieldCheck aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-accent-ink" />
           <span>
             Only reviewers at this university can see this photo. It is deleted automatically once your request is
             approved or declined — we keep the decision, not the image.

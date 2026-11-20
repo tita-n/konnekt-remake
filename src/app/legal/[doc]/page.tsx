@@ -9,16 +9,30 @@ export async function generateMetadata({ params }: { params: Promise<{ doc: stri
   return { title: isLegalDoc(doc) ? LEGAL_DOCS[doc] : "Legal" };
 }
 
+const IN_SHORT: Record<string, string> = {
+  terms: "Only verified students may join. Keep posts respectful to your campus community, and delete or export your account anytime.",
+  privacy: "We collect only what verifies your student status, never show your matric number publicly, and let you export or delete your data.",
+  "community-rules": "Treat classmates with respect, keep academic spaces helpful, and flag spam or harassment for campus moderators.",
+};
+
 export default async function LegalPage({ params }: { params: Promise<{ doc: string }> }) {
   const { doc } = await params;
   if (!isLegalDoc(doc)) notFound();
   const document = await readLegalDoc(doc);
   if (!document) notFound();
 
+  const summary = IN_SHORT[doc];
+
   return (
     <article className="prose-legal max-w-none">
-      <p className="text-tiny font-bold uppercase tracking-[0.12em] text-accent">Version {document.version}</p>
-      <div className="mt-2">
+      <p className="text-tiny font-bold uppercase tracking-[0.12em] text-accent-ink">Version {document.version}</p>
+      {summary ? (
+        <div className="mt-3 rounded-card border border-accent/20 bg-accent-soft px-4 py-3">
+          <p className="text-tiny font-bold uppercase tracking-[0.08em] text-accent-ink">In short</p>
+          <p className="mt-1 text-small leading-relaxed text-fg">{summary}</p>
+        </div>
+      ) : null}
+      <div className="mt-4">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           components={{
@@ -32,7 +46,7 @@ export default async function LegalPage({ params }: { params: Promise<{ doc: str
             td: ({ children }) => <td className="border-b border-border px-2 py-1.5 align-top text-fg-muted">{children}</td>,
             code: ({ children }) => <code className="rounded bg-surface-2 px-1 py-0.5 text-[0.85em]">{children}</code>,
             a: ({ href, children }) => (
-              <a href={href} className="text-accent underline underline-offset-2">
+              <a href={href} className="text-accent-ink underline underline-offset-2">
                 {children}
               </a>
             ),

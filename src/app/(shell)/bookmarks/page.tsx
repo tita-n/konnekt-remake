@@ -32,16 +32,16 @@ export default async function BookmarksPage({
   return (
     <div className="pb-4">
       <header className="sticky top-14 z-20 flex h-14 items-center border-b border-border bg-surface px-2">
-        <Link href="/profile/me" aria-label="Back to profile" className="flex size-10 items-center justify-center rounded-full text-fg hover:bg-surface-2">
+        <Link href="/profile/me" aria-label="Back to profile" className="flex size-11 items-center justify-center rounded-full text-fg hover:bg-surface-2">
           <ArrowLeft aria-hidden="true" className="size-5" />
         </Link>
         <h1 className="flex-1 text-center text-h2 text-fg">Bookmarks</h1>
-        <span className="size-10" aria-hidden="true" />
+        <span className="size-11" aria-hidden="true" />
       </header>
 
-      <div className="px-3 pt-3">
-        <p className="flex items-center gap-2.5 rounded-[12px] bg-accent-soft px-3.5 py-3 text-small font-medium text-accent-soft-fg">
-          <Lock aria-hidden="true" className="size-4 shrink-0 text-accent" />
+      <div className="px-3.5 pt-3">
+        <p className="flex items-center gap-2.5 rounded-button bg-accent-soft px-3.5 py-3 text-small font-medium text-accent-soft-fg">
+          <Lock aria-hidden="true" className="size-4 shrink-0 text-accent-ink" />
           Only you can see your bookmarks.
         </p>
 
@@ -80,7 +80,7 @@ export default async function BookmarksPage({
           {page.posts.length === 0 ? (
             <div className="rounded-card border border-border bg-surface">
               <EmptyState
-                illustration="search"
+                illustration="bookmarks"
                 title={params.q ? "No bookmarks match" : "No bookmarks yet"}
                 description={params.q ? "Try a different search or filter." : "Tap the bookmark icon on a post and it will show up here, privately."}
               />
@@ -89,7 +89,7 @@ export default async function BookmarksPage({
             page.posts.map((post) => <PostCard key={post.id} post={post} />)
           )}
           {page.hasMore && page.nextCursor ? (
-            <Link href={`${base}&cursor=${encodeURIComponent(page.nextCursor)}`} className="flex h-11 items-center justify-center rounded-full border border-border bg-surface text-small font-semibold text-accent">
+            <Link href={`${base}&cursor=${encodeURIComponent(page.nextCursor)}`} className="flex h-11 items-center justify-center rounded-full border border-border bg-surface text-small font-semibold text-accent-ink">
               Load more
             </Link>
           ) : null}

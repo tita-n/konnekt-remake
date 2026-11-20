@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { ArrowLeft, ExternalLink, ShieldAlert } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ShieldAlert, XCircle } from "lucide-react";
 import { requireUniversityRole } from "@/lib/auth/guards";
 import { getVerificationDetail } from "@/lib/services/admin";
 import { DECISION_REASON_LABELS } from "@/lib/validation/schemas";
 import { Card } from "@/components/ui/display";
-import { Badge, RequestStatusBadge } from "@/components/admin/status-badge";
+import { RubberStamp } from "@/components/ui/rubber-stamp";
+import { VerificationDocViewer } from "@/components/admin/verification-doc-viewer";
 import { DecisionForm } from "@/components/admin/decision-form";
 import { validateMatric } from "@/lib/domain/matric";
 
@@ -20,21 +21,23 @@ export default async function VerificationDetailPage({ params }: { params: Promi
 
   const { request } = detail;
   const matric = validateMatric(request.matricNumber ?? "", detail.matricPattern);
+  const stampStatus =
+    request.status === "APPROVED" ? "APPROVED" : request.status === "REJECTED" ? "REJECTED" : "PENDING";
 
   return (
     <div className="space-y-5">
-      <Link href="/admin/verification" className="inline-flex items-center gap-1.5 text-small font-semibold text-fg-muted hover:text-fg">
+      <Link href="/admin/verification" className="inline-flex min-h-10 items-center gap-1.5 text-small font-semibold text-fg-muted hover:text-fg">
         <ArrowLeft aria-hidden="true" className="size-4" /> Queue
       </Link>
 
-      <header className="flex flex-wrap items-start justify-between gap-3">
+      <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-h1 text-fg">{request.user.fullName}</h1>
           <p className="mt-1 text-small text-fg-muted">
             @{request.user.username} · {request.user.email}
           </p>
         </div>
-        <RequestStatusBadge status={request.status} />
+        <RubberStamp status={stampStatus} />
       </header>
 
       <div className="grid gap-4 lg:grid-cols-[1.1fr_1fr]">
@@ -44,22 +47,11 @@ export default async function VerificationDetailPage({ params }: { params: Promi
             <p className="text-small text-fg-muted">Only reviewers at your university can open this image.</p>
           </div>
           {request.idImageRef ? (
-            <a
+            <VerificationDocViewer
+              src={`/api/admin/verification/${request.id}/image`}
               href={`/api/admin/verification/${request.id}/image`}
-              target="_blank"
-              rel="noreferrer"
-              className="group block bg-surface-2 p-3"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={`/api/admin/verification/${request.id}/image`}
-                alt={`Student ID submitted by ${request.user.fullName}`}
-                className="mx-auto max-h-[520px] w-auto rounded-input border border-border bg-surface object-contain"
-              />
-              <span className="mt-2 flex items-center justify-center gap-1.5 text-small font-semibold text-accent">
-                Open full size <ExternalLink aria-hidden="true" className="size-3.5" />
-              </span>
-            </a>
+              alt={`Student ID submitted by ${request.user.fullName}`}
+            />
           ) : (
             <div className="px-4 py-14 text-center text-small text-fg-muted">
               {request.method === "VOUCH" ? "Vouched request — no document." : "The document was removed after a decision."}
@@ -79,8 +71,26 @@ export default async function VerificationDetailPage({ params }: { params: Promi
                 <dt className="text-fg-muted">Matric number</dt>
                 <dd className="text-right">
                   <span className="block font-mono font-semibold text-fg">{request.matricNumber}</span>
-                  <span className="mt-1 inline-block">
-                    {matric.ok ? <Badge tone="success">Matches format</Badge> : <Badge tone="danger">Does not match format</Badge>}
+                  <span
+                    className={`mt-1 inline-flex items-center gap-1 rounded-chip px-2 py-0.5 text-[0.6875rem] font-semibold ${
+                      matric.ok ? "bg-success-soft text-success" : "bg-danger-soft text-danger"
+                    }`}
+                  >
+                    {matric.ok ? <CheckCircle2 aria-hidden="true" className="size-3" /> : <XCircle aria-hidden="true" className="size-3" />}
+                    {matric.ok ? "Matches format" : "Does not match format"}
+                  </span>
+                </dd>
+              </div>
+              <div className="flex items-start justify-between gap-4">
+                <dt className="text-fg-muted">Duplicate matric check</dt>
+                <dd className="text-right">
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-chip px-2 py-0.5 text-[0.6875rem] font-semibold ${
+                      detail.duplicateMatric ? "bg-danger-soft text-danger" : "bg-success-soft text-success"
+                    }`}
+                  >
+                    {detail.duplicateMatric ? <XCircle aria-hidden="true" className="size-3" /> : <CheckCircle2 aria-hidden="true" className="size-3" />}
+                    {detail.duplicateMatric ? "Duplicate found" : "Unique"}
                   </span>
                 </dd>
               </div>
@@ -113,7 +123,7 @@ export default async function VerificationDetailPage({ params }: { params: Promi
                 <ShieldAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-warning" />
                 <p>
                   This matric number is already verified on{" "}
-                  <Link href={`/admin/students?q=${encodeURIComponent(request.matricNumber ?? "")}`} className="font-semibold underline">
+                  <Link href={`/admin/students?q=${encodeURIComponent(request.matricNumber ?? "")}`} className="font-semibold text-accent-ink underline">
                     another account
                   </Link>
                   . Use the duplicate reason if this is the same person.

@@ -11,6 +11,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import type { ProfileView as ProfileData } from "@/lib/services/profile";
+import { UniversityShieldMark } from "@/components/brand/logo";
 import { Avatar } from "@/components/ui/display";
 import { ButtonLink } from "@/components/ui/button";
 import { ProfileTabs } from "./profile-tabs";
@@ -23,15 +24,15 @@ import { formatDate } from "@/lib/utils";
 function InterestIcon({ label }: { label: string }) {
   const lower = label.toLowerCase();
   if (lower.includes("code") || lower.includes("coding") || lower.includes("tech")) {
-    return <Code2 aria-hidden="true" className="size-3.5 text-accent" />;
+    return <Code2 aria-hidden="true" className="size-3.5 text-accent-ink" />;
   }
   if (lower.includes("photo") || lower.includes("camera")) {
-    return <Camera aria-hidden="true" className="size-3.5 text-accent" />;
+    return <Camera aria-hidden="true" className="size-3.5 text-accent-ink" />;
   }
   if (lower.includes("music") || lower.includes("audio")) {
-    return <Headphones aria-hidden="true" className="size-3.5 text-accent" />;
+    return <Headphones aria-hidden="true" className="size-3.5 text-accent-ink" />;
   }
-  return <Sparkles aria-hidden="true" className="size-3.5 text-accent" />;
+  return <Sparkles aria-hidden="true" className="size-3.5 text-accent-ink" />;
 }
 
 export function ProfileView({
@@ -70,8 +71,8 @@ export function ProfileView({
   return (
     <div className="pb-6">
       {!isSelf ? (
-        <header className="sticky top-14 z-20 flex h-12 items-center justify-between border-b border-border bg-surface px-2">
-          <Link href="/pulse" aria-label="Back to Pulse" className="flex size-10 items-center justify-center rounded-full text-fg hover:bg-surface-2">
+        <header className="glass sticky top-14 z-20 flex h-12 items-center justify-between border-b border-border px-2">
+          <Link href="/pulse" aria-label="Back to Pulse" className="flex size-11 items-center justify-center rounded-full text-fg hover:bg-surface-2">
             <ArrowLeft aria-hidden="true" className="size-5" />
           </Link>
           <p className="truncate font-display text-[1rem] font-bold text-fg">{university.name}</p>
@@ -83,22 +84,23 @@ export function ProfileView({
         </header>
       ) : null}
 
-      <div className="relative h-32 overflow-hidden bg-accent-soft">
+      <div className="relative h-32 overflow-hidden bg-gradient-to-br from-accent/20 via-accent-soft to-surface-2">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/assets/illustrations/nova-campus-banner.jpg"
+          src="/seed/campus-quad.svg"
           alt={`${university.name} campus banner`}
           width={900}
           height={280}
-          className="size-full object-cover"
+          className="size-full object-cover opacity-85"
         />
-        <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/15 to-transparent" aria-hidden="true" />
+        <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/20 to-transparent" aria-hidden="true" />
       </div>
 
       <div className="px-4">
         <div className="-mt-12 flex items-end justify-between gap-3">
           <Avatar
             name={profile.fullName}
+            seed={profile.username}
             src={profile.photoUrl}
             size="xl"
             verified={profile.status !== "ALUMNI"}
@@ -108,7 +110,7 @@ export function ProfileView({
           />
           {profile.isPostgraduate ? (
             <span className="mb-1 inline-flex items-center gap-1 rounded-full bg-accent-soft px-3 py-1 text-tiny font-semibold text-accent-soft-fg">
-              <GraduationCap aria-hidden="true" className="size-3.5" />
+              <GraduationCap aria-hidden="true" className="size-3.5 text-accent-ink" />
               Postgraduate
             </span>
           ) : null}
@@ -134,6 +136,38 @@ export function ProfileView({
             {isSelf ? "Add a bio so classmates know who they're meeting." : "No bio yet."}
           </p>
         )}
+
+        {/* Skeuomorphic compact Verified Student card (privacy-preserving; never exposes matric number) */}
+        <div className="relative mt-3.5 overflow-hidden rounded-[14px] border border-border bg-surface-2/80 pl-4 pr-3.5 py-2.5 shadow-card">
+          <span aria-hidden="true" className="absolute inset-y-0 left-0 w-1.5 bg-accent" />
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="flex items-center gap-1.5 text-[0.6875rem] font-bold uppercase tracking-[0.06em] text-accent-ink">
+                <span>{profile.status === "ALUMNI" ? "Verified alumni" : "Verified student"}</span>
+                <span aria-hidden="true">·</span>
+                <span className="truncate font-semibold normal-case tracking-normal text-fg-muted">{university.shortName}</span>
+              </p>
+              <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-small font-semibold text-fg">
+                {canViewDepartment && profile.departmentName ? (
+                  <span className="truncate">{profile.departmentName}</span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-fg-muted">
+                    <Lock aria-hidden="true" className="size-3 text-fg-subtle" /> Department hidden
+                  </span>
+                )}
+                <span aria-hidden="true" className="text-fg-subtle">·</span>
+                {canViewLevel && profile.level ? (
+                  <span className="tabular-nums">{profile.level}L</span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-fg-muted">
+                    <Lock aria-hidden="true" className="size-3 text-fg-subtle" /> Level hidden
+                  </span>
+                )}
+              </p>
+            </div>
+            <UniversityShieldMark className="size-7 shrink-0 opacity-90" />
+          </div>
+        </div>
 
         {academicChips.length > 0 || profile.interests.length > 0 ? (
           <ul className="mt-3 flex flex-wrap gap-1.5" aria-label="Profile details and interests">

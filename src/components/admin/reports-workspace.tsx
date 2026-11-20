@@ -13,13 +13,13 @@ import {
 import type { ReportDetail, ReportQueueItem } from "@/lib/services/moderation";
 import { formatReportDisplayId } from "@/lib/posts/card-presentation";
 import { ReportActionForm } from "@/components/admin/report-action-form";
-import { VerifiedTick } from "@/components/ui/display";
-import { cn, initials, timeAgo } from "@/lib/utils";
+import { Avatar, VerifiedTick } from "@/components/ui/display";
+import { cn, timeAgo } from "@/lib/utils";
 
 const SEVERITY_STYLE = {
-  high: "bg-[#fee2e2] text-[#dc2626]",
-  medium: "bg-[#fef3c7] text-[#b45309]",
-  low: "bg-[#dcfce7] text-[#15803d]",
+  high: "bg-danger-soft text-danger",
+  medium: "bg-highlight-soft text-highlight-fg",
+  low: "bg-success-soft text-success",
 } as const;
 
 export function ReportDetailPane({
@@ -31,8 +31,8 @@ export function ReportDetailPane({
 }) {
   if (!report) {
     return (
-      <div className="flex min-h-[420px] flex-col items-center justify-center rounded-[18px] border border-border bg-surface p-8 text-center">
-        <span className="flex size-12 items-center justify-center rounded-full bg-accent-soft text-accent">
+      <div className="flex min-h-[420px] flex-col items-center justify-center rounded-card border border-border bg-surface p-8 text-center">
+        <span className="flex size-12 items-center justify-center rounded-full bg-accent-soft text-accent-ink">
           <Flag aria-hidden="true" className="size-5" />
         </span>
         <p className="mt-3 font-display text-h3 text-fg">Select a report to review</p>
@@ -44,23 +44,21 @@ export function ReportDetailPane({
   }
 
   return (
-    <div className="space-y-4 rounded-[18px] border border-border bg-surface p-5 shadow-card">
+    <div className="space-y-4 rounded-card border border-border bg-surface p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-display text-[1.125rem] font-bold text-fg">
+        <h2 className="font-display text-h2 font-bold text-fg">
           {report.targetType === "POST" ? "Reported post" : "Reported comment"}
         </h2>
-        <span className="rounded-full border border-border bg-surface-2/60 px-3 py-1 text-tiny font-medium text-fg-muted">
+        <span className="rounded-chip border border-border bg-surface-2/60 px-3 py-1 text-tiny font-medium text-fg-muted">
           Report ID: <strong className="text-fg">{formatReportDisplayId(report.id, report.createdAt)}</strong>
         </span>
       </div>
 
       {report.target ? (
-        <div className="rounded-[16px] border border-border bg-surface p-4">
+        <div className="rounded-card border border-border bg-surface p-4">
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-2.5">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent-soft text-small font-bold text-accent-soft-fg">
-                {initials(report.target.authorName)}
-              </span>
+              <Avatar name={report.target.authorName} seed={report.target.authorUsername} size="sm" />
               <div className="min-w-0">
                 <div className="flex items-center gap-1">
                   <span className="truncate text-small font-bold text-fg">{report.target.authorName}</span>
@@ -74,7 +72,7 @@ export function ReportDetailPane({
             <Link
               href={`/admin/students/${report.target.authorId}/moderation`}
               aria-label={`View ${report.target.authorName} moderation history`}
-              className="flex size-8 items-center justify-center rounded-full text-fg-subtle hover:bg-surface-2"
+              className="flex size-10 items-center justify-center rounded-full text-fg-subtle hover:bg-surface-2"
             >
               <MoreHorizontal aria-hidden="true" className="size-4" />
             </Link>
@@ -137,7 +135,7 @@ export function ReportDetailPane({
             {report.target ? (
               <Link
                 href={`/admin/students/${report.target.authorId}/moderation`}
-                className="text-tiny font-semibold text-accent hover:underline"
+                className="text-tiny font-semibold text-accent-ink hover:underline"
               >
                 History
               </Link>
@@ -217,13 +215,13 @@ export function ReportsWorkspace({
     <div className="grid gap-5 lg:grid-cols-[360px_minmax(0,1fr)] lg:items-start">
       <div className="space-y-3.5">
         <header>
-          <h1 className="font-display text-[1.625rem] font-bold tracking-tight text-fg">Reports</h1>
+          <h1 className="font-display text-h1 text-fg">Reports</h1>
           <div className="mt-3 flex flex-wrap items-center gap-2" role="group" aria-label="Report status">
             <Link
               href={`/admin/reports?status=PENDING&type=${type}`}
               aria-current={status === "PENDING" ? "page" : undefined}
               className={cn(
-                "inline-flex h-9 items-center rounded-full px-4 text-small font-semibold transition",
+                "inline-flex h-10 items-center rounded-chip px-4 text-small font-semibold transition",
                 status === "PENDING"
                   ? "bg-accent text-accent-fg"
                   : "border border-border bg-surface text-fg-muted hover:text-fg",
@@ -235,7 +233,7 @@ export function ReportsWorkspace({
               href={`/admin/reports?status=RESOLVED&type=${type}`}
               aria-current={status === "RESOLVED" ? "page" : undefined}
               className={cn(
-                "inline-flex h-9 items-center rounded-full px-4 text-small font-semibold transition",
+                "inline-flex h-10 items-center rounded-chip px-4 text-small font-semibold transition",
                 status === "RESOLVED"
                   ? "bg-accent text-accent-fg"
                   : "border border-border bg-surface text-fg-muted hover:text-fg",
@@ -259,7 +257,7 @@ export function ReportsWorkspace({
                 href={`/admin/reports?status=${status}&type=${item.value}`}
                 aria-current={type === item.value ? "page" : undefined}
                 className={cn(
-                  "inline-flex h-7 items-center rounded-full px-3 text-tiny font-semibold transition",
+                  "inline-flex h-8 items-center rounded-chip px-3 text-tiny font-semibold transition",
                   type === item.value
                     ? "bg-accent text-accent-fg"
                     : "border border-border bg-surface text-fg-muted hover:text-fg",
@@ -272,7 +270,7 @@ export function ReportsWorkspace({
         </header>
 
         {reports.length === 0 ? (
-          <div className="rounded-[16px] border border-border bg-surface px-5 py-10 text-center">
+          <div className="rounded-card border border-border bg-surface px-5 py-10 text-center">
             <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-success-soft text-success">
               <Flag aria-hidden="true" className="size-5" />
             </span>
@@ -291,22 +289,20 @@ export function ReportsWorkspace({
                     href={`/admin/reports?status=${status}&type=${type}&selected=${report.id}`}
                     aria-current={active ? "true" : undefined}
                     className={cn(
-                      "block rounded-[14px] border bg-surface p-3.5 transition",
+                      "block rounded-card border bg-surface p-3.5 transition",
                       active
-                        ? "border-accent ring-1 ring-accent/25 shadow-card"
+                        ? "border-accent ring-1 ring-accent/25"
                         : "border-border hover:border-border-strong",
                     )}
                   >
                     <div className="flex items-start gap-2.5">
-                      <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-accent-soft text-tiny font-bold text-accent-soft-fg">
-                        {initials(report.authorName)}
-                      </span>
+                      <Avatar name={report.authorName} seed={report.authorUsername} size="sm" />
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <span className={cn("rounded-full px-2 py-0.5 text-[0.6875rem] font-bold capitalize", SEVERITY_STYLE[report.severity])}>
+                          <span className={cn("rounded-chip px-2 py-0.5 text-[0.6875rem] font-bold capitalize", SEVERITY_STYLE[report.severity])}>
                             {report.severity}
                           </span>
-                          <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[0.6875rem] font-semibold text-accent-soft-fg">
+                          <span className="rounded-chip bg-accent-soft px-2 py-0.5 text-[0.6875rem] font-semibold text-accent-soft-fg">
                             {report.reasonLabel}
                           </span>
                           <span className="ml-auto text-[0.6875rem] font-medium text-fg-muted">

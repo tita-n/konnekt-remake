@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowUp, Clock, CloudOff, Loader2, Plus, RefreshCw, TrendingUp, WifiOff } from "lucide-react";
+import { ArrowUp, Check, Clock, CloudOff, Loader2, Plus, RefreshCw, TrendingUp, WifiOff } from "lucide-react";
 import type { FeedFilter, FeedFilterOption, FeedPage, TrendingTag } from "@/lib/posts/types";
+import { formatCompactCount } from "@/lib/domain/card-presentation";
 import { apiGet } from "@/lib/posts/client";
 import { cacheFeed, flushOutbox, listOutbox, readCachedFeed } from "@/lib/offline/store";
 import { Button, ButtonLink } from "@/components/ui/button";
@@ -223,29 +224,39 @@ export function PulseFeed({
 
       {pull > 0 ? (
         <div className="flex h-8 items-center justify-center text-tiny text-fg-subtle" style={{ height: `${Math.min(pull, 56)}px` }} aria-hidden="true">
-          <RefreshCw className={cn("size-4", pull > 52 && "text-accent")} style={{ transform: `rotate(${pull * 4}deg)` }} />
+          <RefreshCw className={cn("size-4", pull > 52 && "text-accent-ink")} style={{ transform: `rotate(${pull * 4}deg)` }} />
         </div>
       ) : null}
 
       <div className="glass sticky top-14 z-30 border-b border-border/60">
-        <div className="no-scrollbar flex gap-2 overflow-x-auto px-3.5 py-2.5" role="group" aria-label="Filter your Pulse">
-          {filters.map((option) => (
-            <Chip
-              key={option.value}
-              selected={filter === option.value}
-              onClick={() => void changeFilter(option.value)}
-              className="min-h-8 shrink-0 rounded-full px-3.5 text-small"
-            >
-              {option.label}
-            </Chip>
-          ))}
+        <div className="relative">
+          <div className="no-scrollbar flex gap-2 overflow-x-auto px-3.5 py-2.5 pr-8" role="group" aria-label="Filter your Pulse">
+            {filters.map((option) => {
+              const selected = filter === option.value;
+              return (
+                <Chip
+                  key={option.value}
+                  selected={selected}
+                  onClick={() => void changeFilter(option.value)}
+                  icon={selected ? <Check aria-hidden="true" className="size-3.5" strokeWidth={2.5} /> : undefined}
+                  className="min-h-8 shrink-0 rounded-full px-3.5 text-small"
+                >
+                  {option.label}
+                </Chip>
+              );
+            })}
+          </div>
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-surface/90 to-transparent"
+          />
         </div>
       </div>
 
       {!online ? (
-        <div className="mx-3.5 mt-2 flex items-center gap-2.5 rounded-[12px] border border-warning/30 bg-warning-soft px-3.5 py-2.5 text-small font-medium text-warning" role="status">
+        <div className="mx-3.5 mt-2 flex items-center gap-2.5 rounded-button border border-warning/30 bg-highlight-soft px-3.5 py-2 text-small font-medium text-highlight-fg" role="status">
           <WifiOff aria-hidden="true" className="size-4 shrink-0" />
-          <span>You&apos;re offline. Showing saved content.</span>
+          <span>You&apos;re offline. Showing saved posts.</span>
         </div>
       ) : null}
 
@@ -254,7 +265,7 @@ export function PulseFeed({
           <button
             type="button"
             onClick={() => void loadFirst(filter)}
-            className="inline-flex h-9 items-center gap-1.5 rounded-full bg-accent px-4 text-small font-semibold text-accent-fg shadow-floating"
+            className="inline-flex h-9 items-center gap-1.5 rounded-full bg-accent px-4 text-small font-semibold text-accent-fg shadow-pill"
           >
             <ArrowUp aria-hidden="true" className="size-4" />
             {newCount} new {newCount === 1 ? "post" : "posts"}
@@ -262,7 +273,7 @@ export function PulseFeed({
         </div>
       ) : null}
 
-      <div className="space-y-3 px-3.5 pb-4 pt-2">
+      <div className="space-y-3 px-3.5 pb-4 pt-2.5">
         {loading ? (
           <FeedSkeleton />
         ) : error ? (
@@ -303,9 +314,9 @@ export function PulseFeed({
             ))}
 
             {trending.length > 0 ? (
-              <section aria-label="Trending on campus" className="rounded-[16px] bg-accent-soft px-3.5 py-3">
+              <section aria-label="Trending on campus" className="rounded-card border border-accent/15 bg-accent-soft px-3.5 py-3 lg:hidden">
                 <h2 className="flex items-center gap-1.5 font-display text-[0.9375rem] font-bold text-fg">
-                  <TrendingUp aria-hidden="true" className="size-4 text-accent" />
+                  <TrendingUp aria-hidden="true" className="size-4 text-accent-ink" />
                   Trending on campus
                 </h2>
                 <ul className="no-scrollbar mt-2 flex gap-2 overflow-x-auto pb-0.5">
@@ -313,9 +324,10 @@ export function PulseFeed({
                     <li key={tag.tag} className="shrink-0">
                       <Link
                         href={`/hashtag/${tag.tag}`}
-                        className="inline-flex h-8 items-center rounded-full border border-border bg-surface px-3 text-small font-medium text-accent transition hover:border-accent"
+                        className="inline-flex h-8 items-center gap-1.5 rounded-full border border-border bg-surface px-3 text-small font-medium text-accent-ink transition hover:border-accent"
                       >
-                        #{tag.tag}
+                        <span>#{tag.tag}</span>
+                        {tag.postCount > 0 ? <span className="text-tiny tabular-nums text-fg-subtle">{formatCompactCount(tag.postCount)}</span> : null}
                       </Link>
                     </li>
                   ))}

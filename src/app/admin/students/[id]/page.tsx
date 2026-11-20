@@ -101,7 +101,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                 {student.verificationRequests.map((request) => (
                   <li key={request.id} className="rounded-input bg-surface-2 px-3 py-2 text-small">
                     <div className="flex items-center justify-between gap-3">
-                      <Link href={`/admin/verification/${request.id}`} className="font-semibold text-accent hover:underline">
+                      <Link href={`/admin/verification/${request.id}`} className="font-semibold text-accent-ink hover:underline">
                         {request.method.replaceAll("_", " ").toLowerCase()}
                       </Link>
                       <span className="font-semibold text-fg">{request.status.toLowerCase()}</span>

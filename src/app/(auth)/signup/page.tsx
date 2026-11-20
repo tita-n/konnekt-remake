@@ -22,7 +22,7 @@ export default async function SignupPage() {
       <UniversityPicker universities={universities} />
       <p className="mt-8 text-center text-small text-fg-muted">
         Already have an account?{" "}
-        <a href="/login" className="font-semibold text-accent underline-offset-2 hover:underline">
+        <a href="/login" className="font-semibold text-accent-ink underline-offset-2 hover:underline">
           Log in
         </a>
       </p>

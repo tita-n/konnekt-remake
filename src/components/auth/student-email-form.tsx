@@ -51,7 +51,7 @@ export function StudentEmailForm({
       {showingCode ? (
         <>
           <div className="flex items-start gap-2.5 rounded-card bg-surface-2 px-3.5 py-3 text-small text-fg-muted">
-            <Mail aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-accent" />
+            <Mail aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-accent-ink" />
             <p>
               We sent a 6-digit code to <span className="font-semibold text-fg">{activeEmail}</span>. It expires in 10 minutes.
             </p>
@@ -82,7 +82,7 @@ export function StudentEmailForm({
               name="intent"
               value="send"
               disabled={pending || cooldown > 0}
-              className="font-semibold text-accent underline-offset-2 hover:underline disabled:text-fg-subtle disabled:no-underline"
+              className="font-semibold text-accent-ink underline-offset-2 hover:underline disabled:text-fg-subtle disabled:no-underline"
             >
               {cooldown > 0 ? `Resend in ${cooldown}s` : "Resend code"}
             </button>
@@ -121,7 +121,7 @@ export function StudentEmailForm({
             Can&apos;t get into your school email?{" "}
             <Link
               href={`/signup/${slug}/id`}
-              className="font-semibold text-accent underline-offset-2 hover:underline"
+              className="font-semibold text-accent-ink underline-offset-2 hover:underline"
             >
               Use your ID card instead
             </Link>

@@ -36,18 +36,18 @@ export default async function HashtagPage({
   return (
     <div className="pb-4">
       <header className="sticky top-14 z-20 flex h-14 items-center border-b border-border bg-surface px-2">
-        <Link href="/pulse" aria-label="Back to Pulse" className="flex size-10 items-center justify-center rounded-full text-fg hover:bg-surface-2">
+        <Link href="/pulse" aria-label="Back to Pulse" className="flex size-11 items-center justify-center rounded-full text-fg hover:bg-surface-2">
           <ArrowLeft aria-hidden="true" className="size-5" />
         </Link>
         <h1 className="flex-1 truncate text-center font-display text-h2 text-fg">#{page.tag}</h1>
-        <span className="size-10" aria-hidden="true" />
+        <span className="size-11" aria-hidden="true" />
       </header>
 
-      <div className="px-3 pt-3">
-        <div className="flex h-[112px] overflow-hidden rounded-[18px] border border-border/70 bg-accent-soft">
+      <div className="px-3.5 pt-3">
+        <div className="flex h-[112px] overflow-hidden rounded-card border border-border/70 bg-accent-soft">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/assets/illustrations/hashtag-banner.jpg"
+            src="/seed/tech-summit.svg"
             alt={`#${page.tag} banner`}
             width={320}
             height={180}
@@ -61,8 +61,8 @@ export default async function HashtagPage({
           </div>
         </div>
 
-        <p className="mt-3 flex items-center gap-2.5 rounded-[12px] bg-accent-soft px-3.5 py-2.5 text-small text-accent-soft-fg">
-          <Info aria-hidden="true" className="size-4 shrink-0 text-accent" />
+        <p className="mt-3 flex items-center gap-2.5 rounded-button bg-accent-soft px-3.5 py-2.5 text-small text-accent-soft-fg">
+          <Info aria-hidden="true" className="size-4 shrink-0 text-accent-ink" />
           <span>Showing posts from audiences you belong to.</span>
         </p>
 
@@ -83,7 +83,7 @@ export default async function HashtagPage({
         </div>
       </div>
 
-      <div className="space-y-2.5 px-3 py-3">
+      <div className="space-y-2.5 px-3.5 py-3">
         {page.posts.length === 0 ? (
           <div className="rounded-card border border-border bg-surface">
             <EmptyState illustration="search" title="No posts here yet" description={`No posts in your audiences use #${page.tag} yet.`} />
@@ -94,7 +94,7 @@ export default async function HashtagPage({
         {page.hasMore && page.nextCursor ? (
           <Link
             href={`${base}?sort=${sort}&cursor=${encodeURIComponent(page.nextCursor)}`}
-            className="flex h-11 items-center justify-center rounded-full border border-border bg-surface text-small font-semibold text-accent"
+            className="flex h-11 items-center justify-center rounded-full border border-border bg-surface text-small font-semibold text-accent-ink"
           >
             Load more
           </Link>

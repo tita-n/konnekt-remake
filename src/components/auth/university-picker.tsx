@@ -91,7 +91,7 @@ export function UniversityPicker({ universities }: { universities: PublicUnivers
           <button
             type="button"
             onClick={() => setWaitlistOpen(true)}
-            className="font-semibold text-accent underline-offset-2 hover:underline"
+            className="font-semibold text-accent-ink underline-offset-2 hover:underline"
           >
             Join the waitlist
           </button>

@@ -98,7 +98,7 @@ export function AccountForm({
         autoComplete="name"
         value={fullName}
         onChange={(event) => setFullName(event.target.value)}
-        placeholder="Adaeze Okonkwo"
+        placeholder="Chinedu Okafor"
         error={state.field === "fullName" ? state.error : null}
       />
 
@@ -109,7 +109,7 @@ export function AccountForm({
         autoComplete="username"
         value={username}
         onChange={(event) => setUsername(event.target.value.replace(/\s/g, ""))}
-        placeholder="adaeze"
+        placeholder="chinedu_okafor"
         leading={<span className="text-small text-fg-subtle">@</span>}
         trailing={
           availability === "checking" ? (
@@ -161,11 +161,11 @@ export function AccountForm({
         label={
           <>
             I agree to the{" "}
-            <Link href="/legal/terms" target="_blank" className="font-semibold text-accent underline-offset-2 hover:underline">
+            <Link href="/legal/terms" target="_blank" className="font-semibold text-accent-ink underline-offset-2 hover:underline">
               Terms
             </Link>{" "}
             and{" "}
-            <Link href="/legal/privacy" target="_blank" className="font-semibold text-accent underline-offset-2 hover:underline">
+            <Link href="/legal/privacy" target="_blank" className="font-semibold text-accent-ink underline-offset-2 hover:underline">
               Privacy Policy
             </Link>
             .
