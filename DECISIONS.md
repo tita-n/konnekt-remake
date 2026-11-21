@@ -163,6 +163,14 @@ The instrumentation entry point deliberately does not import the Zod env module.
 
 `security/headers.snapshot.json` makes any header loosening a diff. `scripts/security-invariants.mjs` runs the real production server with an unreachable Redis, asserts write endpoints return 429, checks the demo seed refuses production, and starts a second server with an unreachable database to prove it returns 503 rather than serving data. `tests/unit/security-fallbacks.test.ts` covers storage, email and Turnstile fallbacks.
 
+### Fonts are self-hosted, not fetched during CI builds
+
+`next/font/google` fetched font files during `next build`. Several CI jobs
+build in parallel, and a rate-limited Google Fonts response failed a build with
+a `next/font` parse error. The same Latin variable files are now vendored under
+`src/fonts` and loaded with `next/font/local`, so builds are deterministic. The
+families and weights are unchanged and both are SIL OFL 1.1.
+
 ### Next.js takes the 15.5.29 patch
 
 The earlier audit kept 15.5.28 because the only benefit then was a PostCSS fix

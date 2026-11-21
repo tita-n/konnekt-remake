@@ -1,26 +1,29 @@
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
-import { Inter, Plus_Jakarta_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import { AppearanceProvider } from "@/components/providers/appearance-provider";
 import { ToastProvider } from "@/components/providers/toast-provider";
 import { OfflineBanner, PwaProvider } from "@/components/pwa/pwa-provider";
 import "./globals.css";
 
-const inter = Inter({
-  subsets: ["latin"],
+// Self-hosted variable fonts. Building with next/font/google requires a
+// network fetch and made CI builds fail when several jobs fetched at once.
+const inter = localFont({
+  src: "../fonts/inter-latin-variable.woff2",
+  weight: "100 900",
   variable: "--font-inter",
   display: "swap",
   fallback: ["system-ui", "-apple-system", "Segoe UI", "Roboto", "sans-serif"],
-  adjustFontFallback: true,
+  adjustFontFallback: "Arial",
 });
 
-const jakarta = Plus_Jakarta_Sans({
-  subsets: ["latin"],
+const jakarta = localFont({
+  src: "../fonts/plus-jakarta-sans-latin-variable.woff2",
+  weight: "200 800",
   variable: "--font-jakarta",
   display: "swap",
-  weight: ["500", "600", "700", "800"],
   fallback: ["system-ui", "-apple-system", "Segoe UI", "sans-serif"],
-  adjustFontFallback: true,
+  adjustFontFallback: "Arial",
 });
 
 export const metadata: Metadata = {

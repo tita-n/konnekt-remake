@@ -23,13 +23,13 @@ Lighthouse CI runs mobile emulation with simulated slow 4G (`rttMs: 150`, `throu
 
 | Category | Threshold | Baseline |
 | --- | ---: | ---: |
-| Performance | ≥ 90 | **97** |
+| Performance | ≥ 90 | **99** |
 | Accessibility | ≥ 95 | **100** |
 | Best Practices | ≥ 90 (warn) | **100** |
 | SEO | ≥ 90 (warn) | **90** |
-| LCP | — | **2.5 s** |
+| LCP | — | **2.0 s** |
 | CLS | — | **0** |
-| TBT | — | **47 ms** |
+| TBT | — | **82 ms** |
 
 Lighthouse 12 removed the PWA category. CI checks installability explicitly: manifest with icons and start URL, plus a served service worker (`npm run check:pwa`).
 
