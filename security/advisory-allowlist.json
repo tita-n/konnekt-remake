@@ -1,0 +1,17 @@
+{
+  "policy": "High and critical production advisories must be fixed, or explicitly accepted here for at most 60 days. Expired entries fail CI.",
+  "advisories": [
+    {
+      "id": "GHSA-ggr8-5vv4-36mx",
+      "packages": ["prisma", "@prisma/config", "deepmerge-ts", "effect"],
+      "justification": "Deepmerge stack exhaustion in the Prisma v6 CLI config loader. The loader runs only during generate/migrate/build against a trusted repository config; it is absent from the runtime server bundle. The fixed release is Prisma 7, which requires a breaking config/client migration and is scheduled separately.",
+      "expires": "2027-01-15"
+    },
+    {
+      "id": "GHSA-7589-6fvf-x4pw",
+      "packages": ["prisma", "@prisma/config", "deepmerge-ts", "effect"],
+      "justification": "Effect ReDoS in the Prisma v6 CLI config loader's template-literal validation. No untrusted runtime input reaches it; it is build-tool only. The fixed release is Prisma 7, deferred behind the v7 migration.",
+      "expires": "2027-01-15"
+    }
+  ]
+}

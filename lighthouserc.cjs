@@ -10,6 +10,14 @@ module.exports = {
       numberOfRuns: 1,
       settings: {
         chromeFlags: "--headless=new --no-sandbox",
+        // The recorded baseline is mobile with simulated slow 4G and 4x CPU.
+        formFactor: "mobile",
+        throttlingMethod: "simulate",
+        throttling: {
+          rttMs: 150,
+          throughputKbps: 1638.4,
+          cpuSlowdownMultiplier: 4,
+        },
       },
     },
     assert: {
