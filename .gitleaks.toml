@@ -14,6 +14,8 @@ paths = [
   '''^\\.env\\.e2e\\.example$''',
 ]
 regexes = [
+  # Deterministic fixture values used by env/security unit tests.
+  '''0123456789abcdef0123456789abcdef''',
   '''ci-only-secret-[A-Za-z0-9]+''',
   '''test-secret-for-konnekt-[A-Za-z0-9-]+''',
   '''KonnektDemo123!''',
