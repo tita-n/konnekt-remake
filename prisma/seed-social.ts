@@ -138,17 +138,9 @@ function rankedAt(createdAt: Date, kind: string): Date {
 export async function seedSocialContent(db: PrismaClient, context: SeedContext): Promise<void> {
   const random = makeRandom();
 
-  // Clean up any leftover E2E marker posts so dev/demo Pulse stays authentic.
-  await db.post.deleteMany({
-    where: {
-      universityId: context.universityId,
-      body: { startsWith: "E2E " },
-    },
-  });
-
   const existing = await db.post.count({ where: { universityId: context.universityId } });
   if (existing > 100) {
-    console.log(`Nova social seed already present (${existing} posts); cleaned E2E markers only.`);
+    console.log(`Nova social seed already present (${existing} posts); leaving it untouched.`);
     return;
   }
 

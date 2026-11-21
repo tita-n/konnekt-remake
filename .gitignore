@@ -6,11 +6,16 @@ coverage
 .env
 .env.local
 .env.*.local
+.env.e2e
+.env.e2e.local
 !.env.example
+!.env.e2e.example
 .pgdata
 playwright-report
 test-results
 .lighthouseci
+perf/current.json
+build.log
 *.tsbuildinfo
 next-env.d.ts
 .DS_Store
