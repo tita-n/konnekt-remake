@@ -31,7 +31,7 @@ External services sit behind adapters in `src/lib/adapters.ts`. `assertProductio
 
 ## Local setup
 
-Requirements: Node 20.11+ (22 recommended), PostgreSQL 15+.
+Requirements: Node 22.12+ (Sentry 11 requires it), PostgreSQL 15+.
 
 ```bash
 npm install
@@ -82,7 +82,15 @@ The seed refuses to run against production (`prisma/seed-guard.ts`). Seeding twi
 | `npm run lint` | Next/ESLint (includes the tenant-import boundary rule) |
 | `npm test` | Vitest unit tests |
 | `npm run test:integration` | Vitest against `konnekt_test` (set `TEST_DATABASE_URL`) |
-| `npm run test:e2e` | Playwright + axe (starts the dev server) |
+| `npm run test:e2e` | Playwright + axe against the dedicated e2e DB (server on :3101) |
+| `npm run e2e:db:up` / `e2e:db:reset` / `e2e:db:prepare` | Start, reset or migrate/seed the e2e DB |
+| `npm run e2e:guard` | Reject an unsafe e2e database |
+| `npm run audit:prod` | Production advisory gate and allowlist expiry |
+| `npm run perf:build` | Build and enforce `perf/baseline.json` (+10%) |
+| `npm run test:security` | Production HTTP/security invariants |
+| `npm run check:env -- staging` | Validate deployment env without printing values |
+| `npm run smoke:staging -- <url>` | Deployed health/header/PWA/privacy/login smoke |
+| `npm run check:invariants` | Verify every invariant test still exists |
 | `npm run db:migrate` / `db:deploy` / `db:seed` | Prisma workflows |
 | `npm run icons` | Regenerate PWA icons from the flat mark |
 | `npm run shots` | Capture the local design-review screenshots |
@@ -96,18 +104,30 @@ DATABASE_URL=postgresql://postgres@127.0.0.1:5432/konnekt_test npx prisma migrat
 npm run test:integration
 ```
 
+### Dedicated e2e database
+
+Playwright never uses the demo database. Copy `.env.e2e.example` to `.env.e2e.local`, then either start Docker with `npm run e2e:db:up` or point `E2E_DATABASE_URL` at a dedicated Neon branch/database ending in `_e2e` (set `E2E_ALLOW_REMOTE=1`). Then:
+
+```bash
+npm run e2e:db:reset   # migrate + minimal deterministic fixtures
+npm run test:e2e       # starts its own server on :3101 with only E2E_DATABASE_URL
+```
+
+The guard refuses a missing/unsafe URL, the dev database, or a production-looking host. CI proves the demo tables are byte-for-byte unchanged across the run. See [`docs/ENV.md`](./docs/ENV.md).
+
 ## Verification
 
 - `tsc --noEmit`: clean.
 - `npm run lint`: clean.
-- Unit: 54 passed. Integration: 11 passed (tenant isolation, DB constraints, append-only audit, verification decisions, invitations).
-- Playwright: **20 passed** — signup (student-email and ID-card), onboarding, audience isolation, polls, reports/moderation, blocks/mutes, shared-device logout, offline outbox, student shell, admin/platform consoles and axe scans.
-- Feed plan on the seeded Pulse dataset: `Index Scan Backward` on `Post_universityId_status_rankAt_id_idx`, **0.148 ms**, **22 shared buffers** for the first 21 rows. Full plan in [`docs/PERFORMANCE.md`](./docs/PERFORMANCE.md).
-- Lighthouse 12 (Phase 0 production build, local): **Performance 97, Accessibility 100, Best Practices 100, SEO 90**. Lighthouse 12 removed the PWA category; installability is verified through DevTools installability checks instead.
+- Unit: 75 passed. Integration: 12 passed (tenant isolation, DB constraints, append-only audit, verification decisions, invitations, 1,000-post feed plan).
+- Playwright: **22 passed** — signup (student-email and ID-card), onboarding, audience isolation, polls, reports/moderation, blocks/mutes, shared-device logout, offline outbox, public-preview privacy, student shell, admin/platform consoles and axe scans. Runs against a dedicated e2e DB; demo checksums are unchanged.
+- Production security invariants: headers snapshot, `/design` and dev-email 404, fail-closed write endpoints, unreachable-DB 503, seed refusal.
+- Feed plan at 1,000 posts: `Index Scan Backward` on `Post_universityId_status_rankAt_id_idx`, **4 shared buffers**, **0.079 ms**. Full plan in [`docs/PERFORMANCE.md`](./docs/PERFORMANCE.md).
+- Lighthouse 12 mobile/slow-4G/4x CPU: scores and bundle budgets are recorded in [`docs/PERFORMANCE.md`](./docs/PERFORMANCE.md). Lighthouse 12 removed the PWA category; the manifest and service worker are checked explicitly.
 
 ## Deploy
 
-The app targets Vercel + Neon. `.github/workflows/deploy.yml` is manual and expects the full secret set; it applies `prisma migrate deploy` using the unpooled Neon URL before building and deploying. This environment has no deployment credentials, so no staging URL is attached — see **Limitations** in `DECISIONS.md`.
+The app targets Vercel + Neon. `.github/workflows/deploy.yml` is manual: it validates the environment, applies `prisma migrate deploy` using the unpooled Neon URL, deploys, then runs the staging smoke test. Follow [`docs/STAGING.md`](./docs/STAGING.md) for every account, variable, GitHub secret and manual step.
 
 ## Documentation
 
@@ -118,6 +138,9 @@ The app targets Vercel + Neon. `.github/workflows/deploy.yml` is manual and expe
 - [`docs/UI-REFINEMENT.md`](./docs/UI-REFINEMENT.md) — the refined visual system and what changed.
 - [`docs/UI-CONVENTIONS.md`](./docs/UI-CONVENTIONS.md) — presentation, accessibility and test conventions.
 - [`docs/UI-SYNC-AUDIT.md`](./docs/UI-SYNC-AUDIT.md) — UI-sync audit, security reverts, invariant matrix and verification.
+- [`docs/SECURITY-ADVISORIES.md`](./docs/SECURITY-ADVISORIES.md) — advisory inventory and temporary allowlist.
+- [`docs/INVARIANTS.md`](./docs/INVARIANTS.md) — invariant-to-test map.
+- [`docs/STAGING.md`](./docs/STAGING.md) — staging accounts, env, secrets and deploy checks.
 - [`design/phase-1-components.html`](./design/phase-1-components.html) — Phase 1 component states using the Phase 0 tokens.
 
 ## Phase boundaries

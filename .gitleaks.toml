@@ -1,0 +1,23 @@
+title = "Konnekt gitleaks policy"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Documented test/CI placeholders and generated local fixtures"
+paths = [
+  '''^test-results/''',
+  '''^playwright-report/''',
+  '''^\\.lighthouseci/''',
+  '''^perf/current\\.json$''',
+  '''^\\.env\\.example$''',
+  '''^\\.env\\.e2e\\.example$''',
+]
+regexes = [
+  '''ci-only-secret-[A-Za-z0-9]+''',
+  '''test-secret-for-konnekt-[A-Za-z0-9-]+''',
+  '''KonnektDemo123!''',
+  '''KonnektE2E123!''',
+  '''1x00000000000000000000AA''',
+  '''1x0000000000000000000000000000000AA''',
+]

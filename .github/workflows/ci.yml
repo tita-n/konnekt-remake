@@ -11,6 +11,7 @@ concurrency:
 
 permissions:
   contents: read
+  pull-requests: read
 
 env:
   NODE_ENV: test
@@ -50,8 +51,16 @@ jobs:
       - run: npx prisma migrate deploy
       - run: npm run typecheck
       - run: npm run lint
-      - run: npm test
-      - run: npm run test:integration
+      - run: node scripts/check-no-mock-db.mjs
+      - run: npm run check:invariants
+      - run: mkdir -p test-results && npm test -- --reporter=json --outputFile=test-results/unit.json
+      - run: npm run test:integration -- --reporter=json --outputFile=test-results/integration.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-reports-quality
+          path: test-results/*.json
+          if-no-files-found: ignore
 
   e2e:
     name: End-to-end and accessibility
@@ -62,7 +71,7 @@ jobs:
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_USER: postgres
-          POSTGRES_DB: konnekt_dev
+          POSTGRES_DB: postgres
         ports: ["5432:5432"]
         options: >-
           --health-cmd pg_isready
@@ -72,7 +81,9 @@ jobs:
     env:
       NODE_ENV: development
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/konnekt_dev
-      APP_URL: http://localhost:3000
+      DEV_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/konnekt_dev
+      E2E_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/konnekt_e2e
+      APP_URL: http://localhost:3101
       AUTH_SECRET: ci-only-secret-0123456789abcdefghijklmnopqrstuvwxyz
       TURNSTILE_BYPASS: "1"
       SEED_PLATFORM_ADMIN_EMAIL: admin@konnekt.ng
@@ -82,12 +93,39 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - run: psql -h localhost -U postgres -d postgres -c 'CREATE DATABASE konnekt_dev;' -c 'CREATE DATABASE konnekt_e2e;'
+        env:
+          PGPASSWORD: postgres
       - run: npm ci
       - run: npx prisma generate
-      - run: npx prisma migrate deploy
-      - run: npm run db:seed
+      - name: Migrate and seed the demo database
+        run: |
+          DATABASE_URL="$DEV_DATABASE_URL" npx prisma migrate deploy
+          DATABASE_URL="$DEV_DATABASE_URL" npm run db:seed
+      - name: Snapshot demo data before Playwright
+        run: |
+          psql "$DEV_DATABASE_URL" -Atc "SELECT md5(string_agg(id || '|' || email || '|' || \"fullName\" || '|' || status::text, ',' ORDER BY id)) FROM \"User\" WHERE \"universityId\" = (SELECT id FROM \"University\" WHERE slug = 'nova-university')" > /tmp/dev-users-before
+          psql "$DEV_DATABASE_URL" -Atc "SELECT md5(string_agg(id || '|' || body || '|' || status::text, ',' ORDER BY id)) FROM \"Post\" WHERE \"universityId\" = (SELECT id FROM \"University\" WHERE slug = 'nova-university')" > /tmp/dev-posts-before
+        env:
+          PGPASSWORD: postgres
+      - run: npm run e2e:guard
+      - run: npm run e2e:db:prepare
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+      - name: Prove Playwright did not touch demo data
+        run: |
+          psql "$DEV_DATABASE_URL" -Atc "SELECT md5(string_agg(id || '|' || email || '|' || \"fullName\" || '|' || status::text, ',' ORDER BY id)) FROM \"User\" WHERE \"universityId\" = (SELECT id FROM \"University\" WHERE slug = 'nova-university')" > /tmp/dev-users-after
+          psql "$DEV_DATABASE_URL" -Atc "SELECT md5(string_agg(id || '|' || body || '|' || status::text, ',' ORDER BY id)) FROM \"Post\" WHERE \"universityId\" = (SELECT id FROM \"University\" WHERE slug = 'nova-university')" > /tmp/dev-posts-after
+          diff /tmp/dev-users-before /tmp/dev-users-after
+          diff /tmp/dev-posts-before /tmp/dev-posts-after
+        env:
+          PGPASSWORD: postgres
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-reports-e2e
+          path: test-results/e2e.json
+          if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -121,7 +159,7 @@ jobs:
           TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
           NEXT_PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
         run: npm run build
-      - name: Start production server
+      - name: Start server, check installability and run Lighthouse
         env:
           NODE_ENV: production
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/konnekt
@@ -135,18 +173,168 @@ jobs:
           RESEND_API_KEY: re_ci
           TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
           NEXT_PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
-        run: npx next start -p 3100 &
-      - name: Wait for the server
         run: |
+          set -euo pipefail
+          npx next start -p 3100 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
           for i in $(seq 1 30); do
-            if curl -sf http://localhost:3100/ > /dev/null; then exit 0; fi
+            if curl -sf http://localhost:3100/ > /dev/null; then break; fi
             sleep 1
           done
-          echo "Server did not start" && exit 1
-      - run: npx lhci autorun
+          curl -sf http://localhost:3100/ > /dev/null
+          PWA_URL=http://localhost:3100 npm run check:pwa
+          npx lhci autorun
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: lighthouse-report
           path: .lighthouseci
           retention-days: 7
+
+  security:
+    name: Production security invariants
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/konnekt_dev
+      DEV_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/konnekt_dev
+      E2E_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/konnekt_e2e
+      SECURITY_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/konnekt_e2e
+      AUTH_SECRET: ci-only-secret-0123456789abcdefghijklmnopqrstuvwxyz
+      TURNSTILE_BYPASS: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: psql -h localhost -U postgres -d postgres -c 'CREATE DATABASE konnekt_dev;' -c 'CREATE DATABASE konnekt_e2e;'
+        env:
+          PGPASSWORD: postgres
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run e2e:db:prepare
+      - run: npx playwright install --with-deps chromium
+      - name: Build production bundle
+        env:
+          NODE_ENV: production
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/konnekt_e2e
+          AUTH_SECRET: ci-only-secret-0123456789abcdefghijklmnopqrstuvwxyz
+          TURNSTILE_BYPASS: "0"
+          UPSTASH_REDIS_REST_URL: https://example.invalid
+          UPSTASH_REDIS_REST_TOKEN: ci
+          CLOUDINARY_CLOUD_NAME: ci
+          CLOUDINARY_API_KEY: ci
+          CLOUDINARY_API_SECRET: ci
+          RESEND_API_KEY: re_ci
+          TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
+          NEXT_PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
+        run: npm run build
+      - run: npm run test:security
+
+  budget:
+    name: Performance budgets
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run perf:build
+        env:
+          NODE_ENV: production
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/konnekt
+          AUTH_SECRET: ci-only-secret-0123456789abcdefghijklmnopqrstuvwxyz
+          TURNSTILE_BYPASS: "0"
+          UPSTASH_REDIS_REST_URL: https://example.invalid
+          UPSTASH_REDIS_REST_TOKEN: ci
+          CLOUDINARY_CLOUD_NAME: ci
+          CLOUDINARY_API_KEY: ci
+          CLOUDINARY_API_SECRET: ci
+          RESEND_API_KEY: re_ci
+          TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
+          NEXT_PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
+
+  audit:
+    name: Production dependency audit
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run audit:prod
+
+  ui-guard:
+    name: UI-only presentation guard
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check UI-only scope
+        env:
+          GITHUB_HEAD_REF: ${{ github.head_ref }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          UI_ONLY_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'ui-only') }}
+          BASE_REF: origin/${{ github.base_ref || 'main' }}
+        run: |
+          git fetch origin "${{ github.base_ref || 'main' }}"
+          npm run check:ui-guard
+
+  test-floor:
+    name: Test floor and skipped-test guard
+    needs: [quality, e2e]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: test-reports-*
+          path: test-results
+          merge-multiple: true
+      - name: Reject focused or skipped tests in source
+        run: |
+          if grep -R -E '(test|it|describe)\.(only|skip|todo)' tests e2e src --include='*.test.ts' --include='*.spec.ts'; then
+            echo "Focused or skipped tests are forbidden."
+            exit 1
+          fi
+      - run: npm run check:test-floor
+
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml

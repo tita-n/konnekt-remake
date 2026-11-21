@@ -139,14 +139,46 @@ auxiliary labels avoid colliding with the option field names.
 
 ## Limitations and open items
 
-- **No staging deployment.** The environment had no Vercel/Neon/Resend/Cloudinary/Upstash/Sentry credentials. The deploy workflow is written and manual; apply migrations and run `deploy.yml` once secrets exist. Lighthouse and installability were verified against a local production build.
-- **Lighthouse 12 has no PWA category.** Installability is asserted via Chrome DevTools’ `Page.getInstallabilityErrors` (zero errors), manifest inspection and an active controlling service worker instead of the removed category score.
+- **No staging deployment has been run.** The environment has no Vercel/Neon/Resend/Cloudinary/Upstash/Sentry credentials. `docs/STAGING.md` and the hardened deploy workflow are ready; apply migrations and run `deploy.yml` once the accounts and secrets exist.
+- **Lighthouse 12 has no PWA category.** Installability is asserted by `scripts/check-pwa.mjs` (manifest with name, icons, start URL and a served service worker) instead of the removed category score.
 - **Logo uploads are square-cropped** using the avatar pipeline. A dedicated non-square brand pipeline can come with the media phase.
 - **Moderator/Official roles are modelled and grantable** but have no Phase 0 screens beyond vouching (Official). They are not fake permissions; their future capabilities are simply not built.
 - **Deletion is a 30-day soft delete.** A scheduled purge job is intentionally out of Phase 0; the data model records `purgeAfter` so the job has a contract.
-- **Sentry is initialised by configuration only.** Without a DSN nothing is sent; production env validation does not require it.
+- **Sentry is installed but not initialised yet.** The SDK is kept patched and its DSN is validated when present, but no Sentry client is started; enabling error monitoring is a separate task. Production env validation does not require it.
 - **No staging deployment for Phase 1 either.** No Vercel/Neon/Resend/Cloudinary/Upstash/Turnstile/Sentry credentials were available. The production build, seed, full unit/integration/Playwright suites and local EXPLAIN plans were verified; deployment awaits secrets.
 - **Post images use the same Cloudinary adapter as avatars.** Authenticated ID assets remain private; post media is public by design. A dedicated media pipeline for video or large galleries is out of Phase 1.
 - **Feed performance is measured on the local seeded dataset.** The plan, not an absolute latency promise, is the portable result; production p95 should be rechecked after real traffic and Neon warm-up.
-- **E2E still shares the development database.** Timestamped markers and explicit cleanup (including durable blocks) keep runs repeatable, but a separate seeded `E2E_DATABASE_URL` remains the stronger CI setup.
-- **Dependency advisories are pre-existing.** `npm audit --omit=dev` reports 26 advisories (1 critical, 7 high, 18 moderate) in the baseline lockfile, including Sentry and transitive Prisma/sharp packages. They require a separate reviewed upgrade.
+
+## Hardening (November 2026)
+
+### E2E has a dedicated database, not a convention
+
+Playwright starts its own server on `:3101` with `DATABASE_URL` replaced by `E2E_DATABASE_URL`. The guard requires a different database name ending in `_e2e` or `_test`, refuses production-looking hosts and requires an explicit opt-in for any remote database. CI seeds the demo database separately, snapshots users/posts, runs Playwright, then diffs the snapshots. The demo seed no longer cleans up E2E markers because e2e never reaches it.
+
+### Production assertions are dependency-free at boot
+
+The instrumentation entry point deliberately does not import the Zod env module. That import was bundled into middleware and added ~25 kB. A small startup check validates the same required names/shapes, while the full schema still runs on every route import. Middleware stays at 34.1 kB (1 kB above the audited 33.1 kB baseline for the startup check).
+
+### Security invariants are executable, not prose
+
+`security/headers.snapshot.json` makes any header loosening a diff. `scripts/security-invariants.mjs` runs the real production server with an unreachable Redis, asserts write endpoints return 429, checks the demo seed refuses production, and starts a second server with an unreachable database to prove it returns 503 rather than serving data. `tests/unit/security-fallbacks.test.ts` covers storage, email and Turnstile fallbacks.
+
+### Next.js takes the 15.5.29 patch
+
+The earlier audit kept 15.5.28 because the only benefit then was a PostCSS fix
+already covered by the override. A later `npm audit` shows three moderate
+runtime advisories in 15.5.28 (SVG image-optimizer bypass, HttpOnly cookie
+exposure on edge routes, and response injection) with a semver-patch fix in
+15.5.29, so the patch is taken rather than deferred.
+
+### Prisma 6 advisories are deferred, with an expiry
+
+Both remaining highs are in Prisma's v6 CLI config loader (`deepmerge-ts`, `effect`). They are build-tool only and receive trusted repository config. Prisma 7 changes the config file and client generation, so it is a separate migration. The allowlist entries expire 2027-01-15; CI rejects unlisted/expired entries. Every other critical/high/moderate advisory was fixed in this branch.
+
+### Budgets and guards are checked against the repository
+
+`perf/baseline.json` records the measured build and Lighthouse result; key routes may not grow more than 10% without an explicit baseline update. `ci/test-floor.json` enforces 54/11/20 (current: 75/12/22) and rejects skipped/focused tests. `.github/ui-guard.json` blocks UI-only branches from touching schema, services, auth, APIs, actions, workers, dependencies, env, security, performance or test infrastructure. CODEOWNERS requires owner review for the same paths.
+
+### Staging is prepared, not deployed
+
+The deploy workflow validates environment variables before migrations or Vercel, then runs a read-only smoke test after deployment. `docs/STAGING.md` lists the accounts, values, GitHub secrets, SPF/DKIM, Cloudinary and Turnstile setup. No credentials are invented or committed.

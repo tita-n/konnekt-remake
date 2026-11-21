@@ -122,13 +122,13 @@ Rate limits use Upstash sliding windows in production, with separate policies pe
 
 | Layer | Tool | Scope |
 | --- | --- | --- |
-| Unit | Vitest | matric, email domains, colour contrast, password strength, CSV parsing, status machines, slugs |
-| Integration | Vitest + real Postgres | tenant isolation (reads/writes/upserts), DB constraints, audit immutability, verification decisions, invitations |
-| E2E | Playwright | signup, onboarding, audience matrix, polls, reports/removal, blocks/mutes, shared-device logout, offline outbox, student shell, admin/platform consoles |
+| Unit | Vitest | matric, email domains, colour contrast, password strength, CSV parsing, status machines, slugs, production env/fallback/cookie guards, e2e DB guard |
+| Integration | Vitest + real Postgres | tenant isolation (reads/writes/upserts), DB constraints, audit immutability, verification decisions, invitations, 1,000-post feed plan |
+| E2E | Playwright | signup, onboarding, audience matrix, polls, reports/removal, blocks/mutes, shared-device logout, offline outbox, public-preview privacy, student shell, admin/platform consoles; dedicated database proof |
 | Accessibility | axe via Playwright | public pages, student shell/settings, verification queue/detail, feed and composer; serious/critical must be zero |
 | Performance | Lighthouse CI + EXPLAIN | production build Performance ≥90, Accessibility ≥95; feed plan in `docs/PERFORMANCE.md` |
 
-CI runs quality + integration, e2e, and Lighthouse jobs. The integration database is migrated with `prisma migrate deploy`; seeds are deterministic and idempotent (including `AcademicNode.parentPath`). Current local counts are 54 unit, 11 integration and 20 Playwright tests. E2E uses Nova University fixtures and cleans up durable relationships; it still shares the development database, so a dedicated `E2E_DATABASE_URL` remains a follow-up.
+CI runs quality + integration, e2e, Lighthouse, production security invariants, dependency audit, performance budget, UI scope, test-floor and secret-scan jobs. The integration database is migrated with `prisma migrate deploy`; the demo and e2e seeds are deterministic and separate. Current counts are 75 unit, 12 integration and 22 Playwright tests. Playwright gets a dedicated `konnekt_e2e` database on `:3101`; CI snapshots the demo users/posts before and after the run and fails on any diff.
 
 ## Failure behaviour
 
