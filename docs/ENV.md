@@ -29,6 +29,28 @@ Copy `.env.example` to `.env` (or `.env.local`). Never commit real secrets. Only
 | `SENTRY_ENVIRONMENT` | — | Sentry environment label. |
 | `SEED_PLATFORM_ADMIN_EMAIL` | `admin@konnekt.ng` | Platform admin created by the seed. |
 
+## Dedicated e2e database
+
+Playwright is hard-guarded away from the demo database. Configure `.env.e2e.local` (ignored):
+
+```bash
+E2E_DATABASE_URL=postgresql://postgres@127.0.0.1:55433/konnekt_e2e
+DEV_DATABASE_URL=postgresql://postgres@127.0.0.1:55432/konnekt_dev
+```
+
+`E2E_DATABASE_URL` must be different from `DATABASE_URL`/`DEV_DATABASE_URL`, must end in `_e2e` or `_test`, and must not look production-like. Remote databases are refused unless `E2E_ALLOW_REMOTE=1`, and are only appropriate for a dedicated Neon branch/database. The Playwright server overrides `DATABASE_URL` with the e2e URL; the app never receives the demo URL. `npm run e2e:db:up` uses Docker; without Docker create a Neon branch and use `E2E_ALLOW_REMOTE=1`.
+
+## Checking a deployment environment
+
+```bash
+npm run check:env -- staging
+npm run check:env -- production
+# or validate a file
+npm run check:env -- staging --env-file .env.staging
+```
+
+It prints variable names and validation messages only, never values. It requires every production service plus `DIRECT_URL`, and rejects `TURNSTILE_BYPASS=1` and non-HTTPS `APP_URL`.
+
 ## Adapters and startup checks
 
 Every external dependency has a real and a local implementation, selected by the keys above (`src/lib/adapters.ts`). At server start (outside `next build`), `assertProductionServices` lists any required production adapter that is missing and refuses to boot. `GET /api/health` and the platform console expose the same status without secrets.
@@ -45,9 +67,12 @@ Phase 1 adds no new environment variables. Post media uses the existing Cloudina
 
 ## Production requirements
 
-At server start with `NODE_ENV=production` (outside `next build`), these must be set or startup fails with a precise message:
+At server start with `NODE_ENV=production` (outside `next build`), `src/instrumentation.ts` runs `assertProductionServices` before requests are served. These must be set or startup fails with a precise message:
 
-- `AUTH_SECRET`
+- `DATABASE_URL` (a valid `postgres://` URL)
+- `AUTH_SECRET` (32+ characters)
+- `APP_URL` (http/https)
+- `EMAIL_FROM` (must contain an address)
 - `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
 - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
 - `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`

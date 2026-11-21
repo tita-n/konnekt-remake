@@ -1,0 +1,21 @@
+# Reviewers for paths that can change security or data behaviour.
+# The GitHub user is inferred from the repository owner (tita-n).
+* @tita-n
+
+/prisma/ @tita-n
+/src/lib/ @tita-n
+/src/middleware.* @tita-n
+/next.config.* @tita-n
+/src/app/api/ @tita-n
+/src/app/**/actions.ts @tita-n
+/src/app/sw.ts @tita-n
+/src/instrumentation.ts @tita-n
+/.github/ @tita-n
+/package.json @tita-n
+/package-lock.json @tita-n
+/.env* @tita-n
+/vitest* @tita-n
+/playwright.config.* @tita-n
+/lighthouserc.* @tita-n
+/security/ @tita-n
+/perf/ @tita-n

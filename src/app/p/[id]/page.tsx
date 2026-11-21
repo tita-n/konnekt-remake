@@ -17,8 +17,11 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Post",
     robots: { index: false, follow: false },
-    // Deliberately no Open Graph or Twitter card: a share preview must not
-    // leak content, an author or a count.
+    // Override the root layout's site-wide cards. A share preview must not
+    // emit any Open Graph or Twitter metadata at all, not even the generic
+    // site card, so a preview can never be attributed or counted.
+    openGraph: null,
+    twitter: null,
   };
 }
 

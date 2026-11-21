@@ -24,7 +24,10 @@ export default async function AdminReportsPage({
     db.report.count({ where: { status: "RESOLVED" } }),
   ]);
 
-  const activeId = params.selected && reports.some((r) => r.id === params.selected) ? params.selected : reports[0]?.id;
+  // Keep an explicitly selected report open even after a moderation action
+  // moves it out of the current queue, so the confirmation stays on screen.
+  // getReportDetail still enforces tenant and role scoping.
+  const activeId = params.selected ?? reports[0]?.id;
   const selectedDetail = activeId ? await getReportDetail(user, activeId) : null;
 
   return (

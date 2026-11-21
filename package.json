@@ -4,7 +4,7 @@
   "private": true,
   "description": "Konnekt — the verified-student social network for Nigerian universities.",
   "engines": {
-    "node": ">=20.11"
+    "node": ">=22.12"
   },
   "scripts": {
     "dev": "next dev",
@@ -21,31 +21,49 @@
     "test:watch": "vitest",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:e2e": "playwright test",
+    "e2e:guard": "tsx scripts/e2e-guard-cli.ts",
+    "e2e:db:up": "tsx scripts/e2e-db.ts up",
+    "e2e:db:prepare": "tsx scripts/e2e-db.ts prepare",
+    "e2e:db:reset": "tsx scripts/e2e-db.ts reset",
+    "check:env": "tsx scripts/check-env.ts",
+    "smoke:staging": "node scripts/smoke-staging.mjs",
+    "check:pwa": "node scripts/check-pwa.mjs",
+    "check:test-floor": "node scripts/check-test-floor.mjs",
+    "check:ui-guard": "node scripts/check-ui-guard.mjs",
+    "check:invariants": "node scripts/check-invariants.mjs",
     "icons": "node scripts/gen-icons.mjs",
     "shots": "node scripts/shots.mjs",
-    "lighthouse": "lhci autorun"
+    "lighthouse": "lhci autorun",
+    "audit:prod": "node scripts/audit-production.mjs",
+    "perf:build": "node scripts/build-budget.mjs",
+    "perf:baseline": "node scripts/build-budget.mjs --update",
+    "check:no-mock-db": "node scripts/check-no-mock-db.mjs",
+    "test:security": "node scripts/security-invariants.mjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
+  "overrides": {
+    "postcss": "8.5.23"
+  },
   "dependencies": {
     "@node-rs/argon2": "2.0.2",
     "@prisma/client": "6.19.3",
-    "@sentry/nextjs": "10.25.0",
+    "@sentry/nextjs": "11.16.0",
     "@upstash/ratelimit": "2.0.7",
     "@upstash/redis": "1.35.6",
     "cloudinary": "2.7.0",
     "clsx": "2.1.1",
     "lucide-react": "0.545.0",
-    "next": "15.5.28",
+    "next": "15.5.29",
     "react": "19.1.1",
     "react-dom": "19.1.1",
     "react-markdown": "10.1.0",
     "remark-gfm": "4.0.1",
-    "resend": "6.4.2",
+    "resend": "6.39.0",
     "server-only": "0.0.1",
     "tailwind-merge": "3.3.1",
-    "zod": "4.1.12"
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.10.2",
@@ -60,12 +78,12 @@
     "@vitejs/plugin-react": "5.0.4",
     "autoprefixer": "10.4.21",
     "eslint": "8.57.1",
-    "eslint-config-next": "15.5.28",
+    "eslint-config-next": "15.5.29",
     "jsdom": "26.1.0",
-    "postcss": "8.5.6",
+    "postcss": "8.5.23",
     "prisma": "6.19.3",
     "serwist": "^9.5.15",
-    "sharp": "0.34.4",
+    "sharp": "0.35.5",
     "tailwindcss": "3.4.18",
     "tsx": "4.20.6",
     "typescript": "5.9.3",

@@ -5,16 +5,15 @@ import { NextResponse, type NextRequest } from "next/server";
  * bootstrap scripts when it sees the CSP header. Styles use inline allowances
  * for React style attributes; there are no inline event handlers anywhere.
  */
-function buildCsp(nonce: string, isDev: boolean, appUrl: string): string {
+function buildCsp(nonce: string, isDev: boolean): string {
   const turnstile = "https://challenges.cloudflare.com";
-  const sentry = "https://*.ingest.sentry.io https://*.ingest.us.sentry.io";
   const directives = [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${turnstile}${isDev ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https://res.cloudinary.com",
     "font-src 'self' data:",
-    `connect-src 'self' ${turnstile} ${sentry} https://api.cloudinary.com${isDev ? " ws: wss:" : ""}`,
+    `connect-src 'self' ${turnstile} https://api.cloudinary.com${isDev ? " ws: wss:" : ""}`,
     `frame-src ${turnstile}`,
     "worker-src 'self' blob:",
     "manifest-src 'self'",
@@ -32,14 +31,13 @@ function buildCsp(nonce: string, isDev: boolean, appUrl: string): string {
 export function middleware(request: NextRequest) {
   const nonce = crypto.randomUUID().replace(/-/g, "");
   const isDev = process.env.NODE_ENV !== "production";
-  const appUrl = process.env.APP_URL ?? "http://localhost:3000";
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
-  requestHeaders.set("Content-Security-Policy", buildCsp(nonce, isDev, appUrl));
+  requestHeaders.set("Content-Security-Policy", buildCsp(nonce, isDev));
 
   const response = NextResponse.next({ request: { headers: requestHeaders } });
-  response.headers.set("Content-Security-Policy", buildCsp(nonce, isDev, appUrl));
+  response.headers.set("Content-Security-Policy", buildCsp(nonce, isDev));
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");

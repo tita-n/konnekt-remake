@@ -1,0 +1,43 @@
+{
+  "description": "Presentation-only UI branches may change these paths. Anything in protected fails the guard unless the branch is explicitly not UI-only.",
+  "allowed": [
+    "src/components/**",
+    "src/styles/**",
+    "src/app/**/page.tsx",
+    "src/app/**/layout.tsx",
+    "src/app/**/loading.tsx",
+    "src/app/**/error.tsx",
+    "src/app/**/not-found.tsx",
+    "public/**",
+    "docs/**",
+    "README.md",
+    "DECISIONS.md",
+    "design/**",
+    "**/*.css"
+  ],
+  "protected": [
+    "prisma/**",
+    "src/lib/**",
+    "src/middleware.*",
+    "next.config.*",
+    "src/app/api/**",
+    "src/app/**/actions.ts",
+    "src/app/sw.ts",
+    "src/app/manifest.ts",
+    ".github/**",
+    "package.json",
+    "package-lock.json",
+    "pnpm-lock.yaml",
+    ".env*",
+    "src/instrumentation.ts",
+    "vitest*.{ts,js,mjs}",
+    "playwright.config.*",
+    "lighthouserc.*",
+    "**/*.config.{ts,js,mjs,cjs}",
+    "security/**",
+    "perf/**",
+    "e2e/**",
+    "tests/**",
+    "scripts/**"
+  ]
+}

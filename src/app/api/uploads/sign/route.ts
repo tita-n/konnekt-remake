@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 import { apiError, noStore, socialApi } from "@/lib/api/social";
 import { cloudinarySignature } from "@/lib/media/post-media";
+import { isProduction } from "@/lib/env";
 import { rateLimit } from "@/lib/security/rate-limit";
 
 export const runtime = "nodejs";
@@ -22,6 +23,7 @@ export async function POST(request: NextRequest) {
     const folder = "konnekt/posts";
     const signature = cloudinarySignature({ folder, public_id: publicId, timestamp });
     if (!signature) {
+      if (isProduction) return noStore({ error: "Image uploads are temporarily unavailable." }, { status: 503 });
       return noStore({ mode: "local", publicIdPrefix: "local:posts/", folder });
     }
     return noStore({
