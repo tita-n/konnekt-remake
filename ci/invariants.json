@@ -1,0 +1,65 @@
+{
+  "invariants": [
+    {
+      "name": "Tenant isolation",
+      "file": "tests/integration/tenant-isolation.test.ts",
+      "tests": [
+        "only returns rows for the bound university",
+        "cannot read another university's user even with the exact id",
+        "refuses a write that names another university"
+      ]
+    },
+    {
+      "name": "Hidden and nonexistent are indistinguishable",
+      "file": "e2e/social.spec.ts",
+      "tests": ["level and public posts reach exactly the right students"]
+    },
+    {
+      "name": "Blocks are symmetric and mutes are private",
+      "file": "tests/unit/posts.test.ts",
+      "tests": [
+        "hides content in both directions when either side blocked",
+        "mutes only the muter's view and never hides the author from themselves"
+      ]
+    },
+    {
+      "name": "Reposts inherit the original audience",
+      "file": "tests/unit/posts.test.ts",
+      "tests": ["inherits the original audience on every repost"]
+    },
+    {
+      "name": "Role boundaries",
+      "file": "e2e/admin.spec.ts",
+      "tests": [
+        "reviewer cannot reach students or team management",
+        "student cannot reach either console",
+        "platform admin creates a space and sees the audit trail"
+      ]
+    },
+    {
+      "name": "Private ID images require reviewer access",
+      "file": "e2e/admin.spec.ts",
+      "tests": ["admin sees the queue and a private ID image"]
+    },
+    {
+      "name": "Public preview privacy",
+      "file": "e2e/privacy.spec.ts",
+      "tests": ["public share preview reveals no author, counts or metadata"]
+    },
+    {
+      "name": "Service worker never caches private data",
+      "file": "tests/unit/service-worker.test.ts",
+      "tests": ["forces API responses to the network and every navigation is network-only"]
+    },
+    {
+      "name": "Logout clears caches, IndexedDB and account storage",
+      "file": "e2e/social.spec.ts",
+      "tests": ["logout clears the cached feed, cookies and IndexedDB"]
+    },
+    {
+      "name": "Offline outbox is idempotent",
+      "file": "e2e/social.spec.ts",
+      "tests": ["offline outbox publishes once after reconnect"]
+    }
+  ]
+}

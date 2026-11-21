@@ -4,6 +4,7 @@ import type { UserStatus } from "@prisma/client";
 import { env, isProduction } from "@/lib/env";
 import { platformDb } from "@/lib/db/platform";
 import { hashIp, hmac, randomToken, safeEqual, sha256 } from "@/lib/crypto";
+import { sessionCookieOptions } from "./cookie-options";
 
 export const SESSION_COOKIE = "konnekt_session";
 export const CSRF_COOKIE = "konnekt_csrf";
@@ -58,13 +59,7 @@ export interface SessionRecord {
 }
 
 function cookieOptions(maxAgeSeconds: number) {
-  return {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: "lax" as const,
-    path: "/",
-    maxAge: maxAgeSeconds,
-  };
+  return sessionCookieOptions(maxAgeSeconds, isProduction);
 }
 
 function requestMeta() {

@@ -52,6 +52,10 @@ describe("service adapters", () => {
     expect(status.every((adapter) => adapter.mode === "real")).toBe(true);
     expect(() => assertProductionServices({
       NODE_ENV: "production",
+      DATABASE_URL: "postgresql://u:p@db/konnekt",
+      AUTH_SECRET: "0123456789abcdef0123456789abcdef",
+      APP_URL: "https://konnekt.example",
+      EMAIL_FROM: "Konnekt <hello@konnekt.ng>",
       RESEND_API_KEY: "re_test",
       CLOUDINARY_CLOUD_NAME: "c",
       CLOUDINARY_API_KEY: "k",
@@ -65,9 +69,24 @@ describe("service adapters", () => {
 
   it("refuses to boot in production when a required key is missing", () => {
     expect(() => assertProductionServices({ NODE_ENV: "production" })).toThrow(/required production services/i);
-    expect(() => assertProductionServices({ NODE_ENV: "production", TURNSTILE_BYPASS: "1" })).toThrow(
-      /required production services|TURNSTILE_BYPASS/i,
-    );
+    expect(() =>
+      assertProductionServices({
+        NODE_ENV: "production",
+        DATABASE_URL: "postgresql://u:p@db/konnekt",
+        AUTH_SECRET: "0123456789abcdef0123456789abcdef",
+        APP_URL: "https://konnekt.example",
+        EMAIL_FROM: "Konnekt <hello@konnekt.ng>",
+        RESEND_API_KEY: "re_test",
+        CLOUDINARY_CLOUD_NAME: "c",
+        CLOUDINARY_API_KEY: "k",
+        CLOUDINARY_API_SECRET: "s",
+        UPSTASH_REDIS_REST_URL: "https://example.invalid",
+        UPSTASH_REDIS_REST_TOKEN: "t",
+        TURNSTILE_SECRET_KEY: "x",
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: "y",
+        TURNSTILE_BYPASS: "1",
+      }),
+    ).toThrow(/TURNSTILE_BYPASS/i);
     expect(() => assertProductionServices({ NODE_ENV: "development" })).not.toThrow();
   });
 });
