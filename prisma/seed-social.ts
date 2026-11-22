@@ -169,6 +169,7 @@ export async function seedSocialContent(db: PrismaClient, context: SeedContext):
           consentPolicyVersion: "2026-01-01",
           consentAcceptedAt: new Date(),
           verifiedAt: new Date(),
+          onboardingCompletedAt: new Date(),
           bio: index % 4 === 0 ? `${level}L Nova University student.` : null,
         },
         select: { id: true },
