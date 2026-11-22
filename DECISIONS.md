@@ -137,6 +137,36 @@ answered-badge contrast failures were fixed at the token/component level, not
 suppressed in the test. The report radio keeps a real native input, and poll
 auxiliary labels avoid colliding with the option field names.
 
+## Phase 2 Communities (November 2026)
+
+### Community posts are a separate audience kind
+
+A community post stores `communityId`, `audienceKind = COMMUNITY` and an empty `audiencePath`. `canSeePost` rejects it, so it can never leak into an academic feed, hashtag or profile path by accident. `canSeePostInCommunity` is the only read rule. Reposts inherit the original community, and a community post cannot also be academic.
+
+### INVITE_ONLY is a 404, not a locked door
+
+For non-members, INVITE_ONLY communities are omitted from discovery, suggestions, search and direct lookup. The page returns the same response as a nonexistent slug. REQUEST communities expose metadata so a student can ask to join, but content, resources and the member list stay member-only. Archived communities are readable by existing members and read-only.
+
+### Names are normalized before uniqueness
+
+Community names strip accents, punctuation, spaces and common lookalikes, then check reserved university, academic, official, SUG and admin terms. Both the normalized name and slug are uniquely indexed per university. The database, not just the service, is the final guard.
+
+### The last-owner guard is a database trigger
+
+Service checks can race or be bypassed by a future caller. A trigger rejects removing or demoting the last active owner. The trigger originally returned `OLD` from `BEFORE UPDATE`, which silently reverted every membership update; the follow-up migration returns `NEW` for updates while preserving the delete guard.
+
+### Invite tokens are hashed and narrow
+
+Invite tokens are 32 random bytes encoded as base64url, stored only as SHA-256. Links expire (default 7 days, maximum 30), active invites are capped, and each link has a usage cap. User-targeted invites bind to a specific account. Accepting an invite still runs the same membership and ban checks as joining.
+
+### Resources are private by default
+
+Community resources are stored in private object storage and served through a short-lived signed URL after a server-side membership check. Allowed types are PDF, Office, text and images up to 10 MB, with a 200-resource cap per community. A resource is never a public object URL.
+
+### Onboarding gets a skippable third step
+
+`User.onboardingCompletedAt` is the authoritative gate. Existing verified users were backfilled by migration; new users can choose interests, join suggested communities or skip, then enter the shell. The login landing and shell guard both use the same field.
+
 ## Limitations and open items
 
 - **No staging deployment has been run.** The environment has no Vercel/Neon/Resend/Cloudinary/Upstash/Sentry credentials. `docs/STAGING.md` and the hardened deploy workflow are ready; apply migrations and run `deploy.yml` once the accounts and secrets exist.
@@ -185,7 +215,7 @@ Both remaining highs are in Prisma's v6 CLI config loader (`deepmerge-ts`, `effe
 
 ### Budgets and guards are checked against the repository
 
-`perf/baseline.json` records the measured build and Lighthouse result; key routes may not grow more than 10% without an explicit baseline update. `ci/test-floor.json` enforces 54/11/20 (current: 75/12/22) and rejects skipped/focused tests. `.github/ui-guard.json` blocks UI-only branches from touching schema, services, auth, APIs, actions, workers, dependencies, env, security, performance or test infrastructure. CODEOWNERS requires owner review for the same paths.
+`perf/baseline.json` records the measured build and Lighthouse result; key routes may not grow more than 10% without an explicit baseline update. `ci/test-floor.json` enforces 85/18/26 (Phase 2 current) and rejects skipped/focused tests. `.github/ui-guard.json` blocks UI-only branches from touching schema, services, auth, APIs, actions, workers, dependencies, env, security, performance or test infrastructure. CODEOWNERS requires owner review for the same paths.
 
 ### Staging is prepared, not deployed
 

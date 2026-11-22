@@ -100,6 +100,8 @@ test.describe("student signup journeys", () => {
     await interests.nth(0).click();
     await interests.nth(1).click();
     await interests.nth(2).click();
+    await page.getByRole("button", { name: "Continue to communities" }).click();
+    await expect(page.getByRole("heading", { name: "Find your people" })).toBeVisible();
     await page.getByRole("button", { name: /Finish and enter Konnekt/ }).click();
     await page.waitForURL(/\/status/, { timeout: 30_000 });
 
