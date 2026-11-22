@@ -64,6 +64,22 @@ import { AdminShell } from "@/components/admin/admin-shell";
 import { ReportsWorkspace } from "@/components/admin/reports-workspace";
 import { StudentDetailsDrawer } from "@/components/admin/student-details-drawer";
 import { UniversitySettingsForm } from "@/components/admin/university-settings-form";
+import { CommunityHub } from "@/components/communities/community-hub";
+import { CommunityPage } from "@/components/communities/community-page";
+import { CommunitySettings } from "@/components/communities/community-settings";
+import { NewCommunityForm } from "@/components/communities/new-community-form";
+import { CommunityConsole } from "@/components/admin/community-console";
+import { CommunitySearch } from "@/components/communities/community-search";
+import type {
+  CommunityAdminPayload,
+  CommunityCardView,
+  CommunityInviteView,
+  CommunityMemberView,
+  CommunityPageView,
+  CommunityReportView,
+  CommunityResourceView,
+  JoinRequestView,
+} from "@/lib/communities/types";
 import { cn } from "@/lib/utils";
 
 const NOW = "2026-11-18T10:00:00.000Z";
@@ -81,6 +97,7 @@ const POSTS: PostView[] = [
     body: "Our demo day went better than expected! Shoutout to everyone from Software Engineering and @aisha_bello for testing the live offline sync. #TechSummit",
     audienceKind: "DEPARTMENT",
     audienceLabel: "My Department · Software Engineering",
+    community: null,
     status: "ACTIVE",
     createdAt: HOUR_AGO,
     editedAt: null,
@@ -96,7 +113,7 @@ const POSTS: PostView[] = [
     reactionCount: 128,
     repostCount: 32,
     bookmarkCount: 19,
-    viewer: { reacted: true, bookmarked: false },
+    viewer: { reacted: true, bookmarked: false, canInteract: true, isMember: false, role: null, muted: false },
     isOwner: true,
   },
   {
@@ -105,6 +122,7 @@ const POSTS: PostView[] = [
     body: "Does anyone have the CSC 204 past questions? Especially 2023 and 2024 mid-semester papers with Dr. Salami's recurrence examples.",
     audienceKind: "LEVEL",
     audienceLabel: "My Level · Software Engineering 300L",
+    community: null,
     status: "ACTIVE",
     createdAt: TWO_HOURS_AGO,
     editedAt: null,
@@ -120,7 +138,7 @@ const POSTS: PostView[] = [
     reactionCount: 42,
     repostCount: 6,
     bookmarkCount: 11,
-    viewer: { reacted: false, bookmarked: true },
+    viewer: { reacted: false, bookmarked: true, canInteract: true, isMember: false, role: null, muted: false },
     isOwner: false,
   },
   {
@@ -129,6 +147,7 @@ const POSTS: PostView[] = [
     body: "Best place to study at night before exams start next week?",
     audienceKind: "PUBLIC",
     audienceLabel: "Public · Nova University",
+    community: null,
     status: "ACTIVE",
     createdAt: FOUR_HOURS_AGO,
     editedAt: null,
@@ -157,7 +176,7 @@ const POSTS: PostView[] = [
     reactionCount: 65,
     repostCount: 14,
     bookmarkCount: 8,
-    viewer: { reacted: false, bookmarked: false },
+    viewer: { reacted: false, bookmarked: false, canInteract: true, isMember: false, role: null, muted: false },
     isOwner: false,
   },
   {
@@ -166,6 +185,7 @@ const POSTS: PostView[] = [
     body: "Engineering students don't miss this one tomorrow morning!",
     audienceKind: "COLLEGE",
     audienceLabel: "My College · Engineering",
+    community: null,
     status: "ACTIVE",
     createdAt: FOUR_HOURS_AGO,
     editedAt: null,
@@ -187,7 +207,7 @@ const POSTS: PostView[] = [
     reactionCount: 73,
     repostCount: 17,
     bookmarkCount: 5,
-    viewer: { reacted: true, bookmarked: false },
+    viewer: { reacted: true, bookmarked: false, canInteract: true, isMember: false, role: null, muted: false },
     isOwner: false,
   },
   {
@@ -196,6 +216,7 @@ const POSTS: PostView[] = [
     body: "Snapshots from the Nova Tech Summit hackathon floor and campus library sprints. #NovaUniversity #TechSummit",
     audienceKind: "PUBLIC",
     audienceLabel: "Public · Nova University",
+    community: null,
     status: "ACTIVE",
     createdAt: FOUR_HOURS_AGO,
     editedAt: HOUR_AGO,
@@ -216,7 +237,7 @@ const POSTS: PostView[] = [
     reactionCount: 1240,
     repostCount: 84,
     bookmarkCount: 52,
-    viewer: { reacted: false, bookmarked: true },
+    viewer: { reacted: false, bookmarked: true, canInteract: true, isMember: false, role: null, muted: false },
     isOwner: false,
   },
 ];
@@ -394,6 +415,149 @@ const UNI_SETTINGS: UniversitySettings = {
   matricPattern: "^NU\\/\\d{2}\\/\\d{4}$",
   labels: { college: "College", faculty: "Faculty", department: "Department" },
   policyVersion: "2026-11-18",
+};
+
+const COMMUNITY_VIEWER = {
+  joinState: "JOINED" as const,
+  isMember: true,
+  role: "MEMBER" as const,
+  pendingRequest: false,
+  hasInvite: false,
+  muted: false,
+  canModerate: false,
+  canManage: false,
+};
+
+const COMMUNITY_CARDS: CommunityCardView[] = [
+  {
+    id: "community-swe",
+    name: "Software Engineering Hub",
+    slug: "software-engineering-hub",
+    description: "Projects, past questions and lab tips for Software Engineering students across every level.",
+    category: "ACADEMIC",
+    privacy: "PUBLIC",
+    status: "ACTIVE",
+    isOfficial: true,
+    iconUrl: null,
+    bannerUrl: null,
+    memberCount: 842,
+    postCount: 196,
+    recentActivity: "Aisha shared CSC 204 past questions",
+    viewer: COMMUNITY_VIEWER,
+  },
+  {
+    id: "community-robotics",
+    name: "Nova Robotics Club",
+    slug: "nova-robotics-club",
+    description: "Build nights, competition teams and hardware help for new and experienced makers.",
+    category: "TECH",
+    privacy: "REQUEST",
+    status: "ACTIVE",
+    isOfficial: false,
+    iconUrl: null,
+    bannerUrl: null,
+    memberCount: 156,
+    postCount: 48,
+    recentActivity: "Tunde posted a build night reminder",
+    viewer: { ...COMMUNITY_VIEWER, joinState: "REQUESTED", isMember: false, role: null, pendingRequest: true },
+  },
+  {
+    id: "community-hall",
+    name: "Mariam Hall",
+    slug: "mariam-hall",
+    description: "News, lost property and hall week planning for Mariam Hall residents.",
+    category: "HOSTEL",
+    privacy: "INVITE_ONLY",
+    status: "ACTIVE",
+    isOfficial: false,
+    iconUrl: null,
+    bannerUrl: null,
+    memberCount: 220,
+    postCount: 87,
+    recentActivity: "Ngozi pinned the hall week schedule",
+    viewer: { ...COMMUNITY_VIEWER, joinState: "INVITE_REQUIRED", isMember: false, role: null },
+  },
+  {
+    id: "community-design",
+    name: "Campus Design Collective",
+    slug: "campus-design-collective",
+    description: "A friendly space for UI, brand and illustration work made by Nova students.",
+    category: "ARTS",
+    privacy: "PUBLIC",
+    status: "ACTIVE",
+    isOfficial: false,
+    iconUrl: null,
+    bannerUrl: null,
+    memberCount: 94,
+    postCount: 31,
+    recentActivity: "New critique thread is open",
+    viewer: { ...COMMUNITY_VIEWER, joinState: "CAN_JOIN", isMember: false, role: null },
+  },
+];
+
+const COMMUNITY_PAGE: CommunityPageView = {
+  ...COMMUNITY_CARDS[0]!,
+  allowMemberUploads: true,
+  createdAt: "2026-08-14T10:00:00.000Z",
+  rules: [
+    { id: "rule-1", position: 1, title: "Help before you ask", body: "Search existing threads and share what you have already tried." },
+    { id: "rule-2", position: 2, title: "Keep coursework honest", body: "Never post full solutions during an active assessment." },
+    { id: "rule-3", position: 3, title: "Respect every level", body: "100L questions deserve the same care as final-year ones." },
+  ],
+  staff: [
+    { userId: "u-chinedu", username: "chinedu_okafor", fullName: "Chinedu Okafor", photoUrl: null, role: "OWNER", joinedAt: "2026-08-14T10:00:00.000Z" },
+    { userId: "u-aisha", username: "aisha_bello", fullName: "Aisha Bello", photoUrl: null, role: "MODERATOR", joinedAt: "2026-08-16T10:00:00.000Z" },
+  ],
+  pendingRequestCount: 3,
+  pendingInviteCount: 1,
+  reportedCount: 0,
+  viewer: { ...COMMUNITY_VIEWER, role: "OWNER", canModerate: true, canManage: true },
+};
+
+const COMMUNITY_MEMBERS: CommunityMemberView[] = [
+  { userId: "u-chinedu", username: "chinedu_okafor", fullName: "Chinedu Okafor", photoUrl: null, role: "OWNER", joinedAt: "2026-08-14T10:00:00.000Z", status: "ACTIVE", departmentName: "Software Engineering", level: 300, mutedUntil: null, isOwner: true, isViewer: true },
+  { userId: "u-aisha", username: "aisha_bello", fullName: "Aisha Bello", photoUrl: null, role: "MODERATOR", joinedAt: "2026-08-16T10:00:00.000Z", status: "ACTIVE", departmentName: "Software Engineering", level: 300, mutedUntil: null, isOwner: false, isViewer: false },
+  { userId: "u-tunde", username: "tunde_adeyemi", fullName: "Tunde Adeyemi", photoUrl: null, role: "MEMBER", joinedAt: "2026-09-02T10:00:00.000Z", status: "ACTIVE", departmentName: "Software Engineering", level: 400, mutedUntil: null, isOwner: false, isViewer: false },
+  { userId: "u-ngozi", username: "ngozi_eze", fullName: "Ngozi Eze", photoUrl: null, role: "MEMBER", joinedAt: "2026-09-08T10:00:00.000Z", status: "ACTIVE", departmentName: "Mass Communication", level: 300, mutedUntil: null, isOwner: false, isViewer: false },
+];
+
+const COMMUNITY_RESOURCES: CommunityResourceView[] = [
+  { id: "res-1", kind: "FILE", title: "CSC 204 past questions (2022–2025)", description: "Combined mid-semester and exam papers with marking guides.", category: "ACADEMIC", mimeType: "application/pdf", sizeBytes: 2_400_000, url: null, createdAt: HOUR_AGO, uploader: { username: "aisha_bello", fullName: "Aisha Bello", photoUrl: null }, canRemove: true },
+  { id: "res-2", kind: "LINK", title: "Lab setup guide", description: "Node, Docker and PostgreSQL setup for the 300L project.", category: "TECH", mimeType: null, sizeBytes: null, url: "https://example.edu.ng/lab-guide", createdAt: TWO_HOURS_AGO, uploader: { username: "chinedu_okafor", fullName: "Chinedu Okafor", photoUrl: null }, canRemove: true },
+];
+
+const COMMUNITY_REQUESTS: JoinRequestView[] = [
+  { id: "req-1", message: "I'm in 200L Software Engineering and would like to help with the peer tutoring roster.", createdAt: HOUR_AGO, user: { id: "u-ibrahim", username: "ibrahim_musa", fullName: "Ibrahim Musa", photoUrl: null, departmentName: "Software Engineering", level: 200 } },
+];
+
+const COMMUNITY_INVITES: CommunityInviteView[] = [
+  { id: "inv-1", kind: "LINK", url: "https://konnekt.ng/c/software-engineering-hub?invite=demo", expiresAt: "2026-11-29T10:00:00.000Z", maxUses: 10, uses: 2, status: "ACTIVE", invitedUser: null, createdBy: { username: "chinedu_okafor", fullName: "Chinedu Okafor" }, createdAt: HOUR_AGO },
+];
+
+const COMMUNITY_REPORTS: CommunityReportView[] = [
+  { id: "rep-1", reason: "Harassment", details: "Targeted a 100L student in a reply.", status: "PENDING", createdAt: HOUR_AGO, targetType: "COMMENT", targetId: "c-1", targetExcerpt: "That question is too basic, figure it out yourself.", reporter: { username: "ngozi_eze", fullName: "Ngozi Eze" }, author: { id: "u-tunde", username: "tunde_adeyemi", fullName: "Tunde Adeyemi" } },
+];
+
+const COMMUNITY_ADMIN: CommunityAdminPayload = {
+  total: 30,
+  officialRequests: [
+    { id: "official-1", community: { id: "community-robotics", name: "Nova Robotics Club", slug: "nova-robotics-club" }, requestedBy: { username: "tunde_adeyemi", fullName: "Tunde Adeyemi" }, note: "We host the university's robotics competition team and need official status for announcements.", createdAt: HOUR_AGO },
+  ],
+  rows: COMMUNITY_CARDS.map((card, index) => ({
+    id: card.id,
+    name: card.name,
+    slug: card.slug,
+    isOfficial: card.isOfficial,
+    status: index === 2 ? "SUSPENDED" : "ACTIVE",
+    privacy: card.privacy,
+    category: card.category,
+    memberCount: card.memberCount,
+    postCount: card.postCount,
+    reportCount: index === 2 ? 4 : index === 0 ? 0 : 1,
+    owner: { username: "chinedu_okafor", fullName: "Chinedu Okafor" },
+    createdAt: "2026-08-14T10:00:00.000Z",
+    pendingOfficialRequest: index === 1,
+  })),
 };
 
 const DRAFTS: DraftView[] = [
@@ -778,6 +942,116 @@ export function ScreenPreviewClient({ screen, theme }: { screen: string; theme: 
               ))}
             </div>
             <p className="text-small font-medium text-accent-ink">3 selected · Ready to continue</p>
+          </div>
+          <div className="sticky bottom-0 -mx-4 border-t border-border/80 bg-bg/95 px-4 py-4 backdrop-blur-sm">
+            <Button fullWidth size="lg">Enter Konnekt</Button>
+          </div>
+        </main>
+      ) : null}
+
+      {screen === "communities-hub" ? (
+        <main className="mx-auto min-h-dvh max-w-[760px] pb-24">
+          <CommunityHub
+            mine={{ active: COMMUNITY_CARDS.slice(0, 1), rest: COMMUNITY_CARDS.slice(3), invitations: [] }}
+            discover={{ communities: COMMUNITY_CARDS.slice(1), nextCursor: null, hasMore: false, trending: COMMUNITY_CARDS.slice(1), suggested: [COMMUNITY_CARDS[3]!] }}
+          />
+        </main>
+      ) : null}
+
+      {screen === "community-search" ? (
+        <main className="mx-auto min-h-dvh max-w-[760px]">
+          <CommunitySearch initial={{ communities: COMMUNITY_CARDS, nextCursor: null, hasMore: false, trending: [], suggested: [] }} />
+        </main>
+      ) : null}
+
+      {screen === "community-posts" || screen === "community-resources" || screen === "community-members" || screen === "community-about" ? (
+        <main className="mx-auto min-h-dvh max-w-[760px]">
+          <CommunityPage
+            community={COMMUNITY_PAGE}
+            initialTab={
+              screen === "community-resources"
+                ? "resources"
+                : screen === "community-members"
+                  ? "members"
+                  : screen === "community-about"
+                    ? "about"
+                    : "posts"
+            }
+            initialPosts={POSTS.map((post) => ({
+              ...post,
+              audienceKind: "COMMUNITY",
+              audienceLabel: "Software Engineering Hub",
+              community: { id: COMMUNITY_PAGE.id, name: COMMUNITY_PAGE.name, slug: COMMUNITY_PAGE.slug, iconUrl: null, isOfficial: true, privacy: "PUBLIC" },
+            }))}
+            initialPinned={[]}
+            initialResources={COMMUNITY_RESOURCES}
+            initialMembers={COMMUNITY_MEMBERS}
+          />
+        </main>
+      ) : null}
+
+      {screen === "community-request-locked" ? (
+        <main className="mx-auto min-h-dvh max-w-[760px]">
+          <CommunityPage
+            community={{ ...COMMUNITY_PAGE, privacy: "REQUEST", viewer: { ...COMMUNITY_VIEWER, joinState: "CAN_REQUEST", isMember: false, role: null, canManage: false, canModerate: false } }}
+            initialPosts={[]}
+            initialPinned={[]}
+            initialResources={null}
+            initialMembers={null}
+          />
+        </main>
+      ) : null}
+
+      {screen === "community-settings" ? (
+        <main className="mx-auto min-h-dvh max-w-[900px] px-4 py-6">
+          <CommunitySettings
+            community={COMMUNITY_PAGE}
+            requests={COMMUNITY_REQUESTS}
+            invites={COMMUNITY_INVITES}
+            reports={COMMUNITY_REPORTS}
+            members={COMMUNITY_MEMBERS}
+          />
+        </main>
+      ) : null}
+
+      {screen === "community-create" ? (
+        <main className="mx-auto min-h-dvh max-w-[640px] px-4 py-6">
+          <NewCommunityForm />
+        </main>
+      ) : null}
+
+      {screen === "admin-communities" ? (
+        <AdminShell university={NOVA_UNI} user={{ fullName: "Funke Adebayo", photoUrl: null }} pendingCount={5} reportCount={12} isAdmin canModerate>
+          <CommunityConsole initial={COMMUNITY_ADMIN} isAdmin />
+        </AdminShell>
+      ) : null}
+
+      {screen === "onboarding-communities" ? (
+        <main className="mx-auto flex min-h-dvh max-w-md flex-col px-4 pt-6">
+          <div className="flex-1 space-y-5 pb-6">
+            <Stepper steps={["Profile", "Interests", "Communities"]} current={2} />
+            <div>
+              <p className="text-tiny font-semibold uppercase tracking-[0.12em] text-accent-ink">Step 3 of 3</p>
+              <h1 className="mt-1 font-display text-h1 text-fg">Find your people</h1>
+              <p className="mt-1 text-body text-fg-muted">Join a few circles now. You can always discover more later.</p>
+            </div>
+            <div className="space-y-2.5">
+              {COMMUNITY_CARDS.slice(0, 2).map((community) => (
+                <div key={community.id} className="flex items-center gap-3 rounded-card border border-border bg-surface p-3">
+                  <Avatar name={community.name} seed={community.slug} size="sm" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-small font-bold text-fg">{community.name}</p>
+                    <p className="truncate text-tiny text-fg-muted">{community.memberCount} members · {community.category.toLowerCase()}</p>
+                  </div>
+                  <Button size="sm" variant={community.id === COMMUNITY_CARDS[0]!.id ? "secondary" : "primary"}>
+                    {community.id === COMMUNITY_CARDS[0]!.id ? "Joined" : "Join"}
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <Link href="/communities" className="inline-flex items-center gap-1 text-small font-semibold text-accent-ink">
+              Browse all communities <ChevronRight aria-hidden="true" className="size-4" />
+            </Link>
           </div>
           <div className="sticky bottom-0 -mx-4 border-t border-border/80 bg-bg/95 px-4 py-4 backdrop-blur-sm">
             <Button fullWidth size="lg">Enter Konnekt</Button>

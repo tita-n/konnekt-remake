@@ -15,7 +15,7 @@ export default async function ShellLayout({ children }: { children: React.ReactN
   if (user.status === "SUSPENDED") redirect("/suspended");
   if (user.status === "DELETED_PENDING") redirect("/account/deleted");
   if (user.status !== "VERIFIED" && user.status !== "ALUMNI") redirect("/status");
-  if (!user.departmentNodeId || !user.level) redirect("/onboarding");
+  if (!user.departmentNodeId || !user.level || !user.onboardingCompletedAt) redirect("/onboarding");
 
   const viewer = await loadSocialViewer(user).catch(() => null);
   const trending = viewer ? await getTrendingTags(viewer, "all").catch(() => []) : [];

@@ -295,7 +295,19 @@ export function PostCard({
               <p className="mt-0.5 flex items-center gap-1.5 text-tiny text-fg-subtle">
                 <Users aria-hidden="true" className="size-3.5 shrink-0" />
                 <span className="truncate">
-                  to <span className="font-medium text-fg-muted">{local.audienceLabel}</span>
+                  {local.community ? (
+                    <>
+                      in{" "}
+                      <Link href={`/c/${local.community.slug}`} className="font-semibold text-accent-ink hover:underline">
+                        {local.community.name}
+                      </Link>
+                      {local.community.isOfficial ? <span className="ml-1 text-accent-ink">· official</span> : null}
+                    </>
+                  ) : (
+                    <>
+                      to <span className="font-medium text-fg-muted">{local.audienceLabel}</span>
+                    </>
+                  )}
                 </span>
               </p>
             </div>

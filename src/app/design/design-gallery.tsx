@@ -19,6 +19,34 @@ import { BottomSheet, Dialog } from "@/components/ui/overlays";
 import { CodeInput } from "@/components/ui/code-input";
 import { ImageCropper } from "@/components/ui/image-cropper";
 import { useToast } from "@/components/providers/toast-provider";
+import { CommunityBadge, CommunityCard, CommunityIcon, CommunityTile } from "@/components/communities/community-card";
+import type { CommunityCardView } from "@/lib/communities/types";
+
+const GALLERY_COMMUNITY: CommunityCardView = {
+  id: "gallery-community",
+  name: "Software Engineering Hub",
+  slug: "software-engineering-hub",
+  description: "Projects, past questions and lab tips for every level.",
+  category: "ACADEMIC",
+  privacy: "PUBLIC",
+  status: "ACTIVE",
+  isOfficial: true,
+  iconUrl: null,
+  bannerUrl: null,
+  memberCount: 842,
+  postCount: 196,
+  recentActivity: "Aisha shared CSC 204 past questions",
+  viewer: {
+    joinState: "JOINED",
+    isMember: true,
+    role: "MEMBER",
+    pendingRequest: false,
+    hasInvite: false,
+    muted: false,
+    canModerate: false,
+    canManage: false,
+  },
+};
 
 export function DesignGallery({ theme }: { theme: "light" | "dark" }) {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -133,6 +161,23 @@ export function DesignGallery({ theme }: { theme: "light" | "dark" }) {
             </div>
             <div className="rounded-card border border-border bg-surface">
               <ErrorState description="This is the error pattern." onRetry={() => undefined} />
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="mb-3 text-h2">Communities</h2>
+          <div className="space-y-4 rounded-card border border-border bg-surface p-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <CommunityIcon community={GALLERY_COMMUNITY} size="lg" />
+              <CommunityBadge official privacy="PUBLIC" />
+              <CommunityBadge official={false} privacy="REQUEST" />
+            </div>
+            <div className="max-w-sm">
+              <CommunityCard community={GALLERY_COMMUNITY} />
+            </div>
+            <div className="max-w-[220px]">
+              <CommunityTile community={GALLERY_COMMUNITY} />
             </div>
           </div>
         </section>
