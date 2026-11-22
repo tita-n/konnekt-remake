@@ -1,5 +1,9 @@
 import { canSee, type AudiencePath, type StudentPath } from "./academic";
 import type { AcademicLayer } from "./academic";
+import {
+  canViewCommunityContent,
+  type CommunityAccess,
+} from "./community";
 
 /**
  * Phase 1 audience rules, kept pure so the same decision is used by the feed
@@ -18,7 +22,7 @@ export const EDIT_LIMIT_MINUTES = 15;
 /** Narrower audiences get a mild recency boost, never engagement ranking. */
 export const AUDIENCE_BOOST_MINUTES = 10;
 
-export type PostAudienceKind = "PUBLIC" | "COLLEGE" | "FACULTY" | "DEPARTMENT" | "LEVEL";
+export type PostAudienceKind = "PUBLIC" | "COLLEGE" | "FACULTY" | "DEPARTMENT" | "LEVEL" | "COMMUNITY";
 
 const RANK: Record<PostAudienceKind, number> = {
   PUBLIC: 0,
@@ -26,6 +30,7 @@ const RANK: Record<PostAudienceKind, number> = {
   FACULTY: 2,
   DEPARTMENT: 3,
   LEVEL: 4,
+  COMMUNITY: 0,
 };
 
 export function audienceRank(kind: PostAudienceKind): number {
@@ -67,6 +72,7 @@ export function kindForScope(scope: "university" | AcademicLayer | "level"): Pos
 export interface AudiencePostShape {
   audiencePath: readonly (string | number)[];
   audienceKind: PostAudienceKind;
+  communityId?: string | null;
 }
 
 /**
@@ -75,6 +81,10 @@ export interface AudiencePostShape {
  * viewer sits inside the chosen audience.
  */
 export function canSeePost(viewerPath: StudentPath, post: AudiencePostShape): boolean {
+  // Community posts are never authorized by the academic path alone. Use
+  // canSeePostInCommunity so membership, privacy and bans are enforced.
+  if (post.audienceKind === "COMMUNITY") return false;
+  if (post.communityId) return false;
   if (post.audienceKind === "PUBLIC") {
     return post.audiencePath.length === 1 && post.audiencePath[0] === "PUBLIC";
   }
@@ -85,13 +95,29 @@ export function canSeePost(viewerPath: StudentPath, post: AudiencePostShape): bo
 }
 
 /**
+ * The only community post visibility decision. The community access row is
+ * loaded server-side, batched per request, and never accepted from a client.
+ */
+export function canSeePostInCommunity(
+  viewerPath: StudentPath,
+  post: AudiencePostShape,
+  access: CommunityAccess | null | undefined,
+): boolean {
+  if (post.audienceKind !== "COMMUNITY") return canSeePost(viewerPath, post);
+  if (!post.communityId || !access || access.communityId !== post.communityId) return false;
+  return canViewCommunityContent(access);
+}
+
+/**
  * Prisma filter for "posts this viewer may see". It mirrors canSeePost exactly:
  * PUBLIC within the tenant, or an audience path that is a prefix of the viewer.
  */
 export function visibleAudienceFilter(viewerPath: StudentPath): {
+  communityId: null;
   OR: Array<{ audienceKind: "PUBLIC" } | { audiencePath: { equals: string[] } }>;
 } {
   return {
+    communityId: null,
     OR: visibleAudiencePaths(viewerPath).map((path) =>
       path.length === 1 && path[0] === "PUBLIC"
         ? { audienceKind: "PUBLIC" as const }
@@ -310,6 +336,8 @@ export function audienceLabel(
         : (labels.department ?? "My department");
     case "LEVEL":
       return "My level";
+    case "COMMUNITY":
+      return "Community";
   }
 }
 
@@ -318,9 +346,9 @@ export function feedFiltersFor(input: {
   labels: { college?: string; faculty?: string; department?: string };
   hasCollege: boolean;
   hasFaculty: boolean;
-}): Array<{ value: "all" | "level" | "department" | "college" | "faculty" | "public"; label: string }> {
+}): Array<{ value: "all" | "level" | "department" | "college" | "faculty" | "public" | "communities"; label: string }> {
   const department = input.labels.department ?? "Department";
-  const options: Array<{ value: "all" | "level" | "department" | "college" | "faculty" | "public"; label: string }> = [
+  const options: Array<{ value: "all" | "level" | "department" | "college" | "faculty" | "public" | "communities"; label: string }> = [
     { value: "all", label: "All" },
     { value: "level", label: "My Level" },
     { value: "department", label: `My ${department}` },
@@ -328,6 +356,7 @@ export function feedFiltersFor(input: {
   if (input.hasCollege) options.push({ value: "college", label: `My ${input.labels.college ?? "College"}` });
   else if (input.hasFaculty) options.push({ value: "faculty", label: `My ${input.labels.faculty ?? "Faculty"}` });
   options.push({ value: "public", label: "Public" });
+  options.push({ value: "communities", label: "Communities" });
   return options;
 }
 
@@ -346,4 +375,9 @@ export function filterKindForLabel(filter: string): PostAudienceKind | "ALL" {
     default:
       return "ALL";
   }
+}
+
+/** True when a feed filter is allowed to contain community posts. */
+export function filterIncludesCommunityPosts(filter: string): boolean {
+  return filter === "all" || filter === "communities";
 }

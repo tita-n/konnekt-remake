@@ -31,7 +31,7 @@ export async function requireStudent(nextPath?: string): Promise<SessionUser> {
   if (user.status === "SUSPENDED") redirect("/suspended");
   if (user.status === "DELETED_PENDING") redirect("/account/deleted");
   if (user.status !== "VERIFIED" && user.status !== "ALUMNI") redirect("/status");
-  if (!user.departmentNodeId || !user.level) redirect("/onboarding");
+  if (!user.departmentNodeId || !user.level || !user.onboardingCompletedAt) redirect("/onboarding");
   return user;
 }
 

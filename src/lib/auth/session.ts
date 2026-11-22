@@ -29,6 +29,7 @@ export interface SessionUser {
   departmentVisibility: "EVERYONE" | "UNIVERSITY" | "NOBODY";
   levelVisibility: "EVERYONE" | "UNIVERSITY" | "NOBODY";
   createdAt: Date;
+  onboardingCompletedAt: Date | null;
   deletedRequestedAt: Date | null;
   purgeAfter: Date | null;
   roles: Array<{ role: string; universityId: string | null }>;
@@ -170,6 +171,7 @@ export async function getSession(): Promise<{ session: SessionRecord; user: Sess
       departmentVisibility: true,
       levelVisibility: true,
       createdAt: true,
+      onboardingCompletedAt: true,
       deletedRequestedAt: true,
       purgeAfter: true,
       roles: { select: { role: true, universityId: true } },

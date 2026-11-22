@@ -36,6 +36,14 @@ const TENANT_MODELS = [
   "Report",
   "ModerationAction",
   "Strike",
+  "Community",
+  "CommunityMember",
+  "JoinRequest",
+  "CommunityInvite",
+  "CommunityRule",
+  "CommunityResource",
+  "CommunityPin",
+  "CommunityOfficialRequest",
 ] as const;
 
 const TENANT_MODEL_SET = new Set<string>(TENANT_MODELS);

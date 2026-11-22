@@ -93,6 +93,7 @@ enum AudienceKind {
   FACULTY
   DEPARTMENT
   LEVEL
+  COMMUNITY
 }
 
 enum PostStatus {
@@ -120,6 +121,80 @@ enum MentionSourceType {
 enum ReportTargetType {
   POST
   COMMENT
+}
+
+enum CommunityCategory {
+  ACADEMIC
+  TECH
+  SPORTS
+  ARTS
+  FAITH
+  BUSINESS
+  HOSTEL
+  ASSOCIATION
+  HOBBY
+  OTHER
+}
+
+enum CommunityPrivacy {
+  PUBLIC
+  REQUEST
+  INVITE_ONLY
+}
+
+enum CommunityStatus {
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
+  DELETED
+}
+
+enum CommunityRole {
+  OWNER
+  MODERATOR
+  MEMBER
+}
+
+enum CommunityMemberStatus {
+  ACTIVE
+  BANNED
+  LEFT
+}
+
+enum JoinRequestStatus {
+  PENDING
+  APPROVED
+  DECLINED
+  CANCELLED
+}
+
+enum CommunityInviteKind {
+  USER
+  LINK
+}
+
+enum CommunityInviteStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+  USED
+}
+
+enum CommunityResourceKind {
+  FILE
+  LINK
+}
+
+enum CommunityResourceStatus {
+  ACTIVE
+  REMOVED
+  DELETED
+}
+
+enum CommunityOfficialRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum ReportReason {
@@ -237,19 +312,20 @@ model User {
   updatedAt            DateTime   @updatedAt
   lastActiveAt         DateTime?
   verifiedAt           DateTime?
+  onboardingCompletedAt DateTime?
   deletedRequestedAt   DateTime?
   purgeAfter           DateTime?
   suspendedUntil       DateTime?
   flaggedForReviewAt   DateTime?
 
-  university           University            @relation(fields: [universityId], references: [id], onDelete: Restrict)
-  department           AcademicNode?         @relation(fields: [departmentNodeId], references: [id], onDelete: Restrict)
+  university           University                 @relation(fields: [universityId], references: [id], onDelete: Restrict)
+  department           AcademicNode?              @relation(fields: [departmentNodeId], references: [id], onDelete: Restrict)
   roles                RoleAssignment[]
   sessions             Session[]
   emailCodes           EmailCode[]
-  verificationRequests VerificationRequest[] @relation("Requester")
-  vouchesGiven         VerificationRequest[] @relation("Voucher")
-  reviewsGiven         VerificationRequest[] @relation("Reviewer")
+  verificationRequests VerificationRequest[]      @relation("Requester")
+  vouchesGiven         VerificationRequest[]      @relation("Voucher")
+  reviewsGiven         VerificationRequest[]      @relation("Reviewer")
   passwordResets       PasswordResetToken[]
   auditLogs            AuditLog[]
   posts                Post[]
@@ -257,14 +333,25 @@ model User {
   reactions            Reaction[]
   bookmarks            Bookmark[]
   drafts               Draft[]
-  mutesGiven           Mute[]                @relation("Muter")
-  mutesReceived        Mute[]                @relation("Muted")
-  blocksGiven          Block[]               @relation("Blocker")
-  blocksReceived       Block[]               @relation("Blocked")
-  reportsMade          Report[]              @relation("Reporter")
-  moderationActions    ModerationAction[]    @relation("Moderator")
+  mutesGiven           Mute[]                     @relation("Muter")
+  mutesReceived        Mute[]                     @relation("Muted")
+  blocksGiven          Block[]                    @relation("Blocker")
+  blocksReceived       Block[]                    @relation("Blocked")
+  reportsMade          Report[]                   @relation("Reporter")
+  moderationActions    ModerationAction[]         @relation("Moderator")
   strikes              Strike[]
   mentions             Mention[]
+  communitiesCreated   Community[]                @relation("CommunityCreator")
+  communityMemberships CommunityMember[]          @relation("CommunityMemberUser")
+  communityBansIssued  CommunityMember[]          @relation("CommunityBanner")
+  communityRequests    JoinRequest[]              @relation("CommunityRequester")
+  communityDecisions   JoinRequest[]              @relation("CommunityRequestDecider")
+  communityInvitesSent CommunityInvite[]          @relation("CommunityInviter")
+  communityInvitesGot  CommunityInvite[]          @relation("CommunityInvitee")
+  communityResources   CommunityResource[]        @relation("CommunityResourceUploader")
+  communityPins        CommunityPin[]             @relation("CommunityPinAuthor")
+  officialRequests     CommunityOfficialRequest[] @relation("CommunityOfficialRequester")
+  officialDecisions    CommunityOfficialRequest[] @relation("CommunityOfficialDecider")
 
   @@index([universityId])
   @@index([universityId, status])
@@ -393,6 +480,7 @@ model PasswordResetToken {
 
   @@index([userId])
 }
+
 model Session {
   id           String    @id @default(cuid())
   userId       String
@@ -441,6 +529,8 @@ model Post {
   updatedAt         DateTime     @updatedAt
 
   author          User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  communityId     String?
+  community       Community?     @relation(fields: [communityId], references: [id], onDelete: SetNull)
   repostOf        Post?          @relation("Reposts", fields: [repostOfId], references: [id], onDelete: SetNull)
   reposts         Post[]         @relation("Reposts")
   acceptedComment Comment?       @relation("AcceptedAnswer", fields: [acceptedCommentId], references: [id], onDelete: SetNull)
@@ -449,10 +539,12 @@ model Post {
   comments        Comment[]
   revisions       PostRevision[]
   hashtags        PostHashtag[]
+  communityPin    CommunityPin?
 
   @@index([universityId, status, rankAt, id])
   @@index([universityId, audienceKind, rankAt])
   @@index([universityId, authorId, createdAt])
+  @@index([universityId, communityId, status, rankAt, id])
   @@index([repostOfId])
   @@index([createdAt])
 }
@@ -688,14 +780,17 @@ model Report {
   status       ReportStatus     @default(PENDING)
   resolvedAt   DateTime?
   resolvedById String?
+  communityId  String?
   createdAt    DateTime         @default(now())
 
-  reporter User               @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
-  actions  ModerationAction[]
+  reporter  User               @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  community Community?         @relation("CommunityReports", fields: [communityId], references: [id], onDelete: SetNull)
+  actions   ModerationAction[]
 
   @@unique([reporterId, targetType, targetId], map: "report_one_per_user")
   @@index([universityId, status, createdAt])
   @@index([universityId, targetType, targetId])
+  @@index([universityId, communityId, status, createdAt])
 }
 
 model ModerationAction {
@@ -732,6 +827,192 @@ model Strike {
 
   @@index([universityId, userId, createdAt])
   @@index([universityId, expiresAt])
+}
+
+/// Interest-based student community. Membership is always explicit; nothing is
+/// created or joined automatically from the academic tree.
+model Community {
+  id                 String            @id @default(cuid())
+  universityId       String
+  name               String
+  nameNormalized     String
+  slug               String
+  description        String            @db.Text
+  category           CommunityCategory
+  privacy            CommunityPrivacy  @default(PUBLIC)
+  isOfficial         Boolean           @default(false)
+  status             CommunityStatus   @default(ACTIVE)
+  iconPublicId       String?
+  bannerPublicId     String?
+  allowMemberUploads Boolean           @default(false)
+  createdById        String
+  memberCount        Int               @default(0)
+  postCount          Int               @default(0)
+  lastActivityAt     DateTime          @default(now())
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  archivedAt         DateTime?
+  suspendedAt        DateTime?
+  deletedAt          DateTime?
+  purgeAfter         DateTime?
+
+  createdBy        User                       @relation("CommunityCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  members          CommunityMember[]
+  joinRequests     JoinRequest[]
+  invites          CommunityInvite[]
+  rules            CommunityRule[]
+  resources        CommunityResource[]
+  pins             CommunityPin[]
+  officialRequests CommunityOfficialRequest[]
+  posts            Post[]
+  reports          Report[]                   @relation("CommunityReports")
+
+  @@unique([universityId, nameNormalized])
+  @@unique([universityId, slug])
+  @@index([universityId, status, privacy, category])
+  @@index([universityId, status, lastActivityAt])
+  @@index([universityId, isOfficial, status])
+}
+
+model CommunityMember {
+  id           String                @id @default(cuid())
+  universityId String
+  communityId  String
+  userId       String
+  role         CommunityRole         @default(MEMBER)
+  status       CommunityMemberStatus @default(ACTIVE)
+  joinedAt     DateTime              @default(now())
+  lastSeenAt   DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  bannedById   String?
+  bannedReason String?
+  mutedUntil   DateTime?
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user      User      @relation("CommunityMemberUser", fields: [userId], references: [id], onDelete: Cascade)
+  bannedBy  User?     @relation("CommunityBanner", fields: [bannedById], references: [id], onDelete: SetNull)
+
+  @@unique([communityId, userId])
+  @@index([universityId, userId, status])
+  @@index([communityId, status, role, joinedAt])
+  @@index([universityId, communityId, mutedUntil])
+}
+
+model JoinRequest {
+  id           String            @id @default(cuid())
+  universityId String
+  communityId  String
+  userId       String
+  status       JoinRequestStatus @default(PENDING)
+  message      String?
+  decidedById  String?
+  decidedAt    DateTime?
+  createdAt    DateTime          @default(now())
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user      User      @relation("CommunityRequester", fields: [userId], references: [id], onDelete: Cascade)
+  decidedBy User?     @relation("CommunityRequestDecider", fields: [decidedById], references: [id], onDelete: SetNull)
+
+  @@index([universityId, communityId, status, createdAt])
+  @@index([universityId, userId, status])
+}
+
+model CommunityInvite {
+  id            String                @id @default(cuid())
+  universityId  String
+  communityId   String
+  createdById   String
+  kind          CommunityInviteKind
+  invitedUserId String?
+  tokenHash     String?               @unique
+  expiresAt     DateTime
+  maxUses       Int?
+  uses          Int                   @default(0)
+  status        CommunityInviteStatus @default(ACTIVE)
+  revokedAt     DateTime?
+  createdAt     DateTime              @default(now())
+
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  createdBy   User      @relation("CommunityInviter", fields: [createdById], references: [id], onDelete: Cascade)
+  invitedUser User?     @relation("CommunityInvitee", fields: [invitedUserId], references: [id], onDelete: Cascade)
+
+  @@index([universityId, communityId, status, createdAt])
+  @@index([universityId, invitedUserId, status])
+}
+
+model CommunityRule {
+  id           String @id @default(cuid())
+  universityId String
+  communityId  String
+  position     Int
+  title        String
+  body         String @db.Text
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  @@unique([communityId, position])
+  @@index([universityId, communityId])
+}
+
+model CommunityResource {
+  id           String                  @id @default(cuid())
+  universityId String
+  communityId  String
+  uploaderId   String
+  kind         CommunityResourceKind
+  title        String
+  description  String?
+  category     CommunityCategory
+  fileKey      String?
+  mimeType     String?
+  sizeBytes    Int?
+  url          String?
+  status       CommunityResourceStatus @default(ACTIVE)
+  removedById  String?
+  removedAt    DateTime?
+  createdAt    DateTime                @default(now())
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  uploader  User      @relation("CommunityResourceUploader", fields: [uploaderId], references: [id], onDelete: Cascade)
+
+  @@index([universityId, communityId, status, category, createdAt])
+  @@index([universityId, uploaderId, createdAt])
+}
+
+model CommunityPin {
+  id           String   @id @default(cuid())
+  universityId String
+  communityId  String
+  postId       String   @unique
+  position     Int
+  pinnedById   String
+  createdAt    DateTime @default(now())
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  pinnedBy  User      @relation("CommunityPinAuthor", fields: [pinnedById], references: [id], onDelete: Cascade)
+
+  @@unique([communityId, position])
+  @@index([universityId, communityId, position])
+}
+
+model CommunityOfficialRequest {
+  id            String                         @id @default(cuid())
+  universityId  String
+  communityId   String
+  requestedById String
+  note          String                         @db.Text
+  status        CommunityOfficialRequestStatus @default(PENDING)
+  decidedById   String?
+  decidedAt     DateTime?
+  createdAt     DateTime                       @default(now())
+
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  requestedBy User      @relation("CommunityOfficialRequester", fields: [requestedById], references: [id], onDelete: Cascade)
+  decidedBy   User?     @relation("CommunityOfficialDecider", fields: [decidedById], references: [id], onDelete: SetNull)
+
+  @@index([universityId, status, createdAt])
+  @@index([universityId, communityId, status])
 }
 
 model WaitlistEntry {
