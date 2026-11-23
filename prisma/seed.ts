@@ -138,6 +138,9 @@ function slugify(value: string): string {
 async function main() {
   const hashValue = await passwordHash();
   const platformAdminEmail = process.env.SEED_PLATFORM_ADMIN_EMAIL ?? "admin@konnekt.ng";
+  // Demo accounts represent established students. A fixed age keeps rules
+  // such as the 24-hour community-creation delay deterministic on fresh DBs.
+  const demoAccountCreatedAt = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
   const university = await db.university.upsert({
     where: { slug: "nova-university" },
@@ -236,6 +239,7 @@ async function main() {
       interests: input.interests ?? [],
       consentPolicyVersion: "2026-01-01",
       consentAcceptedAt: new Date(),
+      createdAt: demoAccountCreatedAt,
       verifiedAt: input.status === "VERIFIED" || input.status === "ALUMNI" ? new Date() : null,
       onboardingCompletedAt:
         (input.status === "VERIFIED" || input.status === "ALUMNI") && input.departmentKey && input.level

@@ -1,12 +1,20 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Cookie, type Page } from "@playwright/test";
 import { login } from "./helpers";
 
 const STUDENT = "student@nova.edu.ng";
 const LEVELMATE = "levelmate@nova.edu.ng";
+const sessions = new Map<string, Cookie[]>();
 
 async function switchUser(page: Page, email: string): Promise<void> {
   await page.context().clearCookies();
+  const cached = sessions.get(email);
+  if (cached) {
+    await page.context().addCookies(cached);
+    await page.goto("/pulse", { waitUntil: "networkidle" });
+    return;
+  }
   await login(page, email);
+  sessions.set(email, await page.context().cookies());
 }
 
 async function mutation(page: Page, method: "POST" | "PATCH", path: string, data: Record<string, unknown>) {

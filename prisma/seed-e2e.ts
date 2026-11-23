@@ -167,6 +167,9 @@ async function main() {
       interests: input.status === "VERIFIED" ? ["Coding", "Design"] : [],
       consentPolicyVersion: "2026-01-01",
       consentAcceptedAt: new Date(),
+      // Deterministic account age: community creation requires 24 hours.
+      createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+      onboardingCompletedAt: new Date(),
       verifiedAt: input.status === "VERIFIED" ? new Date() : null,
     };
     const user = await db.user.upsert({
@@ -181,6 +184,7 @@ async function main() {
         bio: data.bio,
         passwordHash,
         emailVerified: true,
+        onboardingCompletedAt: data.onboardingCompletedAt,
       },
       create: data,
     });

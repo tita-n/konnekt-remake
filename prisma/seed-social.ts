@@ -168,6 +168,7 @@ export async function seedSocialContent(db: PrismaClient, context: SeedContext):
           interests: ["Coding", "Campus", "Music"],
           consentPolicyVersion: "2026-01-01",
           consentAcceptedAt: new Date(),
+          createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
           verifiedAt: new Date(),
           onboardingCompletedAt: new Date(),
           bio: index % 4 === 0 ? `${level}L Nova University student.` : null,
