@@ -3,7 +3,10 @@
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { Camera, Loader2 } from "lucide-react";
 import type { DepartmentChoice } from "@/lib/services/academic";
-import { saveInterestsStep, saveProfileStep } from "@/app/onboarding/actions";
+import { finishOnboardingStep, saveInterestsStep, saveProfileStep } from "@/app/onboarding/actions";
+import type { CommunityCardView } from "@/lib/communities/types";
+import { apiGet } from "@/lib/posts/client";
+import { CommunityCard } from "@/components/communities/community-card";
 import { emptyFormState } from "@/lib/action-state";
 import { Avatar } from "@/components/ui/display";
 import { Button } from "@/components/ui/button";
@@ -42,6 +45,9 @@ export function OnboardingWizard({
   const [step, setStep] = useState(0);
   const [profileState, profileAction, savingProfile] = useActionState(saveProfileStep, emptyFormState);
   const [interestsState, interestsAction, savingInterests] = useActionState(saveInterestsStep, emptyFormState);
+  const [finishState, finishAction, savingFinish] = useActionState(finishOnboardingStep, emptyFormState);
+  const [communitySuggestions, setCommunitySuggestions] = useState<CommunityCardView[]>([]);
+  const [loadingCommunities, setLoadingCommunities] = useState(false);
   const [departmentId, setDepartmentId] = useState(initial.departmentId);
   const [level, setLevel] = useState<number | null>(initial.level);
   const [postgraduate, setPostgraduate] = useState(initial.isPostgraduate);
@@ -58,6 +64,16 @@ export function OnboardingWizard({
   useEffect(() => {
     if (profileState.ok) setStep(1);
   }, [profileState.ok]);
+
+  useEffect(() => {
+    if (!interestsState.ok) return;
+    setStep(2);
+    setLoadingCommunities(true);
+    void apiGet<{ suggested: CommunityCardView[]; trending: CommunityCardView[] }>("/api/communities")
+      .then(({ data }) => setCommunitySuggestions([...data.suggested, ...data.trending].slice(0, 6)))
+      .catch(() => setCommunitySuggestions([]))
+      .finally(() => setLoadingCommunities(false));
+  }, [interestsState.ok]);
 
   useEffect(() => {
     if (levels.length > 0 && (!level || !levels.includes(level))) {
@@ -94,12 +110,16 @@ export function OnboardingWizard({
 
   return (
     <div>
-      <Stepper steps={["Profile", "Interests"]} current={step} />
-      <h1 className="mt-6 text-h1 text-fg">{step === 0 ? "Make your profile yours" : "What are you into?"}</h1>
+      <Stepper steps={["Profile", "Interests", "Communities"]} current={step} />
+      <h1 className="mt-6 text-h1 text-fg">
+        {step === 0 ? "Make your profile yours" : step === 1 ? "What are you into?" : "Find your people"}
+      </h1>
       <p className="mt-1.5 text-body text-fg-muted">
         {step === 0
           ? "This is what classmates see. Your department and level put you in the right conversations."
-          : "Pick at least 3. Your interests help people find you — and help us build better communities."}
+          : step === 1
+            ? "Pick at least 3. Your interests help people find you — and help us suggest communities."
+            : "Join a few circles now, or skip and explore later. You can always find them in Communities."}
       </p>
 
       {step === 0 ? (
@@ -192,7 +212,7 @@ export function OnboardingWizard({
             </Button>
           </div>
         </form>
-      ) : (
+      ) : step === 1 ? (
         <form action={interestsAction} className="mt-6 space-y-4">
           <div className="flex flex-wrap gap-2" role="group" aria-label="Your interests">
             {interests.map((interest) => {
@@ -233,9 +253,51 @@ export function OnboardingWizard({
           <FormMessage error={interestsState.error} />
 
           <div className="sticky bottom-0 z-10 -mx-5 border-t border-border/80 bg-bg/95 px-5 py-3.5 backdrop-blur-sm sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0">
-            <Button type="submit" size="lg" fullWidth loading={savingInterests} loadingLabel="Finishing…" disabled={selected.length < 3}>
-              {selected.length < 3 ? "Pick at least 3 interests" : "Finish and enter Konnekt"}
+            <Button type="submit" size="lg" fullWidth loading={savingInterests} loadingLabel="Saving…" disabled={selected.length < 3}>
+              {selected.length < 3 ? "Pick at least 3 interests" : "Continue to communities"}
             </Button>
+          </div>
+        </form>
+      ) : (
+        <form action={finishAction} className="mt-5 space-y-3">
+          {loadingCommunities ? (
+            <div className="flex items-center justify-center gap-2 rounded-card border border-border bg-surface py-8 text-small text-fg-muted">
+              <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+              Finding communities for you…
+            </div>
+          ) : communitySuggestions.length === 0 ? (
+            <div className="rounded-card border border-border bg-surface p-4 text-center">
+              <p className="text-small font-semibold text-fg">No suggestions yet</p>
+              <p className="mt-1 text-small text-fg-muted">
+                Communities are just getting started. You can start your own from the Communities tab.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {communitySuggestions.map((community) => (
+                <CommunityCard key={community.id} community={community} />
+              ))}
+            </div>
+          )}
+
+          <FormMessage error={finishState.error} />
+
+          <div className="sticky bottom-0 z-10 -mx-5 space-y-2 border-t border-border/80 bg-bg/95 px-5 py-3.5 backdrop-blur-sm sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0">
+            <Button type="submit" size="lg" fullWidth loading={savingFinish} loadingLabel="Opening Pulse…">
+              Finish and enter Konnekt
+            </Button>
+            <div className="flex items-center justify-center gap-4">
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="py-2 text-small font-semibold text-fg-muted hover:text-fg"
+              >
+                Back
+              </button>
+              <button type="submit" className="py-2 text-small font-semibold text-accent-ink hover:underline">
+                Skip for now
+              </button>
+            </div>
           </div>
         </form>
       )}

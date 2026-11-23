@@ -12,6 +12,7 @@ import path from "node:path";
 import sharp from "sharp";
 import { assertSeedAllowed } from "./seed-guard";
 import { seedSocialContent } from "./seed-social";
+import { seedCommunities } from "./seed-communities";
 
 try {
   assertSeedAllowed();
@@ -137,6 +138,9 @@ function slugify(value: string): string {
 async function main() {
   const hashValue = await passwordHash();
   const platformAdminEmail = process.env.SEED_PLATFORM_ADMIN_EMAIL ?? "admin@konnekt.ng";
+  // Demo accounts represent established students. A fixed age keeps rules
+  // such as the 24-hour community-creation delay deterministic on fresh DBs.
+  const demoAccountCreatedAt = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
   const university = await db.university.upsert({
     where: { slug: "nova-university" },
@@ -150,7 +154,7 @@ async function main() {
       vouchingEnabled: true,
       matricPattern: "^[A-Z]{2,4}/\\d{4}/\\d{3,4}$",
       labels: { college: "College", faculty: "Faculty", department: "Department" },
-      featureFlags: { campusVoice: false, communities: false, events: false, messaging: false },
+      featureFlags: { campusVoice: false, communities: true, events: false, messaging: false },
     },
     create: {
       name: "Nova University",
@@ -163,7 +167,7 @@ async function main() {
       vouchingEnabled: true,
       matricPattern: "^[A-Z]{2,4}/\\d{4}/\\d{3,4}$",
       labels: { college: "College", faculty: "Faculty", department: "Department" },
-      featureFlags: { campusVoice: false, communities: false, events: false, messaging: false },
+      featureFlags: { campusVoice: false, communities: true, events: false, messaging: false },
     },
   });
 
@@ -235,7 +239,12 @@ async function main() {
       interests: input.interests ?? [],
       consentPolicyVersion: "2026-01-01",
       consentAcceptedAt: new Date(),
+      createdAt: demoAccountCreatedAt,
       verifiedAt: input.status === "VERIFIED" || input.status === "ALUMNI" ? new Date() : null,
+      onboardingCompletedAt:
+        (input.status === "VERIFIED" || input.status === "ALUMNI") && input.departmentKey && input.level
+          ? new Date()
+          : null,
     };
     const user = await db.user.upsert({
       where: { email: input.email },
@@ -249,6 +258,7 @@ async function main() {
         matricNormalized: data.matricNormalized,
         bio: data.bio,
         interests: data.interests,
+        onboardingCompletedAt: data.onboardingCompletedAt,
         passwordHash: hashValue,
         emailVerified: true,
       },
@@ -466,20 +476,28 @@ async function main() {
     });
   }
 
+  const demoAuthors = [
+    { id: verified.id, fullName: "Chinedu Okafor", username: "chinedu_okafor", deptKey: "dept-swe", level: 300 },
+    { id: levelmate.id, fullName: "Aisha Bello", username: "aisha_bello", deptKey: "dept-swe", level: 300 },
+    { id: otherLevel.id, fullName: "Tunde Adeyemi", username: "tunde_adeyemi", deptKey: "dept-swe", level: 400 },
+    { id: otherDept.id, fullName: "Ngozi Eze", username: "ngozi_eze", deptKey: "dept-mech", level: 300 },
+    { id: otherCollege.id, fullName: "Ibrahim Musa", username: "ibrahim_musa", deptKey: "dept-law", level: 300 },
+    { id: courseRep.id, fullName: "Igwe Kalu", username: "swe_rep", deptKey: "dept-swe", level: 400 },
+    { id: reviewer.id, fullName: "Bola Ogunleye", username: "nova_reviewer", deptKey: "dept-law", level: 400 },
+  ];
+
   await seedSocialContent(db, {
     universityId: university.id,
     nodeIds,
     passwordHash: hashValue,
     moderatorId: uniAdmin.id,
-    demoAuthors: [
-      { id: verified.id, fullName: "Chinedu Okafor", username: "chinedu_okafor", deptKey: "dept-swe", level: 300 },
-      { id: levelmate.id, fullName: "Aisha Bello", username: "aisha_bello", deptKey: "dept-swe", level: 300 },
-      { id: otherLevel.id, fullName: "Tunde Adeyemi", username: "tunde_adeyemi", deptKey: "dept-swe", level: 400 },
-      { id: otherDept.id, fullName: "Ngozi Eze", username: "ngozi_eze", deptKey: "dept-mech", level: 300 },
-      { id: otherCollege.id, fullName: "Ibrahim Musa", username: "ibrahim_musa", deptKey: "dept-law", level: 300 },
-      { id: courseRep.id, fullName: "Igwe Kalu", username: "swe_rep", deptKey: "dept-swe", level: 400 },
-      { id: reviewer.id, fullName: "Bola Ogunleye", username: "nova_reviewer", deptKey: "dept-law", level: 400 },
-    ],
+    demoAuthors,
+  });
+
+  await seedCommunities(db, {
+    universityId: university.id,
+    moderatorId: uniAdmin.id,
+    demoAuthors,
   });
 
   const auditExists = await db.auditLog.findFirst({ where: { action: "seed.completed" } });

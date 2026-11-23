@@ -15,7 +15,12 @@ export default async function OnboardingPage() {
   const { user } = session;
   if (user.status === "SUSPENDED") redirect("/suspended");
   if (user.status === "DELETED_PENDING") redirect("/account/deleted");
-  if ((user.status === "VERIFIED" || user.status === "ALUMNI") && user.departmentNodeId && user.level) {
+  if (
+    (user.status === "VERIFIED" || user.status === "ALUMNI") &&
+    user.departmentNodeId &&
+    user.level &&
+    user.onboardingCompletedAt
+  ) {
     redirect("/pulse");
   }
 

@@ -60,6 +60,60 @@
       "name": "Offline outbox is idempotent",
       "file": "e2e/social.spec.ts",
       "tests": ["offline outbox publishes once after reconnect"]
+    },
+    {
+      "name": "Community names normalize and reserved names stay blocked",
+      "file": "tests/unit/communities.test.ts",
+      "tests": ["normalizes lookalike names before uniqueness checks", "reserves official, university and academic names"]
+    },
+    {
+      "name": "Community visibility follows privacy, archived and suspended rules",
+      "file": "tests/unit/communities.test.ts",
+      "tests": [
+        "keeps REQUEST metadata visible while its content stays member-only",
+        "makes INVITE_ONLY indistinguishable from a missing community to outsiders",
+        "keeps archived communities readable by members only"
+      ]
+    },
+    {
+      "name": "Community permissions and ownership are table-driven",
+      "file": "tests/unit/communities.test.ts",
+      "tests": [
+        "enforces owner, moderator and member actions with mute and upload rules",
+        "chooses a moderator first and never transfers to an inactive owner"
+      ]
+    },
+    {
+      "name": "Community posts never widen into academic feeds",
+      "file": "tests/unit/communities.test.ts",
+      "tests": ["keeps community posts out of academic feeds and honours access"]
+    },
+    {
+      "name": "Community invites are hashed and single-purpose",
+      "file": "tests/unit/communities.test.ts",
+      "tests": ["stores only a hash of a high-entropy invite token"]
+    },
+    {
+      "name": "Community discovery and request joins are server-authorized",
+      "file": "tests/integration/communities.test.ts",
+      "tests": [
+        "keeps invite-only communities out of discovery for outsiders",
+        "keeps request joins pending until a moderator approves them",
+        "never exposes another university's communities through the tenant client"
+      ]
+    },
+    {
+      "name": "Communities always retain at least one owner",
+      "file": "tests/integration/communities.test.ts",
+      "tests": [
+        "transfers ownership and protects the last owner from leaving",
+        "the database refuses to remove the last owner even outside the service"
+      ]
+    },
+    {
+      "name": "Invite-only communities are indistinguishable from missing ones",
+      "file": "e2e/communities.spec.ts",
+      "tests": ["invite-only communities are indistinguishable from missing ones for outsiders"]
     }
   ]
 }

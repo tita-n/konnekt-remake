@@ -18,7 +18,12 @@ function landingFor(status: string, onboarded: boolean) {
 export default async function WelcomePage() {
   const session = await getSession();
   if (session) {
-    redirect(landingFor(session.user.status, Boolean(session.user.departmentNodeId && session.user.level)));
+    redirect(
+      landingFor(
+        session.user.status,
+        Boolean(session.user.departmentNodeId && session.user.level && session.user.onboardingCompletedAt),
+      ),
+    );
   }
 
   return (

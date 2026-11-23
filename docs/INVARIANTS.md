@@ -14,6 +14,14 @@
 | Service worker never caches private data | `tests/unit/service-worker.test.ts` | `forces API responses to the network and every navigation is network-only` |
 | Logout clears caches, IndexedDB and storage | `e2e/social.spec.ts` | `logout clears the cached feed, cookies and IndexedDB` |
 | Offline outbox publishes exactly once | `e2e/social.spec.ts` | `offline outbox publishes once after reconnect` |
+| Community names normalize and reserved names stay blocked | `tests/unit/communities.test.ts` | `normalizes lookalike names before uniqueness checks`; `reserves official, university and academic names` |
+| Community visibility follows privacy, archived and suspended rules | `tests/unit/communities.test.ts` | `keeps REQUEST metadata visible while its content stays member-only`; `makes INVITE_ONLY indistinguishable from a missing community to outsiders`; `keeps archived communities readable by members only` |
+| Community permissions and ownership are table-driven | `tests/unit/communities.test.ts` | `enforces owner, moderator and member actions with mute and upload rules`; `chooses a moderator first and never transfers to an inactive owner` |
+| Community posts never widen into academic feeds | `tests/unit/communities.test.ts` | `keeps community posts out of academic feeds and honours access` |
+| Community invites are hashed and single-purpose | `tests/unit/communities.test.ts` | `stores only a hash of a high-entropy invite token` |
+| Community discovery and request joins are server-authorized | `tests/integration/communities.test.ts` | `keeps invite-only communities out of discovery for outsiders`; `keeps request joins pending until a moderator approves them`; `never exposes another university's communities through the tenant client` |
+| Communities always retain at least one owner | `tests/integration/communities.test.ts` | `transfers ownership and protects the last owner from leaving`; `the database refuses to remove the last owner even outside the service` |
+| Invite-only communities are indistinguishable from missing ones | `e2e/communities.spec.ts` | `invite-only communities are indistinguishable from missing ones for outsiders` |
 
 ## Production hardening invariants
 

@@ -3,7 +3,7 @@
  * no server imports, so client components can accept them directly.
  */
 export type PostTypeView = "POST" | "QUESTION" | "POLL" | "REPOST";
-export type AudienceKindView = "PUBLIC" | "COLLEGE" | "FACULTY" | "DEPARTMENT" | "LEVEL";
+export type AudienceKindView = "PUBLIC" | "COLLEGE" | "FACULTY" | "DEPARTMENT" | "LEVEL" | "COMMUNITY";
 export type PostStatusView = "ACTIVE" | "REMOVED" | "DELETED";
 
 export interface PostAuthorView {
@@ -50,12 +50,23 @@ export interface RepostSourceView {
   status: PostStatusView;
 }
 
+export interface PostCommunityView {
+  id: string;
+  name: string;
+  slug: string;
+  iconUrl: string | null;
+  isOfficial: boolean;
+  privacy: "PUBLIC" | "REQUEST" | "INVITE_ONLY";
+}
+
 export interface PostView {
   id: string;
   type: PostTypeView;
   body: string;
   audienceKind: AudienceKindView;
   audienceLabel: string;
+  community: PostCommunityView | null;
+  pinned?: boolean;
   status: PostStatusView;
   createdAt: string;
   editedAt: string | null;
@@ -74,6 +85,10 @@ export interface PostView {
   viewer: {
     reacted: boolean;
     bookmarked: boolean;
+    canInteract: boolean;
+    isMember: boolean;
+    role: "OWNER" | "MODERATOR" | "MEMBER" | null;
+    muted: boolean;
   };
   isOwner: boolean;
 }
@@ -109,7 +124,7 @@ export interface FeedPage {
   hasMore: boolean;
 }
 
-export type FeedFilter = "all" | "level" | "department" | "college" | "faculty" | "public";
+export type FeedFilter = "all" | "level" | "department" | "college" | "faculty" | "public" | "communities";
 
 export interface FeedFilterOption {
   value: FeedFilter;
@@ -137,8 +152,9 @@ export interface DraftView {
     pollOptions?: string[];
     pollDurationDays?: number;
     media?: Array<{ publicId: string; url: string; width: number; height: number; alt?: string | null }>;
+    communityId?: string;
   };
-  audience: { id?: string; label?: string; path?: string[]; kind?: AudienceKindView };
+  audience: { id?: string; label?: string; path?: string[]; kind?: AudienceKindView; communityId?: string };
   updatedAt: string;
 }
 

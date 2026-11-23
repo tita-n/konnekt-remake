@@ -49,6 +49,9 @@ interface AudienceChoice {
   label: string;
   description: string;
   scope: string;
+  communityId?: string;
+  iconUrl?: string | null;
+  rules?: Array<{ title: string; body: string }>;
 }
 
 export function Composer({
@@ -262,7 +265,8 @@ export function Composer({
     const payload = {
       type: mode,
       body,
-      audienceId: audience?.id ?? "",
+      audienceId: audience?.communityId ? "" : (audience?.id ?? ""),
+      communityId: audience?.communityId,
       questionTitle: mode === "QUESTION" ? questionTitle : undefined,
       topicTag: mode === "QUESTION" ? topicTag || undefined : undefined,
       pollOptions: mode === "POLL" ? pollOptions : undefined,
@@ -677,13 +681,15 @@ export function Composer({
           {audiences.map((option) => {
             const selected = audienceDraft === option.id;
             const ScopeIcon =
-              option.scope === "university"
-                ? Globe
-                : option.scope === "college" || option.scope === "faculty"
-                  ? GraduationCap
-                  : option.scope === "department"
-                    ? Layers
-                    : Users;
+              option.scope === "community"
+                ? Users
+                : option.scope === "university"
+                  ? Globe
+                  : option.scope === "college" || option.scope === "faculty"
+                    ? GraduationCap
+                    : option.scope === "department"
+                      ? Layers
+                      : Users;
             return (
               <button
                 key={option.id}
@@ -717,7 +723,9 @@ export function Composer({
         </div>
         <p className="mt-1 flex items-center gap-2 px-1 pb-1 text-tiny text-fg-muted">
           <Info aria-hidden="true" className="size-4 shrink-0 text-fg-subtle" />
-          Only people in this audience will see your post.
+          {audienceDraft.startsWith("community:")
+            ? "This post appears in the community and not in your academic feed."
+            : "Only people in this audience will see your post."}
         </p>
       </BottomSheet>
     </div>

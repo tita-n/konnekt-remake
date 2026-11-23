@@ -78,14 +78,28 @@ export async function saveInterestsStep(_prev: FormState, formData: FormData): P
 
   const db = tenantDb(user.universityId);
   await db.user.update({ where: { id: user.id }, data: { interests: parsed.data } });
+  return { ok: true };
+}
 
+/** Final onboarding step: communities are optional, so this always finishes. */
+export async function finishOnboardingStep(_prev: FormState, _formData: FormData): Promise<FormState> {
+  const user = await requireSessionUser();
+  if (user.status === "SUSPENDED") redirect("/suspended");
+  if (user.status === "DELETED_PENDING") redirect("/account/deleted");
+  if (!user.departmentNodeId || !user.level) return { error: "Finish your profile details first." };
+
+  const db = tenantDb(user.universityId);
+  await db.user.update({
+    where: { id: user.id },
+    data: { onboardingCompletedAt: user.onboardingCompletedAt ?? new Date() },
+  });
   await writeAudit({
     actorId: user.id,
     universityId: user.universityId,
     action: "onboarding.completed",
     targetType: "User",
     targetId: user.id,
-    metadata: { interests: parsed.data.length },
+    metadata: { interests: user.interests.length },
   }).catch(() => undefined);
 
   redirect(user.status === "PENDING" || user.status === "REJECTED" || user.status === "UNVERIFIED" ? "/status" : "/pulse");

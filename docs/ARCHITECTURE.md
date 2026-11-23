@@ -6,8 +6,10 @@
 Browser (PWA)
   ├─ public pages      /, /login, /signup/[slug]/*, /legal/*
   ├─ student shell     /pulse, /p/[id], /compose, /hashtag/[tag], /bookmarks,
-  │                     /drafts, /communities, /events, /inbox, /profile/*, /settings/*
-  ├─ university console /admin/*, /admin/reports, /admin/students/[id]/moderation
+  │                     /drafts, /communities, /communities/new, /c/[slug],
+  │                     /c/[slug]/settings, /events, /inbox, /profile/*, /settings/*
+  ├─ university console /admin/*, /admin/reports, /admin/communities,
+  │                     /admin/students/[id]/moderation
   └─ platform console   /platform/*     (PLATFORM_ADMIN)
 
 Next.js App Router (Node runtime on Vercel)
@@ -61,6 +63,17 @@ A `SocialViewer` is resolved once per request from the session: academic path, d
 4. A hidden post, comment or profile calls `notFound()`; the response is the same as a missing record.
 
 Post detail deliberately allows `REMOVED` rows for viewers who could see the original audience, so the author and moderators can inspect the removal notice. `DELETED` rows are absent everywhere. Reposts copy the original audience verbatim and can never widen it.
+
+## Communities
+
+Communities reuse the same viewer and tenant boundary but are deliberately outside the academic audience model. A post with `communityId` stores `audienceKind = COMMUNITY` and an empty `audiencePath`; `canSeePost` rejects it, so it cannot appear in an academic feed or hashtag by accident. `canSeePostInCommunity` is the only community read rule and combines the community privacy/status with a batched `CommunityMember` lookup.
+
+- PUBLIC communities expose metadata and content to verified students at the same university. REQUEST exposes metadata but keeps content, resources and members member-only. INVITE_ONLY is member-only and indistinguishable from a nonexistent slug for outsiders.
+- The Pulse `All` and `Communities` tabs include posts from joined active communities; academic chips exclude them. Bookmarks and search only surface content the viewer can currently read.
+- Roles are OWNER, MODERATOR and MEMBER. Permissions are pure table-driven checks in `src/lib/domain/community.ts`; a database trigger refuses to remove the last active owner.
+- Invite tokens are random, stored as SHA-256, expiring and usage-capped. Name normalization and reserved-name checks run before the per-university unique name/slug constraints.
+- Resources live in private storage and are served through a short-lived signed URL after a server-side membership check.
+- `/admin/communities` is for university admins and moderators: official requests, suspension, reinstatement, archival and creation of official communities. Community-level moderation stays with the community's own staff.
 
 ## Moderation
 

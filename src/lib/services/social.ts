@@ -24,6 +24,9 @@ export interface SocialViewer {
   labels: LayerLabels;
   lineage: { college: string | null; faculty: string | null; department: string | null };
   accountAgeHours: number;
+  interests: string[];
+  isUniversityStaff: boolean;
+  isUniversityAdmin: boolean;
 }
 
 export async function loadSocialViewer(user: SessionUser): Promise<SocialViewer | null> {
@@ -56,6 +59,15 @@ export async function loadSocialViewer(user: SessionUser): Promise<SocialViewer 
       department: lineage.department?.name ?? null,
     },
     accountAgeHours: Math.max(0, (Date.now() - user.createdAt.getTime()) / 3_600_000),
+    interests: user.interests,
+    isUniversityStaff: user.roles.some(
+      (role) =>
+        role.universityId === user.universityId &&
+        (role.role === "UNIVERSITY_ADMIN" || role.role === "MODERATOR"),
+    ),
+    isUniversityAdmin: user.roles.some(
+      (role) => role.universityId === user.universityId && role.role === "UNIVERSITY_ADMIN",
+    ),
   };
 }
 
@@ -102,6 +114,20 @@ export const postSelect = {
   audiencePath: true,
   audienceKind: true,
   status: true,
+  communityId: true,
+  community: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      iconPublicId: true,
+      privacy: true,
+      status: true,
+      isOfficial: true,
+      memberCount: true,
+    },
+  },
+  communityPin: { select: { position: true } },
   createdAt: true,
   rankAt: true,
   editedAt: true,

@@ -1,6 +1,6 @@
 {
-  "unit": 75,
-  "integration": 12,
-  "e2e": 22,
+  "unit": 85,
+  "integration": 18,
+  "e2e": 26,
   "note": "Raising a floor is allowed with new tests. Lowering it requires explicit PR justification."
 }

@@ -14,6 +14,11 @@ Measured by `npm run perf:build` on 2026-11-21 from a clean install with the har
 | `/signup/[slug]` | **117 kB** |
 | `/compose` | **133 kB** |
 | `/admin/verification` | **108 kB** |
+| `/communities` | **137 kB** (118 kB before Phase 2) |
+| `/c/[slug]` | **152 kB** (new in Phase 2) |
+| `/admin/communities` | **128 kB** (new in Phase 2) |
+
+Phase 2 did not change the shared JS chunk (**104 kB**) or middleware (**34.1 kB**). The `/design/preview/[screen]` route grew from 220 kB to 249 kB because it now imports every community surface for screenshot review; it is development-only and not part of a student route.
 
 `perf/baseline.json` is the source of truth. `npm run perf:build` builds production, writes `perf/current.json` and fails if a key route, shared JS or middleware grows more than **10%** over baseline. Updating the baseline is an explicit, reviewable change; the CI job prints the route and percentage that failed.
 
@@ -27,15 +32,17 @@ Lighthouse CI runs mobile emulation with simulated slow 4G (`rttMs: 150`, `throu
 | Accessibility | ≥ 95 | **100** |
 | Best Practices | ≥ 90 (warn) | **100** |
 | SEO | ≥ 90 (warn) | **90** |
-| LCP | — | **2.0 s** |
+| LCP | — | **2.3 s** |
 | CLS | — | **0** |
-| TBT | — | **82 ms** |
+| TBT | — | **20 ms** |
+
+The Phase 2 rerun kept all category scores unchanged (99/100/100/90). LCP moved from 2.0 s to 2.3 s within run variance; TBT measured 20 ms. The landing page remains the audited URL, so community route bundles are covered by the build-size budget rather than Lighthouse.
 
 Lighthouse 12 removed the PWA category. CI checks installability explicitly: manifest with icons and start URL, plus a served service worker (`npm run check:pwa`).
 
 ## Dataset
 
-The demo seed (`konnekt_dev`) contains 52 students/staff and ~530 posts (440 posts, 45 questions, 45 polls), plus comments and moderation history. The query-plan regression test uses a dedicated tenant with **1,000 posts**, so it does not depend on the demo seed size.
+The demo seed (`konnekt_dev`) contains 52 students/staff, ~530 posts (440 posts, 45 questions, 45 polls), 30 communities, community memberships, resources and moderation history. The query-plan regression test uses a dedicated tenant with **1,000 posts**, so it does not depend on the demo seed size.
 
 ## Query shape
 
@@ -98,6 +105,19 @@ Defined in `prisma/migrations/20261117220532_phase1_posts/migration.sql`:
 | `Report_universityId_status_createdAt_idx` | Moderation queue |
 | `ModerationAction_universityId_targetType_targetId_idx` | Moderation history |
 | `block_one_per_user`, `mute_one_per_user`, `report_one_per_user` | Relationship/report uniqueness |
+| `Community_universityId_status_privacy_category_idx` | Discover by category and privacy |
+| `Community_universityId_status_lastActivityAt_idx` | Trending and recent activity |
+| `CommunityMember_universityId_userId_status_idx` | A student's joined-community set and feed filter |
+| `CommunityMember_communityId_status_role_joinedAt_idx` | Member list and staff ordering |
+| `Community_universityId_nameNormalized_key`, `Community_universityId_slug_key` | Name/slug uniqueness after lookalike normalization |
+| `Post_universityId_communityId_status_rankAt_id_idx` | Community post page and pins, keyset ordered |
+| `CommunityResource_universityId_communityId_status_category__idx` | Resource tab filters |
+| `CommunityInvite_tokenHash_key` | Constant-time invite token lookup |
+| `Community_name_trgm_idx`, `Community_description_trgm_idx` | Bounded community search |
+
+## Community query shape
+
+Community discovery and the community post page reuse the bounded keyset pattern. The post tab reads `Post` by `(universityId, communityId, status, rankAt, id)` and never falls back to an academic feed. Access is resolved once per request with a batched `CommunityMember` lookup, then applied as pure domain rules; the service does not issue per-card membership queries. Member lists are capped and cursor-paginated. Resource rows carry no public URL: downloads resolve a short-lived signature only after server-side access checks.
 
 ## Pagination and client work
 

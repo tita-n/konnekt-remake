@@ -3,9 +3,10 @@ import type { ReportReason, ReportTargetType } from "@prisma/client";
 import type { SessionUser } from "@/lib/auth/guards";
 import { writeAudit } from "@/lib/audit";
 import { tenantDb, withTenantTransaction } from "@/lib/db/tenant";
-import { canSeePost } from "@/lib/domain/posts";
+import { canSeePostInCommunity } from "@/lib/domain/posts";
 import { SocialError } from "@/lib/posts/errors";
 import { rateLimit } from "@/lib/security/rate-limit";
+import { loadCommunityAccessMap } from "./community-access";
 import { isHiddenAuthor, loadRelationships, type SocialViewer } from "./social";
 
 export const REPORT_REASON_LABELS: Record<ReportReason, string> = {
@@ -55,17 +56,22 @@ export async function reportContent(
   const db = tenantDb(viewer.universityId);
 
   let authorId: string;
+  let communityId: string | null = null;
   if (input.targetType === "POST") {
     const post = await db.post.findFirst({
       where: { id: input.targetId },
-      select: { id: true, status: true, authorId: true, audiencePath: true, audienceKind: true },
+      select: { id: true, status: true, authorId: true, audiencePath: true, audienceKind: true, communityId: true },
     });
-    if (!post || post.status !== "ACTIVE" || !canSeePost(viewer.studentPath, post)) {
+    const access = post?.communityId
+      ? (await loadCommunityAccessMap(db, viewer.userId, [post.communityId])).get(post.communityId) ?? null
+      : null;
+    if (!post || post.status !== "ACTIVE" || !canSeePostInCommunity(viewer.studentPath, post, access)) {
       throw new SocialError("This post isn't available.", 404);
     }
     const relationships = await loadRelationships(db, viewer.userId);
     if (isHiddenAuthor(relationships, post.authorId, viewer.userId)) throw new SocialError("This post isn't available.", 404);
     authorId = post.authorId;
+    communityId = post.communityId;
   } else {
     const comment = await db.comment.findFirst({
       where: { id: input.targetId },
@@ -73,10 +79,18 @@ export async function reportContent(
         id: true,
         status: true,
         authorId: true,
-        post: { select: { status: true, audiencePath: true, audienceKind: true, authorId: true } },
+        post: { select: { status: true, audiencePath: true, audienceKind: true, authorId: true, communityId: true } },
       },
     });
-    if (!comment || comment.status !== "ACTIVE" || comment.post.status !== "ACTIVE" || !canSeePost(viewer.studentPath, comment.post)) {
+    const access = comment?.post.communityId
+      ? (await loadCommunityAccessMap(db, viewer.userId, [comment.post.communityId])).get(comment.post.communityId) ?? null
+      : null;
+    if (
+      !comment ||
+      comment.status !== "ACTIVE" ||
+      comment.post.status !== "ACTIVE" ||
+      !canSeePostInCommunity(viewer.studentPath, comment.post, access)
+    ) {
       throw new SocialError("This comment isn't available.", 404);
     }
     const relationships = await loadRelationships(db, viewer.userId);
@@ -84,6 +98,7 @@ export async function reportContent(
       throw new SocialError("This comment isn't available.", 404);
     }
     authorId = comment.authorId;
+    communityId = comment.post.communityId;
   }
   if (authorId === viewer.userId) throw new SocialError("You can't report your own content.");
 
@@ -101,6 +116,7 @@ export async function reportContent(
       targetId: input.targetId,
       reason: input.reason,
       details: details || null,
+      ...(communityId ? { communityId } : {}),
     },
     select: { id: true },
   });
@@ -482,7 +498,7 @@ export async function moderateReport(
     report.targetType === "POST"
       ? await db.post.findFirst({
           where: { id: report.targetId },
-          select: { id: true, authorId: true, status: true },
+          select: { id: true, authorId: true, status: true, communityId: true },
         })
       : await db.comment.findFirst({
           where: { id: report.targetId },
@@ -507,6 +523,12 @@ export async function moderateReport(
         });
         if (authorId) {
           await tx.comment.updateMany({ where: { postId: target.id }, data: { status: "REMOVED", moderationReason: reason } });
+        }
+        if ("communityId" in target && target.communityId) {
+          await tx.community.update({
+            where: { id: target.communityId },
+            data: { postCount: { decrement: 1 } },
+          });
         }
       } else {
         await tx.comment.update({

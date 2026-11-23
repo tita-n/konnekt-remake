@@ -119,8 +119,8 @@ The guard refuses a missing/unsafe URL, the dev database, or a production-lookin
 
 - `tsc --noEmit`: clean.
 - `npm run lint`: clean.
-- Unit: 75 passed. Integration: 12 passed (tenant isolation, DB constraints, append-only audit, verification decisions, invitations, 1,000-post feed plan).
-- Playwright: **22 passed** — signup (student-email and ID-card), onboarding, audience isolation, polls, reports/moderation, blocks/mutes, shared-device logout, offline outbox, public-preview privacy, student shell, admin/platform consoles and axe scans. Runs against a dedicated e2e DB; demo checksums are unchanged.
+- Unit: 85 passed. Integration: 18 passed (tenant isolation, DB constraints, append-only audit, verification decisions, invitations, 1,000-post feed plan, and community discovery, joins, ownership and tenant isolation).
+- Playwright: **26 passed** — signup (student-email and ID-card), three-step onboarding, audience isolation, polls, reports/moderation, blocks/mutes, shared-device logout, offline outbox, public-preview privacy, community creation and post isolation, invite-only invisibility, request approval, official communities, student shell, admin/platform consoles and axe scans. Runs against a dedicated e2e DB; demo checksums are unchanged.
 - Production security invariants: headers snapshot, `/design` and dev-email 404, fail-closed write endpoints, unreachable-DB 503, seed refusal.
 - Feed plan at 1,000 posts: `Index Scan Backward` on `Post_universityId_status_rankAt_id_idx`, **4 shared buffers**, **0.079 ms**. Full plan in [`docs/PERFORMANCE.md`](./docs/PERFORMANCE.md).
 - Lighthouse 12 mobile/slow-4G/4x CPU: scores and bundle budgets are recorded in [`docs/PERFORMANCE.md`](./docs/PERFORMANCE.md). Lighthouse 12 removed the PWA category; the manifest and service worker are checked explicitly.
@@ -147,4 +147,6 @@ The app targets Vercel + Neon. `.github/workflows/deploy.yml` is manual: it vali
 
 Built through Phase 1: feed, posts, questions, polls, comments, reactions, reposts, bookmarks, hashtags, mentions, reports, moderation, blocks, mutes, offline reading and the outbox.
 
-Not built, by design: communities, events, messaging, Campus Voice, push notifications and marketplace. Their tabs remain final empty states; no placeholder APIs or tables exist for them.
+Built in Phase 2: communities with creation and management, discovery, PUBLIC/REQUEST/INVITE_ONLY joins, invites, posts, resources, members, rules, community and university moderation, onboarding step 3, and the admin Communities console with official status.
+
+Not built, by design: events, announcements, following, messaging/chat, Campus Voice, push notifications, short video and marketplace. Their tabs remain final empty states; no placeholder APIs or tables exist for them.

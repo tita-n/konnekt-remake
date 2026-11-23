@@ -7,7 +7,8 @@ import {
   type Audience,
 } from "@/lib/domain/academic";
 import {
-  canSeePost,
+  canSeePostInCommunity,
+  filterIncludesCommunityPosts,
   filterKindForLabel,
   firstLine,
   inheritedRepostAudience,
@@ -27,6 +28,15 @@ import {
   MAX_POST_LENGTH,
   type PostAudienceKind,
 } from "@/lib/domain/posts";
+import { canAccessCommunityAction, type CommunityAccess } from "@/lib/domain/community";
+import {
+  assertCommunityAction,
+  joinedActiveCommunityIds,
+  loadCommunityAccessMap,
+  postViewerCommunityState,
+  readableCommunityIds,
+  communityImageUrl,
+} from "./community-access";
 import { isAllowedPostPublicId, postMediaUrl } from "@/lib/media/post-media";
 import {
   decodeRankCursor,
@@ -108,20 +118,27 @@ function serializePost(
     labels: SocialViewer["labels"];
     lineage: SocialViewer["lineage"];
     level: number;
+    access: CommunityAccess | null;
   },
 ): PostView {
   const isOwner = row.authorId === input.viewerId;
   const removed = row.status !== "ACTIVE";
+  const community = row.community;
   const audience =
-    row.audienceKind === "PUBLIC"
-      ? "Public"
-      : row.audienceKind === "LEVEL"
-        ? `My level${input.lineage.department ? ` · ${input.lineage.department} ${input.level}L` : ""}`
-        : row.audienceKind === "DEPARTMENT"
-          ? `My ${input.labels.department}${input.lineage.department ? ` · ${input.lineage.department}` : ""}`
-          : row.audienceKind === "FACULTY"
-            ? `My ${input.labels.faculty}${input.lineage.faculty ? ` · ${input.lineage.faculty}` : ""}`
-            : `My ${input.labels.college}${input.lineage.college ? ` · ${input.lineage.college}` : ""}`;
+    row.audienceKind === "COMMUNITY"
+      ? (community?.name ?? "Community")
+      : row.audienceKind === "PUBLIC"
+        ? "Public"
+        : row.audienceKind === "LEVEL"
+          ? `My level${input.lineage.department ? ` · ${input.lineage.department} ${input.level}L` : ""}`
+          : row.audienceKind === "DEPARTMENT"
+            ? `My ${input.labels.department}${input.lineage.department ? ` · ${input.lineage.department}` : ""}`
+            : row.audienceKind === "FACULTY"
+              ? `My ${input.labels.faculty}${input.lineage.faculty ? ` · ${input.lineage.faculty}` : ""}`
+              : `My ${input.labels.college}${input.lineage.college ? ` · ${input.lineage.college}` : ""}`;
+  const communityViewer = row.communityId
+    ? postViewerCommunityState(input.access)
+    : { canInteract: true, isMember: false, role: null, muted: false };
 
   return {
     id: row.id,
@@ -129,6 +146,17 @@ function serializePost(
     body: removed ? "" : row.body,
     audienceKind: row.audienceKind,
     audienceLabel: audience,
+    community: community
+      ? {
+          id: community.id,
+          name: community.name,
+          slug: community.slug,
+          iconUrl: communityImageUrl(community.iconPublicId),
+          isOfficial: community.isOfficial,
+          privacy: community.privacy,
+        }
+      : null,
+    pinned: Boolean(row.communityPin),
     status: row.status,
     createdAt: row.createdAt.toISOString(),
     editedAt: row.editedAt?.toISOString() ?? null,
@@ -160,6 +188,7 @@ function serializePost(
     viewer: {
       reacted: input.reacted.has(row.id),
       bookmarked: input.bookmarked.has(row.id),
+      ...communityViewer,
     },
     isOwner,
   };
@@ -170,7 +199,8 @@ async function serializeRows(
   viewer: SocialViewer,
   rows: PostRow[],
 ): Promise<PostView[]> {
-  const [state, pollVotes] = await Promise.all([
+  const communityIds = rows.flatMap((row) => (row.communityId ? [row.communityId] : []));
+  const [state, pollVotes, access] = await Promise.all([
     viewerPostState(
       db,
       viewer.userId,
@@ -182,6 +212,7 @@ async function serializeRows(
           select: { pollId: true, optionId: true },
         })
       : Promise.resolve([]),
+    loadCommunityAccessMap(db, viewer.userId, communityIds),
   ]);
   const votes = new Map(pollVotes.map((vote) => [vote.pollId, vote.optionId]));
   return rows.map((row) =>
@@ -193,24 +224,168 @@ async function serializeRows(
       labels: viewer.labels,
       lineage: viewer.lineage,
       level: viewer.level,
+      access: row.communityId ? (access.get(row.communityId) ?? null) : null,
     }),
   );
+}
+
+export function canSeePostRow(
+  viewerPath: SocialViewer["studentPath"],
+  row: Pick<PostRow, "audiencePath" | "audienceKind" | "communityId">,
+  access: CommunityAccess | null | undefined,
+): boolean {
+  return canSeePostInCommunity(viewerPath, row, access);
+}
+
+/**
+ * Visibility prefilter for non-feed read paths. It includes readable PUBLIC
+ * communities and joined communities; every returned row is still rechecked
+ * with canSeePostInCommunity. Feed "All" deliberately uses a narrower set
+ * (joined communities only).
+ */
+function visiblePostsWhere(
+  viewer: SocialViewer,
+  readableIds: readonly string[],
+): Prisma.PostWhereInput {
+  const academic = { ...visibleAudienceFilter(viewer.studentPath) };
+  if (readableIds.length === 0) return academic;
+  return {
+    OR: [
+      academic,
+      { audienceKind: "COMMUNITY", communityId: { in: [...readableIds] } },
+    ],
+  };
 }
 
 function feedWhere(
   viewer: SocialViewer,
   filter: FeedFilter,
   relationships: RelationshipSets,
+  joinedCommunityIds: readonly string[],
   extra: Prisma.PostWhereInput = {},
 ): Prisma.PostWhereInput {
   const kind = filterKindForLabel(filter);
   const hidden = hiddenAuthorIds(relationships);
+  const communityBranch =
+    joinedCommunityIds.length > 0
+      ? { audienceKind: "COMMUNITY" as const, communityId: { in: [...joinedCommunityIds] } }
+      : null;
+  const academicBranch = {
+    ...visibleAudienceFilter(viewer.studentPath),
+    ...(kind === "ALL" ? {} : { audienceKind: kind }),
+  };
   return {
     status: "ACTIVE",
-    ...(kind === "ALL" ? {} : { audienceKind: kind }),
-    ...visibleAudienceFilter(viewer.studentPath),
+    ...(filter === "communities"
+      ? communityBranch ?? { audienceKind: "COMMUNITY" as const, communityId: { in: [] } }
+      : filterIncludesCommunityPosts(filter)
+        ? { OR: communityBranch ? [academicBranch, communityBranch] : [academicBranch] }
+        : academicBranch),
     ...(hidden.length > 0 ? { authorId: { notIn: hidden } } : {}),
     ...extra,
+  };
+}
+
+export interface CommunityFeedPage {
+  posts: PostView[];
+  pinned: PostView[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
+/** Posts inside one community. Community page only; access is rechecked here. */
+export async function getCommunityFeed(
+  viewer: SocialViewer,
+  communityId: string,
+  sort: "latest" | "top",
+  cursor?: string | null,
+): Promise<CommunityFeedPage | null> {
+  const db = tenantDb(viewer.universityId);
+  const access = (await loadCommunityAccessMap(db, viewer.userId, [communityId])).get(communityId);
+  if (!access || !canAccessCommunityAction(access, "VIEW_CONTENT")) return null;
+  const relationships = await loadRelationships(db, viewer.userId);
+  const hidden = hiddenAuthorIds(relationships);
+  const baseWhere: Prisma.PostWhereInput = {
+    communityId,
+    status: "ACTIVE",
+    ...(hidden.length > 0 ? { authorId: { notIn: hidden } } : {}),
+  };
+  const pins = await db.communityPin.findMany({
+    where: { communityId },
+    orderBy: { position: "asc" },
+    take: 3,
+    select: { postId: true },
+  });
+  const pinIds = pins.map((pin) => pin.postId);
+  const pinnedRows = pinIds.length
+    ? await db.post.findMany({ where: { id: { in: pinIds }, status: "ACTIVE" }, select: postSelect })
+    : [];
+  const pinOrder = new Map(pinIds.map((id, index) => [id, index]));
+  const pinned = (await serializeRows(db, viewer, pinnedRows)).sort(
+    (a, b) => (pinOrder.get(a.id) ?? 0) - (pinOrder.get(b.id) ?? 0),
+  );
+  const exclude = pinIds.length > 0 ? { id: { notIn: pinIds } } : {};
+  if (sort === "latest") {
+    const decoded = decodeRankCursor(cursor);
+    const rows = await db.post.findMany({
+      where: {
+        ...baseWhere,
+        ...exclude,
+        ...(decoded
+          ? {
+              AND: [
+                {
+                  OR: [
+                    { rankAt: { lt: new Date(decoded.rankAt) } },
+                    { rankAt: new Date(decoded.rankAt), id: { lt: decoded.id } },
+                  ],
+                },
+              ],
+            }
+          : {}),
+      },
+      orderBy: [{ rankAt: "desc" }, { id: "desc" }],
+      take: 11,
+      select: postSelect,
+    });
+    const page = rows.filter((row) => canSeePostInCommunity(viewer.studentPath, row, access)).slice(0, 10);
+    const last = page[page.length - 1];
+    return {
+      posts: await serializeRows(db, viewer, page),
+      pinned,
+      nextCursor: rows.length > 10 && last ? encodeRankCursor(last.rankAt, last.id) : null,
+      hasMore: rows.length > 10,
+    };
+  }
+  const decoded = decodeScoreCursor(cursor);
+  const rows = await db.post.findMany({
+    where: {
+      ...baseWhere,
+      ...exclude,
+      ...(decoded
+        ? {
+            AND: [
+              {
+                OR: [
+                  { reactionCount: { lt: decoded.score } },
+                  { reactionCount: decoded.score, id: { lt: decoded.id } },
+                ],
+              },
+            ],
+          }
+        : {}),
+    },
+    orderBy: [{ reactionCount: "desc" }, { createdAt: "desc" }, { id: "desc" }],
+    take: 11,
+    select: postSelect,
+  });
+  const page = rows.filter((row) => canSeePostInCommunity(viewer.studentPath, row, access)).slice(0, 10);
+  const last = page[page.length - 1];
+  return {
+    posts: await serializeRows(db, viewer, page),
+    pinned,
+    nextCursor: rows.length > 10 && last ? encodeScoreCursor(last.reactionCount, last.id) : null,
+    hasMore: rows.length > 10,
   };
 }
 
@@ -221,11 +396,14 @@ export async function getFeed(
   limit = FEED_PAGE_SIZE,
 ): Promise<FeedPage> {
   const db = tenantDb(viewer.universityId);
-  const relationships = await loadRelationships(db, viewer.userId);
+  const [relationships, joinedCommunityIds] = await Promise.all([
+    loadRelationships(db, viewer.userId),
+    joinedActiveCommunityIds(db, viewer.userId),
+  ]);
   const decoded = decodeRankCursor(cursor);
   const pageSize = Math.min(Math.max(limit, 1), 20);
 
-  const where = feedWhere(viewer, filter, relationships, {
+  const where = feedWhere(viewer, filter, relationships, joinedCommunityIds, {
     ...(decoded
       ? {
           AND: [
@@ -247,7 +425,10 @@ export async function getFeed(
     select: postSelect,
   });
 
-  const visibleRows = rows.filter((row) => canSeePost(viewer.studentPath, row)).slice(0, pageSize);
+  const access = await loadCommunityAccessMap(db, viewer.userId, rows.flatMap((row) => (row.communityId ? [row.communityId] : [])));
+  const visibleRows = rows
+    .filter((row) => canSeePostInCommunity(viewer.studentPath, row, row.communityId ? access.get(row.communityId) : null))
+    .slice(0, pageSize);
   const hasMore = rows.length > pageSize;
   const last = visibleRows[visibleRows.length - 1];
   return {
@@ -263,9 +444,12 @@ export async function countNewPosts(
   since: Date,
 ): Promise<number> {
   const db = tenantDb(viewer.universityId);
-  const relationships = await loadRelationships(db, viewer.userId);
+  const [relationships, joinedCommunityIds] = await Promise.all([
+    loadRelationships(db, viewer.userId),
+    joinedActiveCommunityIds(db, viewer.userId),
+  ]);
   return db.post.count({
-    where: feedWhere(viewer, filter, relationships, { createdAt: { gt: since } }),
+    where: feedWhere(viewer, filter, relationships, joinedCommunityIds, { createdAt: { gt: since } }),
   });
 }
 
@@ -279,7 +463,10 @@ export async function getPostDetail(
   const row = await db.post.findFirst({ where: { id: postId }, select: postSelect });
   if (!row) return null;
   if (row.status === "DELETED") return null;
-  if (!canSeePost(viewer.studentPath, row)) return null;
+  const access = row.communityId
+    ? (await loadCommunityAccessMap(db, viewer.userId, [row.communityId])).get(row.communityId) ?? null
+    : null;
+  if (!canSeePostInCommunity(viewer.studentPath, row, access)) return null;
   if (isHiddenAuthor(relationships, row.authorId, viewer.userId)) return null;
 
   const [post] = await serializeRows(db, viewer, [row]);
@@ -425,9 +612,17 @@ export async function createComment(input: {
   const relationships = await loadRelationships(db, viewer.userId);
   const post = await db.post.findFirst({
     where: { id: input.postId },
-    select: { id: true, status: true, audiencePath: true, audienceKind: true, authorId: true },
+    select: { id: true, status: true, audiencePath: true, audienceKind: true, authorId: true, communityId: true },
   });
-  if (!post || post.status !== "ACTIVE" || !canSeePost(viewer.studentPath, post)) {
+  const access = post?.communityId
+    ? (await loadCommunityAccessMap(db, viewer.userId, [post.communityId])).get(post.communityId) ?? null
+    : null;
+  if (
+    !post ||
+    post.status !== "ACTIVE" ||
+    !canSeePostInCommunity(viewer.studentPath, post, access) ||
+    (post.communityId && !assertCommunityAction(access, "COMMENT"))
+  ) {
     throw new SocialError("This post isn't available.", 404);
   }
   if (isHiddenAuthor(relationships, post.authorId, viewer.userId)) throw new SocialError("This post isn't available.", 404);
@@ -458,7 +653,7 @@ export async function createComment(input: {
     select: { id: true },
   });
   await db.post.update({ where: { id: post.id }, data: { commentCount: { increment: 1 } } });
-  await syncMentions(db, viewer.universityId, "COMMENT", created.id, parseMentions(body));
+  await syncMentions(db, viewer.universityId, "COMMENT", created.id, parseMentions(body), post.communityId);
   if (flag.flagged) {
     await db.report
       .create({
@@ -467,6 +662,7 @@ export async function createComment(input: {
           reporterId: viewer.userId,
           targetType: "COMMENT",
           targetId: created.id,
+          ...(post.communityId ? { communityId: post.communityId } : {}),
           reason: flag.reasons.some((reason) => reason.startsWith("keyword:")) ? "HARASSMENT" : "SPAM",
           details: `[automated] ${flag.reasons.join(", ")}`,
         },
@@ -483,13 +679,13 @@ export async function updateComment(viewer: SocialViewer, commentId: string, bod
   const db = tenantDb(viewer.universityId);
   const comment = await db.comment.findFirst({
     where: { id: commentId },
-    select: { id: true, authorId: true, status: true, postId: true },
+    select: { id: true, authorId: true, status: true, postId: true, post: { select: { communityId: true } } },
   });
   if (!comment || comment.authorId !== viewer.userId || comment.status !== "ACTIVE") {
     throw new SocialError("You can only edit your own comment.");
   }
   await db.comment.update({ where: { id: comment.id }, data: { body, editedAt: new Date() } });
-  await syncMentions(db, viewer.universityId, "COMMENT", comment.id, parseMentions(body));
+  await syncMentions(db, viewer.universityId, "COMMENT", comment.id, parseMentions(body), comment.post.communityId);
 }
 
 export async function deleteComment(viewer: SocialViewer, commentId: string): Promise<void> {
@@ -547,13 +743,21 @@ export async function toggleHelpful(viewer: SocialViewer, commentId: string): Pr
       id: true,
       status: true,
       helpfulCount: true,
-      post: { select: { id: true, status: true, audiencePath: true, audienceKind: true, authorId: true } },
+      post: { select: { id: true, status: true, audiencePath: true, audienceKind: true, authorId: true, communityId: true } },
     },
   });
   if (!comment || comment.status !== "ACTIVE" || comment.post.status !== "ACTIVE") {
     throw new SocialError("This answer isn't available.", 404);
   }
-  if (!canSeePost(viewer.studentPath, comment.post)) throw new SocialError("This answer isn't available.", 404);
+  const helpfulAccess = comment.post.communityId
+    ? (await loadCommunityAccessMap(db, viewer.userId, [comment.post.communityId])).get(comment.post.communityId) ?? null
+    : null;
+  if (
+    !canSeePostInCommunity(viewer.studentPath, comment.post, helpfulAccess) ||
+    (comment.post.communityId && !assertCommunityAction(helpfulAccess, "REACT"))
+  ) {
+    throw new SocialError("This answer isn't available.", 404);
+  }
   const existing = await db.helpfulMark.findFirst({ where: { commentId, userId: viewer.userId } });
   return db.$transaction(async (tx) => {
     if (existing) {
@@ -589,9 +793,17 @@ export async function toggleReaction(
   if (targetType === "POST") {
     const post = await db.post.findFirst({
       where: { id: targetId },
-      select: { id: true, status: true, audiencePath: true, audienceKind: true, authorId: true, reactionCount: true },
+      select: { id: true, status: true, audiencePath: true, audienceKind: true, authorId: true, reactionCount: true, communityId: true },
     });
-    if (!post || post.status !== "ACTIVE" || !canSeePost(viewer.studentPath, post)) {
+    const access = post?.communityId
+      ? (await loadCommunityAccessMap(db, viewer.userId, [post.communityId])).get(post.communityId) ?? null
+      : null;
+    if (
+      !post ||
+      post.status !== "ACTIVE" ||
+      !canSeePostInCommunity(viewer.studentPath, post, access) ||
+      (post.communityId && !assertCommunityAction(access, "REACT"))
+    ) {
       throw new SocialError("This post isn't available.", 404);
     }
     const relationships = await loadRelationships(db, viewer.userId);
@@ -622,10 +834,19 @@ export async function toggleReaction(
     select: {
       id: true,
       status: true,
-      post: { select: { id: true, status: true, audiencePath: true, audienceKind: true } },
+      post: { select: { id: true, status: true, audiencePath: true, audienceKind: true, communityId: true } },
     },
   });
-  if (!comment || comment.status !== "ACTIVE" || comment.post.status !== "ACTIVE" || !canSeePost(viewer.studentPath, comment.post)) {
+  const commentAccess = comment?.post.communityId
+    ? (await loadCommunityAccessMap(db, viewer.userId, [comment.post.communityId])).get(comment.post.communityId) ?? null
+    : null;
+  if (
+    !comment ||
+    comment.status !== "ACTIVE" ||
+    comment.post.status !== "ACTIVE" ||
+    !canSeePostInCommunity(viewer.studentPath, comment.post, commentAccess) ||
+    (comment.post.communityId && !assertCommunityAction(commentAccess, "REACT"))
+  ) {
     throw new SocialError("This comment isn't available.", 404);
   }
   const existing = await db.reaction.findFirst({ where: { userId: viewer.userId, targetType, targetId } });
@@ -640,9 +861,12 @@ export async function toggleBookmark(viewer: SocialViewer, postId: string): Prom
   const db = tenantDb(viewer.universityId);
   const post = await db.post.findFirst({
     where: { id: postId },
-    select: { id: true, status: true, audiencePath: true, audienceKind: true, authorId: true },
+    select: { id: true, status: true, audiencePath: true, audienceKind: true, authorId: true, communityId: true },
   });
-  if (!post || post.status !== "ACTIVE" || !canSeePost(viewer.studentPath, post)) {
+  const access = post?.communityId
+    ? (await loadCommunityAccessMap(db, viewer.userId, [post.communityId])).get(post.communityId) ?? null
+    : null;
+  if (!post || post.status !== "ACTIVE" || !canSeePostInCommunity(viewer.studentPath, post, access)) {
     throw new SocialError("This post isn't available.", 404);
   }
   const relationships = await loadRelationships(db, viewer.userId);
@@ -678,10 +902,18 @@ export async function votePoll(viewer: SocialViewer, pollId: string, optionId: s
       id: true,
       endsAt: true,
       options: { select: { id: true } },
-      post: { select: { id: true, status: true, audiencePath: true, audienceKind: true, authorId: true } },
+      post: { select: { id: true, status: true, audiencePath: true, audienceKind: true, authorId: true, communityId: true } },
     },
   });
-  if (!poll || poll.post.status !== "ACTIVE" || !canSeePost(viewer.studentPath, poll.post)) {
+  const pollAccess = poll?.post.communityId
+    ? (await loadCommunityAccessMap(db, viewer.userId, [poll.post.communityId])).get(poll.post.communityId) ?? null
+    : null;
+  if (
+    !poll ||
+    poll.post.status !== "ACTIVE" ||
+    !canSeePostInCommunity(viewer.studentPath, poll.post, pollAccess) ||
+    (poll.post.communityId && !assertCommunityAction(pollAccess, "REACT"))
+  ) {
     throw new SocialError("This poll isn't available.", 404);
   }
   if (!pollIsOpen(poll.endsAt)) throw new SocialError("This poll has ended.");
@@ -713,8 +945,22 @@ export interface CreatePostInput {
   pollOptions?: string[];
   pollDurationDays?: number;
   repostOfId?: string;
+  communityId?: string;
   media?: Array<{ publicId: string; url?: string; width: number; height: number; alt?: string }>;
   idempotencyKey?: string;
+}
+
+async function resolveCommunityPost(
+  viewer: SocialViewer,
+  communityId: string,
+  action: "CREATE_POST" | "REPOST",
+): Promise<CommunityAccess> {
+  const db = tenantDb(viewer.universityId);
+  const access = (await loadCommunityAccessMap(db, viewer.userId, [communityId])).get(communityId);
+  if (!access || !canAccessCommunityAction(access, action)) {
+    throw new SocialError("This community isn't available to post in.", 404);
+  }
+  return access;
 }
 
 function audienceChoices(viewer: SocialViewer): Audience[] {
@@ -740,11 +986,22 @@ export interface ComposerAudience {
   id: string;
   label: string;
   description: string;
-  scope: Audience["scope"];
+  scope: Audience["scope"] | "community";
+  communityId?: string;
+  iconUrl?: string | null;
+  rules?: Array<{ title: string; body: string }>;
 }
 
-export function composerAudiences(viewer: SocialViewer): ComposerAudience[] {
-  return audienceChoices(viewer).map((option) => ({
+export function composerAudiences(
+  viewer: SocialViewer,
+  communities: Array<{
+    id: string;
+    name: string;
+    iconUrl: string | null;
+    rules: Array<{ title: string; body: string }>;
+  }> = [],
+): ComposerAudience[] {
+  const academic: ComposerAudience[] = audienceChoices(viewer).map((option) => ({
     id: option.id,
     label: option.label,
     scope: option.scope,
@@ -759,6 +1016,18 @@ export function composerAudiences(viewer: SocialViewer): ComposerAudience[] {
               ? (viewer.lineage.faculty ?? viewer.labels.faculty)
               : (viewer.lineage.college ?? viewer.labels.college),
   }));
+  return [
+    ...academic,
+    ...communities.map((community) => ({
+      id: `community:${community.id}`,
+      label: community.name,
+      description: "Community",
+      scope: "community" as const,
+      communityId: community.id,
+      iconUrl: community.iconUrl,
+      rules: community.rules,
+    })),
+  ];
 }
 
 function resolveAudience(viewer: SocialViewer, audienceId: string): {
@@ -831,11 +1100,31 @@ async function syncMentions(
   sourceType: "POST" | "COMMENT",
   sourceId: string,
   handles: string[],
+  communityId?: string | null,
 ): Promise<void> {
   await db.mention.deleteMany({ where: { sourceType, sourceId } });
   if (handles.length === 0) return;
+  let eligibleIds: string[] | null = null;
+  if (communityId) {
+    const community = await db.community.findFirst({
+      where: { id: communityId },
+      select: { privacy: true, status: true },
+    });
+    if (!community || community.status !== "ACTIVE") return;
+    if (community.privacy !== "PUBLIC") {
+      const members = await db.communityMember.findMany({
+        where: { communityId, status: "ACTIVE" },
+        select: { userId: true },
+      });
+      eligibleIds = members.map((member) => member.userId);
+    }
+  }
   const users = await db.user.findMany({
-    where: { username: { in: handles }, status: { in: ["VERIFIED", "ALUMNI"] } },
+    where: {
+      username: { in: handles },
+      status: { in: ["VERIFIED", "ALUMNI"] },
+      ...(eligibleIds ? { id: { in: eligibleIds } } : {}),
+    },
     select: { id: true },
     take: 20,
   });
@@ -865,6 +1154,7 @@ export async function createPost(input: CreatePostInput): Promise<{ id: string; 
   if (body.length > MAX_POST_LENGTH) throw new SocialError("Posts can be up to 2,000 characters.");
 
   let audience: { audiencePath: string[]; audienceKind: PostAudienceKind };
+  let communityId: string | null = null;
   let repostOfId: string | null = null;
   let questionTitle: string | null = null;
   let topicTag: string | null = null;
@@ -884,9 +1174,18 @@ export async function createPost(input: CreatePostInput): Promise<{ id: string; 
         audienceKind: true,
         authorId: true,
         type: true,
+        communityId: true,
       },
     });
-    if (!original || original.status !== "ACTIVE" || !canSeePost(viewer.studentPath, original)) {
+    const originalAccess = original?.communityId
+      ? (await loadCommunityAccessMap(db, viewer.userId, [original.communityId])).get(original.communityId) ?? null
+      : null;
+    if (
+      !original ||
+      original.status !== "ACTIVE" ||
+      !canSeePostInCommunity(viewer.studentPath, original, originalAccess) ||
+      (original.communityId && !assertCommunityAction(originalAccess, "CREATE_POST"))
+    ) {
       throw new SocialError("This post isn't available.", 404);
     }
     const relationships = await loadRelationships(db, viewer.userId);
@@ -895,10 +1194,17 @@ export async function createPost(input: CreatePostInput): Promise<{ id: string; 
     }
     if (original.type === "REPOST") throw new SocialError("Choose the original post to repost.");
     audience = inheritedRepostAudience(original);
+    communityId = original.communityId ?? null;
     repostOfId = original.id;
     media = [];
   } else {
-    audience = resolveAudience(viewer, input.audienceId);
+    if (input.communityId) {
+      await resolveCommunityPost(viewer, input.communityId, "CREATE_POST");
+      audience = { audiencePath: [], audienceKind: "COMMUNITY" };
+      communityId = input.communityId;
+    } else {
+      audience = resolveAudience(viewer, input.audienceId);
+    }
     if (input.type === "QUESTION") {
       questionTitle = (input.questionTitle ?? "").trim();
       if (questionTitle.length < 8) throw new SocialError("Give your question a clear title (at least 8 characters).");
@@ -948,6 +1254,7 @@ export async function createPost(input: CreatePostInput): Promise<{ id: string; 
         body,
         audiencePath: audience.audiencePath,
         audienceKind: audience.audienceKind,
+        ...(communityId ? { communityId } : {}),
         rankAt: rankingTimestamp(now, audience.audienceKind),
         ...(input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : {}),
         ...(repostOfId ? { repostOfId } : {}),
@@ -990,10 +1297,16 @@ export async function createPost(input: CreatePostInput): Promise<{ id: string; 
     });
 
     await syncHashtags(db, viewer.universityId, created.id, parseHashtags(body));
-    await syncMentions(db, viewer.universityId, "POST", created.id, parseMentions(body));
+    await syncMentions(db, viewer.universityId, "POST", created.id, parseMentions(body), communityId);
 
     if (repostOfId) {
       await db.post.update({ where: { id: repostOfId }, data: { repostCount: { increment: 1 } } });
+    }
+    if (communityId) {
+      await db.community.update({
+        where: { id: communityId },
+        data: { postCount: { increment: 1 }, lastActivityAt: now },
+      });
     }
     if (flag.flagged) {
       await db.report
@@ -1003,6 +1316,7 @@ export async function createPost(input: CreatePostInput): Promise<{ id: string; 
             reporterId: viewer.userId,
             targetType: "POST",
             targetId: created.id,
+            ...(communityId ? { communityId } : {}),
             reason: flag.reasons.some((reason) => reason.startsWith("keyword:")) ? "HARASSMENT" : "SPAM",
             details: `[automated] ${flag.reasons.join(", ")}`,
           },
@@ -1029,7 +1343,7 @@ export async function updatePost(viewer: SocialViewer, postId: string, bodyInput
   const db = tenantDb(viewer.universityId);
   const post = await db.post.findFirst({
     where: { id: postId },
-    select: { id: true, authorId: true, status: true, type: true, body: true },
+    select: { id: true, authorId: true, status: true, type: true, body: true, communityId: true },
   });
   if (!post || post.authorId !== viewer.userId || post.status !== "ACTIVE") {
     throw new SocialError("You can only edit your own active post.");
@@ -1041,14 +1355,14 @@ export async function updatePost(viewer: SocialViewer, postId: string, bodyInput
     await tx.post.update({ where: { id: post.id }, data: { body, editedAt: new Date() } });
   });
   await syncHashtags(db, viewer.universityId, post.id, parseHashtags(body));
-  await syncMentions(db, viewer.universityId, "POST", post.id, parseMentions(body));
+  await syncMentions(db, viewer.universityId, "POST", post.id, parseMentions(body), post.communityId);
 }
 
 export async function deletePost(viewer: SocialViewer, postId: string): Promise<void> {
   const db = tenantDb(viewer.universityId);
   const post = await db.post.findFirst({
     where: { id: postId },
-    select: { id: true, authorId: true, status: true, repostOfId: true },
+    select: { id: true, authorId: true, status: true, repostOfId: true, communityId: true },
   });
   if (!post || post.authorId !== viewer.userId || post.status === "DELETED") {
     throw new SocialError("You can only delete your own post.");
@@ -1057,6 +1371,12 @@ export async function deletePost(viewer: SocialViewer, postId: string): Promise<
     await tx.post.update({ where: { id: post.id }, data: { status: "DELETED", body: "" } });
     if (post.repostOfId) {
       await tx.post.updateMany({ where: { id: post.repostOfId }, data: { repostCount: { decrement: 1 } } });
+    }
+    if (post.communityId) {
+      await tx.community.update({
+        where: { id: post.communityId },
+        data: { postCount: { decrement: 1 } },
+      });
     }
   });
 }
@@ -1067,22 +1387,38 @@ const trendingCache = new Map<string, { expires: number; value: TrendingTag[] }>
 
 export async function getTrendingTags(viewer: SocialViewer, filter: FeedFilter): Promise<TrendingTag[]> {
   const db = tenantDb(viewer.universityId);
-  const relationships = await loadRelationships(db, viewer.userId);
+  const [relationships, readableIds, joinedIds] = await Promise.all([
+    loadRelationships(db, viewer.userId),
+    readableCommunityIds(db, viewer.userId),
+    joinedActiveCommunityIds(db, viewer.userId),
+  ]);
   const hidden = hiddenAuthorIds(relationships).sort();
-  const key = `${viewer.studentPath.join("/")}|${filter}|${hidden.join(",")}`;
+  const communityKey = [...readableIds].sort().join(",");
+  const key = `${viewer.studentPath.join("/")}|${filter}|${communityKey}|${hidden.join(",")}`;
   const cached = trendingCache.get(key);
   if (cached && cached.expires > Date.now()) return cached.value;
 
-  const kind = filterKindForLabel(filter);
   const since = new Date(Date.now() - 48 * 60 * 60 * 1000);
+  const filterKind = filterKindForLabel(filter);
+  const scopeWhere: Prisma.PostWhereInput =
+    filter === "all"
+      ? visiblePostsWhere(viewer, readableIds)
+      : filter === "communities"
+        ? {
+            audienceKind: "COMMUNITY",
+            ...(joinedIds.length > 0 ? { communityId: { in: joinedIds } } : { communityId: { in: [] } }),
+          }
+        : {
+            ...visibleAudienceFilter(viewer.studentPath),
+            ...(filterKind === "ALL" ? {} : { audienceKind: filterKind }),
+          };
   const grouped = await db.postHashtag.groupBy({
     by: ["hashtagId"],
     where: {
       post: {
         status: "ACTIVE",
         createdAt: { gte: since },
-        ...(kind === "ALL" ? {} : { audienceKind: kind }),
-        ...visibleAudienceFilter(viewer.studentPath),
+        ...scopeWhere,
         ...(hidden.length > 0 ? { authorId: { notIn: hidden } } : {}),
       },
     },
@@ -1116,18 +1452,20 @@ export async function getHashtagPage(
   const tag = normalizeTag(rawTag);
   if (!tag) return null;
   const db = tenantDb(viewer.universityId);
-  const relationships = await loadRelationships(db, viewer.userId);
+  const [relationships, readableIds] = await Promise.all([
+    loadRelationships(db, viewer.userId),
+    readableCommunityIds(db, viewer.userId),
+  ]);
   const hashtag = await db.hashtag.findFirst({ where: { tag }, select: { id: true, tag: true } });
   if (!hashtag) return null;
   const hidden = hiddenAuthorIds(relationships);
-  const visible = visibleAudienceFilter(viewer.studentPath);
+  const access = await loadCommunityAccessMap(db, viewer.userId, readableIds);
   const baseWhere: Prisma.PostWhereInput = {
     status: "ACTIVE",
     hashtags: { some: { hashtagId: hashtag.id } },
-    ...visible,
+    ...visiblePostsWhere(viewer, readableIds),
     ...(hidden.length > 0 ? { authorId: { notIn: hidden } } : {}),
   };
-  const postCount = await db.post.count({ where: baseWhere });
 
   if (sort === "latest") {
     const decoded = decodeRankCursor(cursor);
@@ -1151,11 +1489,13 @@ export async function getHashtagPage(
       take: 11,
       select: postSelect,
     });
-    const page = rows.filter((row) => canSeePost(viewer.studentPath, row)).slice(0, 10);
+    const page = rows
+      .filter((row) => canSeePostInCommunity(viewer.studentPath, row, row.communityId ? access.get(row.communityId) : null))
+      .slice(0, 10);
     const last = page[page.length - 1];
     return {
       tag: hashtag.tag,
-      postCount,
+      postCount: await db.post.count({ where: baseWhere }),
       posts: await serializeRows(db, viewer, page),
       nextCursor: rows.length > 10 && last ? encodeRankCursor(last.rankAt, last.id) : null,
       hasMore: rows.length > 10,
@@ -1184,11 +1524,13 @@ export async function getHashtagPage(
     take: 11,
     select: postSelect,
   });
-  const page = rows.filter((row) => canSeePost(viewer.studentPath, row)).slice(0, 10);
+  const page = rows
+    .filter((row) => canSeePostInCommunity(viewer.studentPath, row, row.communityId ? access.get(row.communityId) : null))
+    .slice(0, 10);
   const last = page[page.length - 1];
   return {
     tag: hashtag.tag,
-    postCount,
+    postCount: await db.post.count({ where: baseWhere }),
     posts: await serializeRows(db, viewer, page),
     nextCursor: rows.length > 10 && last ? encodeScoreCursor(last.reactionCount, last.id) : null,
     hasMore: rows.length > 10,
@@ -1223,7 +1565,10 @@ export async function getBookmarks(
   options: { q?: string; type?: "ALL" | "POST" | "QUESTION" | "POLL" | "REPOST"; cursor?: string | null } = {},
 ): Promise<BookmarkPage> {
   const db = tenantDb(viewer.universityId);
-  const relationships = await loadRelationships(db, viewer.userId);
+  const [relationships, readableIds] = await Promise.all([
+    loadRelationships(db, viewer.userId),
+    readableCommunityIds(db, viewer.userId),
+  ]);
   const decoded = decodeBookmarkCursor(options.cursor);
   const rows = await db.bookmark.findMany({
     where: {
@@ -1256,16 +1601,21 @@ export async function getBookmarks(
           ...(options.q?.trim()
             ? { body: { contains: options.q.trim(), mode: "insensitive" as const } }
             : {}),
-          ...visibleAudienceFilter(viewer.studentPath),
+          ...visiblePostsWhere(viewer, readableIds),
         },
         select: postSelect,
       })
     : [];
+  const access = await loadCommunityAccessMap(
+    db,
+    viewer.userId,
+    posts.flatMap((post) => (post.communityId ? [post.communityId] : [])),
+  );
   const byId = new Map(posts.map((post) => [post.id, post]));
   const ordered = pageRows
     .map((row) => byId.get(row.postId))
     .filter((row): row is PostRow => Boolean(row))
-    .filter((row) => canSeePost(viewer.studentPath, row))
+    .filter((row) => canSeePostInCommunity(viewer.studentPath, row, row.communityId ? access.get(row.communityId) : null))
     .filter((row) => !isHiddenAuthor(relationships, row.authorId, viewer.userId));
   const last = pageRows[pageRows.length - 1];
   return {
@@ -1288,18 +1638,26 @@ export interface ProfileReply {
 
 export async function getAuthorPosts(viewer: SocialViewer, authorId: string, limit = 20): Promise<PostView[]> {
   const db = tenantDb(viewer.universityId);
-  const relationships = await loadRelationships(db, viewer.userId);
+  const [relationships, joinedIds] = await Promise.all([
+    loadRelationships(db, viewer.userId),
+    joinedActiveCommunityIds(db, viewer.userId),
+  ]);
   if (isHiddenAuthor(relationships, authorId, viewer.userId)) return [];
   const rows = await db.post.findMany({
-    where: feedWhere(viewer, "all", relationships, { authorId }),
+    where: feedWhere(viewer, "all", relationships, joinedIds, { authorId }),
     orderBy: [{ rankAt: "desc" }, { id: "desc" }],
     take: Math.min(limit, 30),
     select: postSelect,
   });
+  const access = await loadCommunityAccessMap(
+    db,
+    viewer.userId,
+    rows.flatMap((row) => (row.communityId ? [row.communityId] : [])),
+  );
   return serializeRows(
     db,
     viewer,
-    rows.filter((row) => canSeePost(viewer.studentPath, row)),
+    rows.filter((row) => canSeePostInCommunity(viewer.studentPath, row, row.communityId ? access.get(row.communityId) : null)),
   );
 }
 
@@ -1315,14 +1673,19 @@ export async function getAuthorReplies(viewer: SocialViewer, authorId: string, l
       id: true,
       body: true,
       createdAt: true,
-      post: { select: { id: true, type: true, status: true, audiencePath: true, audienceKind: true, authorId: true, questionTitle: true } },
+      post: { select: { id: true, type: true, status: true, audiencePath: true, audienceKind: true, authorId: true, communityId: true, questionTitle: true } },
     },
   });
+  const access = await loadCommunityAccessMap(
+    db,
+    viewer.userId,
+    rows.flatMap((row) => (row.post.communityId ? [row.post.communityId] : [])),
+  );
   return rows
     .filter(
       (row) =>
         row.post.status === "ACTIVE" &&
-        canSeePost(viewer.studentPath, row.post) &&
+        canSeePostInCommunity(viewer.studentPath, row.post, row.post.communityId ? access.get(row.post.communityId) : null) &&
         !isHiddenAuthor(relationships, row.post.authorId, viewer.userId),
     )
     .map((row) => ({
@@ -1466,9 +1829,11 @@ export async function getPublicPreview(
 ): Promise<{ kind: "preview"; firstLine: string } | { kind: "generic" }> {
   const post = await platformDb.post.findFirst({
     where: { id: postId },
-    select: { status: true, audienceKind: true, body: true, questionTitle: true },
+    select: { status: true, audienceKind: true, body: true, questionTitle: true, communityId: true },
   });
-  if (!post || post.status !== "ACTIVE" || post.audienceKind !== "PUBLIC") return { kind: "generic" };
+  if (!post || post.status !== "ACTIVE" || post.audienceKind !== "PUBLIC" || post.communityId) {
+    return { kind: "generic" };
+  }
   const line = firstLine(post.body || post.questionTitle || "");
   if (!line) return { kind: "generic" };
   return { kind: "preview", firstLine: line.slice(0, 160) };
@@ -1483,9 +1848,12 @@ export async function getReactionList(
   const db = tenantDb(viewer.universityId);
   const post = await db.post.findFirst({
     where: { id: postId },
-    select: { id: true, status: true, audiencePath: true, audienceKind: true, authorId: true },
+    select: { id: true, status: true, audiencePath: true, audienceKind: true, authorId: true, communityId: true },
   });
-  if (!post || post.status !== "ACTIVE" || !canSeePost(viewer.studentPath, post)) return null;
+  const access = post?.communityId
+    ? (await loadCommunityAccessMap(db, viewer.userId, [post.communityId])).get(post.communityId) ?? null
+    : null;
+  if (!post || post.status !== "ACTIVE" || !canSeePostInCommunity(viewer.studentPath, post, access)) return null;
   const relationships = await loadRelationships(db, viewer.userId);
   if (isHiddenAuthor(relationships, post.authorId, viewer.userId)) return null;
   const reactions = await db.reaction.findMany({

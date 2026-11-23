@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
       pollOptions: Array.isArray(body.pollOptions) ? body.pollOptions.filter((value): value is string => typeof value === "string") : [],
       pollDurationDays: typeof body.pollDurationDays === "number" ? body.pollDurationDays : undefined,
       repostOfId: typeof body.repostOfId === "string" ? body.repostOfId : undefined,
+      communityId: typeof body.communityId === "string" && body.communityId ? body.communityId : undefined,
       media,
       idempotencyKey:
         request.headers.get("idempotency-key")?.slice(0, 120) ||
