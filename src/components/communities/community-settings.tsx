@@ -505,7 +505,7 @@ export function CommunitySettings({
         </section>
 
         <section aria-labelledby="danger-title" className="rounded-card border border-danger/30 bg-danger-soft p-4">
-          <h2 id="danger-title" className="font-display text-h2 font-bold text-danger">Danger zone</h2>
+          <h2 id="danger-title" className="font-display text-h2 font-bold text-fg">Danger zone</h2>
           <p className="mt-1 text-small text-fg-muted">Archiving makes the community read-only. Deletion is permanent after 30 days.</p>
           <div className="mt-2 flex flex-wrap gap-2">
             <Button variant="secondary" onClick={() => void archive()} loading={working}>

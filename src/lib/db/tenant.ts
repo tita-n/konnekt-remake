@@ -71,6 +71,24 @@ function whereWithTenant(args: Args, universityId: string): Args {
   return { ...args, where: { AND: [where, { universityId }] } };
 }
 
+/**
+ * findFirst only takes a filter, so compound unique shorthands such as
+ * `{ universityId_tag: { universityId, tag } }` must be expanded into their
+ * individual fields before the tenant filter is ANDed in.
+ */
+function expandUniqueWhere(where: unknown): Args {
+  if (!where || typeof where !== "object" || Array.isArray(where)) return {};
+  const expanded: Args = {};
+  for (const [key, value] of Object.entries(where as Args)) {
+    if (value && typeof value === "object" && !Array.isArray(value) && key.includes("_")) {
+      Object.assign(expanded, value);
+    } else {
+      expanded[key] = value;
+    }
+  }
+  return expanded;
+}
+
 function assertSameTenant(data: unknown, universityId: string): void {
   if (!data || typeof data !== "object" || Array.isArray(data)) return;
   const value = (data as { universityId?: unknown }).universityId;
@@ -122,7 +140,9 @@ function tenantQueryExtension(universityId: string) {
           // findUnique only accepts a unique filter. Resolve it through findFirst
           // with the tenant ANDed in, so another tenant's row is simply absent.
           if (operation === "findUnique" || operation === "findUniqueOrThrow") {
-            const result = await rawModel(model).findFirst(whereWithTenant(args, universityId));
+            const result = await rawModel(model).findFirst(
+              whereWithTenant({ ...args, where: expandUniqueWhere(args.where) }, universityId),
+            );
             if (result == null && operation === "findUniqueOrThrow") {
               throw Object.assign(new Error("Record not found"), { code: "P2025" });
             }
@@ -137,7 +157,7 @@ function tenantQueryExtension(universityId: string) {
           // first, then run the original unique query.
           if (operation === "update" || operation === "delete") {
             const existing = await rawModel(model).findFirst(
-              whereWithTenant({ where: args.where, select: { id: true } }, universityId),
+              whereWithTenant({ where: expandUniqueWhere(args.where), select: { id: true } }, universityId),
             );
             if (!existing) {
               throw Object.assign(new Error("Record not found"), { code: "P2025" });
@@ -153,10 +173,12 @@ function tenantQueryExtension(universityId: string) {
           if (operation === "upsert") {
             assertSameTenant(args.create, universityId);
             assertSameTenant(args.update, universityId);
-            const existing = await rawModel(model).findFirst({
-              where: args.where,
-              select: { id: true, universityId: true },
-            });
+            const existing = await rawModel(model).findFirst(
+              whereWithTenant(
+                { where: expandUniqueWhere(args.where), select: { id: true, universityId: true } },
+                universityId,
+              ),
+            );
             if (
               existing &&
               typeof existing === "object" &&

@@ -121,6 +121,53 @@ test.describe("communities product", () => {
     await expect(page.getByRole("link", { name: "Post in community" })).toBeVisible();
   });
 
+  test("an owner manages rules, invites and resources from the community screens", async ({ page }) => {
+    test.setTimeout(120_000);
+    // Admin-created so this test does not consume a student's daily community
+    // creation budget, which is shared with the other cases in this file.
+    await login(page, "admin@nova.edu.ng");
+    const suffix = Date.now().toString(36);
+    const created = await mutation(page, "POST", "/api/admin/communities", {
+      name: `E2E Manage Circle ${suffix}`,
+      description: "A public community used to exercise every management screen.",
+      category: "ACADEMIC",
+      privacy: "PUBLIC",
+    });
+    expect(created.status()).toBe(201);
+    const community = (await created.json()) as { id: string; slug: string };
+
+    await page.goto(`/c/${community.slug}/settings`, { waitUntil: "networkidle" });
+    await expect(page.getByRole("heading", { name: "Basics" })).toBeVisible();
+
+    const ruleTitle = `Keep it useful ${suffix}`;
+    await page.getByRole("button", { name: "Add rule" }).click();
+    await page.getByLabel("Rule 1 title").fill(ruleTitle);
+    await page.getByLabel("Rule 1 description").fill("Cite sources when you share past questions.");
+    await page.getByRole("button", { name: "Save changes" }).click();
+    await expect(page.getByText("Community updated")).toBeVisible();
+    await page.reload({ waitUntil: "networkidle" });
+    await expect(page.getByLabel("Rule 1 title")).toHaveValue(ruleTitle);
+
+    await page.getByRole("button", { name: "Create link" }).click();
+    await expect(page.getByRole("button", { name: "Copy invite link" })).toBeVisible();
+    await expect(page.getByText(/invite=/)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Revoke invite" })).toHaveCount(1);
+
+    await page.goto(`/c/${community.slug}`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: "Resources" }).click();
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    await page.getByRole("button", { name: "Link", exact: true }).click();
+    const resourceTitle = `Lab setup guide ${suffix}`;
+    await page.getByLabel("Title").fill(resourceTitle);
+    await page.getByLabel("https:// link").fill("https://example.edu.ng/lab-setup.pdf");
+    await page.getByRole("button", { name: "Add resource" }).last().click();
+    await expect(page.getByText(resourceTitle)).toBeVisible();
+
+    await page.getByRole("button", { name: "Members" }).click();
+    await expect(page.getByPlaceholder("Search by name or username")).toBeVisible();
+    await expect(page.getByText("@nova_admin")).toBeVisible();
+  });
+
   test("a university admin creates an official community from the console", async ({ page }) => {
     test.setTimeout(90_000);
     await login(page, "admin@nova.edu.ng");

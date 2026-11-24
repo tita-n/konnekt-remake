@@ -1810,13 +1810,28 @@ export async function searchHashtags(viewer: SocialViewer, query: string): Promi
   const q = query.trim().replace(/^#/, "").toLowerCase();
   if (q.length < 1) return [];
   const db = tenantDb(viewer.universityId);
-  const rows = await db.hashtag.findMany({
-    where: { tag: { startsWith: q } },
-    orderBy: { tag: "asc" },
+  const [relationships, readableIds] = await Promise.all([
+    loadRelationships(db, viewer.userId),
+    readableCommunityIds(db, viewer.userId),
+  ]);
+  const hidden = hiddenAuthorIds(relationships);
+  // Only suggest tags that appear on a post this viewer may read, so a tag
+  // first used inside a private community never leaks its existence.
+  const rows = await db.postHashtag.findMany({
+    where: {
+      hashtag: { tag: { startsWith: q } },
+      post: {
+        status: "ACTIVE",
+        ...visiblePostsWhere(viewer, readableIds),
+        ...(hidden.length > 0 ? { authorId: { notIn: hidden } } : {}),
+      },
+    },
+    distinct: ["hashtagId"],
+    orderBy: { hashtag: { tag: "asc" } },
     take: 6,
-    select: { tag: true },
+    select: { hashtag: { select: { tag: true } } },
   });
-  return rows.map((row) => row.tag);
+  return rows.map((row) => row.hashtag.tag);
 }
 
 /**
