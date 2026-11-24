@@ -159,6 +159,12 @@ test.describe("shared device and offline", () => {
     await login(page, STUDENT);
     await page.goto("/pulse", { waitUntil: "networkidle" });
 
+    // The cache is opened from a client effect after hydration, which can land
+    // after networkidle on a slow runner.
+    await expect
+      .poll(async () => page.evaluate(async () => (await indexedDB.databases()).length), { timeout: 20_000 })
+      .toBeGreaterThan(0);
+
     const before = await page.evaluate(async () => ({
       indexedDb: (await indexedDB.databases()).map((entry) => entry.name),
       caches: await caches.keys(),
