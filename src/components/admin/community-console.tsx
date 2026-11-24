@@ -4,12 +4,19 @@ import Link from "next/link";
 import { useState } from "react";
 import { ArrowUpRight, Check, Plus, Search, ShieldAlert, Sparkles, X } from "lucide-react";
 import type { CommunityAdminPayload, CommunityAdminRow } from "@/lib/communities/types";
-import { COMMUNITY_CATEGORIES, type CommunityCategory, type CommunityPrivacy } from "@/lib/domain/community";
+import {
+  COMMUNITY_CATEGORIES,
+  COMMUNITY_PRIVACY_LABELS,
+  type CommunityCategory,
+  type CommunityPrivacy,
+} from "@/lib/domain/community";
 import { ApiError, apiGet, apiPatch, apiPost } from "@/lib/posts/client";
 import { Button } from "@/components/ui/button";
 import { Chip, SelectField, TextArea, TextField } from "@/components/ui/form-controls";
 import { Dialog } from "@/components/ui/overlays";
 import { useToast } from "@/components/providers/toast-provider";
+
+const CATEGORY_LABELS = new Map(COMMUNITY_CATEGORIES.map((category) => [category.value, category.label]));
 
 export function CommunityConsole({ initial, isAdmin }: { initial: CommunityAdminPayload; isAdmin: boolean }) {
   const { toast } = useToast();
@@ -207,7 +214,7 @@ export function CommunityConsole({ initial, isAdmin }: { initial: CommunityAdmin
                     {row.name}
                   </Link>
                   <p className="truncate text-tiny text-fg-muted">
-                    {row.privacy.toLowerCase()} · {row.category.toLowerCase()}
+                    {COMMUNITY_PRIVACY_LABELS[row.privacy]} · {CATEGORY_LABELS.get(row.category) ?? row.category}
                     {row.isOfficial ? " · official" : ""}
                   </p>
                   <div className="mt-1 flex flex-wrap gap-1 md:hidden">

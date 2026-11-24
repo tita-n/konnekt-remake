@@ -651,11 +651,19 @@ function validateRules(rules: Array<{ title: string; body: string }>): Array<{ t
     });
 }
 
-async function uniqueSlug(db: TenantClient, universityId: string, name: string): Promise<string> {
+async function uniqueSlug(
+  db: TenantClient,
+  universityId: string,
+  name: string,
+  excludeCommunityId?: string,
+): Promise<string> {
   const base = slugifyCommunityName(name);
   for (let attempt = 0; attempt < 8; attempt += 1) {
     const slug = attempt === 0 ? base : `${base}-${Math.random().toString(36).slice(2, 6)}`;
-    const taken = await db.community.findFirst({ where: { universityId, slug }, select: { id: true } });
+    const taken = await db.community.findFirst({
+      where: { universityId, slug, ...(excludeCommunityId ? { id: { not: excludeCommunityId } } : {}) },
+      select: { id: true },
+    });
     if (!taken) return slug;
   }
   return `${base}-${Date.now().toString(36)}`;
@@ -798,9 +806,17 @@ export async function updateCommunity(
         throw new SocialError(nameResult.message ?? "That name isn't available.");
       }
     }
+    const current = await db.community.findFirst({
+      where: { id: communityId },
+      select: { nameNormalized: true },
+    });
     data.name = name;
     data.nameNormalized = nameResult.normalized;
-    data.slug = await uniqueSlug(db, viewer.universityId, name);
+    // Saving other settings must not move the community to a new URL, so only
+    // regenerate the slug when the normalized name actually changes.
+    if (current?.nameNormalized !== nameResult.normalized) {
+      data.slug = await uniqueSlug(db, viewer.universityId, name, communityId);
+    }
   }
   const rules = input.rules ? validateRules(input.rules) : null;
   if (rules && !canAccessCommunityAction(access, "EDIT_RULES")) {
@@ -965,35 +981,48 @@ export async function joinCommunity(
     return { state: "REQUESTED" };
   }
 
-  await db.$transaction(async (tx) => {
-    const existing = await tx.communityMember.findFirst({
-      where: { communityId, userId: viewer.userId },
-      select: { id: true, status: true, role: true },
+  try {
+    await db.$transaction(async (tx) => {
+      const existing = await tx.communityMember.findFirst({
+        where: { communityId, userId: viewer.userId },
+        select: { id: true, status: true, role: true },
+      });
+      if (existing?.status === "BANNED") throw new SocialError("You can't join this community.", 403);
+      if (existing?.status === "ACTIVE") return;
+      // Conditional update: only the request that actually flips the row to
+      // ACTIVE may change the cached member count. A losing concurrent join
+      // updates zero rows and must not increment.
+      const activated = existing
+        ? await tx.communityMember.updateMany({
+            where: { id: existing.id, status: { not: "ACTIVE" }, role: { not: "OWNER" } },
+            data: { status: "ACTIVE", role: "MEMBER", joinedAt: new Date(), lastSeenAt: new Date() },
+          })
+        : await tx.communityMember.createMany({
+            data: {
+              universityId: viewer.universityId,
+              communityId,
+              userId: viewer.userId,
+              role: "MEMBER",
+            },
+            skipDuplicates: true,
+          });
+      if (activated.count === 1) {
+        await tx.community.update({ where: { id: communityId }, data: { memberCount: { increment: 1 } } });
+      }
+      await tx.joinRequest.updateMany({
+        where: { communityId, userId: viewer.userId, status: "PENDING" },
+        data: { status: "APPROVED", decidedById: viewer.userId, decidedAt: new Date() },
+      });
+      await communityAudit(tx, viewer, "community.join", communityId);
     });
-    if (existing?.status === "BANNED") throw new SocialError("You can't join this community.", 403);
-    if (existing?.status === "ACTIVE") return;
-    if (existing) {
-      await tx.communityMember.update({
-        where: { id: existing.id },
-        data: { status: "ACTIVE", role: "MEMBER", joinedAt: new Date(), lastSeenAt: new Date() },
-      });
-    } else {
-      await tx.communityMember.create({
-        data: {
-          universityId: viewer.universityId,
-          communityId,
-          userId: viewer.userId,
-          role: "MEMBER",
-        },
-      });
+  } catch (error) {
+    // A concurrent join created the membership first: the outcome is the same
+    // and the counter has already been incremented exactly once.
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return { state: "JOINED" };
     }
-    await tx.community.update({ where: { id: communityId }, data: { memberCount: { increment: 1 } } });
-    await tx.joinRequest.updateMany({
-      where: { communityId, userId: viewer.userId, status: "PENDING" },
-      data: { status: "APPROVED", decidedById: viewer.userId, decidedAt: new Date() },
-    });
-    await communityAudit(tx, viewer, "community.join", communityId);
-  });
+    throw error;
+  }
   return { state: "JOINED" };
 }
 
@@ -1010,10 +1039,13 @@ export async function leaveCommunity(viewer: SocialViewer, communityId: string):
     }
   }
   await db.$transaction(async (tx) => {
-    await tx.communityMember.updateMany({
-      where: { communityId, userId: viewer.userId },
+    // Only decrement when this request actually moved an ACTIVE row to LEFT.
+    // A concurrent leave that already did so updates zero rows and is a no-op.
+    const left = await tx.communityMember.updateMany({
+      where: { communityId, userId: viewer.userId, status: "ACTIVE" },
       data: { status: "LEFT", role: "MEMBER", mutedUntil: null },
     });
+    if (left.count === 0) return;
     await tx.community.update({
       where: { id: communityId },
       data: { memberCount: { decrement: 1 } },
@@ -1086,38 +1118,43 @@ export async function decideJoinRequest(
   });
   if (!request) throw new SocialError("That request has already been handled.", 409);
   await db.$transaction(async (tx) => {
-    if (decision === "APPROVE") {      const membership = await tx.communityMember.findFirst({
-        where: { communityId, userId: request.userId },
-        select: { id: true, status: true },
-      });
-      if (membership?.status === "BANNED") throw new SocialError("That student is banned from this community.", 409);
-      if (membership?.status !== "ACTIVE") {
-        if (membership) {
-          await tx.communityMember.update({
-            where: { id: membership.id },
-            data: { status: "ACTIVE", role: "MEMBER", joinedAt: new Date(), lastSeenAt: new Date() },
-          });
-        } else {
-          await tx.communityMember.create({
-            data: {
-              universityId: viewer.universityId,
-              communityId,
-              userId: request.userId,
-              role: "MEMBER",
-            },
-          });
-        }
-        await tx.community.update({ where: { id: communityId }, data: { memberCount: { increment: 1 } } });
-      }
-    }
-    await tx.joinRequest.update({
-      where: { id: request.id },
+    // Claim the request first; a second moderator racing the same decision
+    // updates zero rows and must not add the member a second time.
+    const claimed = await tx.joinRequest.updateMany({
+      where: { id: request.id, communityId, status: "PENDING" },
       data: {
         status: decision === "APPROVE" ? "APPROVED" : "DECLINED",
         decidedById: viewer.userId,
         decidedAt: new Date(),
       },
     });
+    if (claimed.count === 0) throw new SocialError("That request has already been handled.", 409);
+    if (decision === "APPROVE") {
+      const membership = await tx.communityMember.findFirst({
+        where: { communityId, userId: request.userId },
+        select: { id: true, status: true },
+      });
+      if (membership?.status === "BANNED") throw new SocialError("That student is banned from this community.", 409);
+      if (membership?.status !== "ACTIVE") {
+        const activated = membership
+          ? await tx.communityMember.updateMany({
+              where: { id: membership.id, status: { not: "ACTIVE" }, role: { not: "OWNER" } },
+              data: { status: "ACTIVE", role: "MEMBER", joinedAt: new Date(), lastSeenAt: new Date() },
+            })
+          : await tx.communityMember.createMany({
+              data: {
+                universityId: viewer.universityId,
+                communityId,
+                userId: request.userId,
+                role: "MEMBER",
+              },
+              skipDuplicates: true,
+            });
+        if (activated.count === 1) {
+          await tx.community.update({ where: { id: communityId }, data: { memberCount: { increment: 1 } } });
+        }
+      }
+    }
     await communityAudit(tx, viewer, decision === "APPROVE" ? "community.request.approve" : "community.request.decline", communityId, {
       requestId: request.id,
     });
@@ -1268,10 +1305,11 @@ export async function removeCommunityMember(
     throw new SocialError("Only the owner can remove a moderator.", 403);
   }
   await db.$transaction(async (tx) => {
-    await tx.communityMember.updateMany({
-      where: { communityId, userId: targetUserId },
+    const removed = await tx.communityMember.updateMany({
+      where: { communityId, userId: targetUserId, status: "ACTIVE" },
       data: { status: "LEFT", role: "MEMBER", mutedUntil: null },
     });
+    if (removed.count === 0) return;
     await tx.community.update({ where: { id: communityId }, data: { memberCount: { decrement: 1 } } });
     await communityAudit(tx, viewer, "community.member.remove", communityId, { targetUserId });
   });
@@ -1341,9 +1379,8 @@ export async function banCommunityMember(
   const note = reason.trim().slice(0, 300);
   if (note.length < 2) throw new SocialError("Add a short reason for the ban.");
   await db.$transaction(async (tx) => {
-    const wasActive = target.status === "ACTIVE";
-    await tx.communityMember.updateMany({
-      where: { communityId, userId: targetUserId },
+    const banned = await tx.communityMember.updateMany({
+      where: { communityId, userId: targetUserId, status: "ACTIVE" },
       data: {
         status: "BANNED",
         role: "MEMBER",
@@ -1352,7 +1389,18 @@ export async function banCommunityMember(
         bannedReason: note,
       },
     });
-    if (wasActive) {
+    if (banned.count === 0) {
+      await tx.communityMember.updateMany({
+        where: { communityId, userId: targetUserId },
+        data: {
+          status: "BANNED",
+          role: "MEMBER",
+          mutedUntil: null,
+          bannedById: viewer.userId,
+          bannedReason: note,
+        },
+      });
+    } else {
       await tx.community.update({ where: { id: communityId }, data: { memberCount: { decrement: 1 } } });
     }
     await tx.joinRequest.updateMany({
@@ -1649,33 +1697,40 @@ async function acceptInviteRecord(
     });
     if (membership?.status === "BANNED") throw new SocialError("You can't join this community.", 403);
     if (membership?.status !== "ACTIVE") {
-      if (membership) {
-        await tx.communityMember.update({
-          where: { id: membership.id },
-          data: { status: "ACTIVE", role: "MEMBER", joinedAt: new Date(), lastSeenAt: new Date() },
-        });
-      } else {
-        await tx.communityMember.create({
-          data: {
-            universityId: viewer.universityId,
-            communityId: invite.community.id,
-            userId: viewer.userId,
-            role: "MEMBER",
-          },
-        });
+      const activated = membership
+        ? await tx.communityMember.updateMany({
+            where: { id: membership.id, status: { not: "ACTIVE" }, role: { not: "OWNER" } },
+            data: { status: "ACTIVE", role: "MEMBER", joinedAt: new Date(), lastSeenAt: new Date() },
+          })
+        : await tx.communityMember.createMany({
+            data: {
+              universityId: viewer.universityId,
+              communityId: invite.community.id,
+              userId: viewer.userId,
+              role: "MEMBER",
+            },
+            skipDuplicates: true,
+          });
+      if (activated.count === 1) {
+        await tx.community.update({ where: { id: invite.community.id }, data: { memberCount: { increment: 1 } } });
       }
-      await tx.community.update({ where: { id: invite.community.id }, data: { memberCount: { increment: 1 } } });
     }
+    // Claim one use with the observed counter. A concurrent accept of the same
+    // link updates zero rows, so maxUses cannot be exceeded under a race.
+    const claimed = await tx.communityInvite.updateMany({
+      where: { id: invite.id, status: "ACTIVE", uses: invite.uses },
+      data: { uses: { increment: 1 } },
+    });
+    if (claimed.count === 0) throw new SocialError("This invite has already been used.", 410);
     await tx.joinRequest.updateMany({
       where: { communityId: invite.community.id, userId: viewer.userId, status: "PENDING" },
       data: { status: "APPROVED", decidedById: viewer.userId, decidedAt: new Date() },
     });
     const nextUses = invite.uses + 1;
     const spent = invite.kind === "USER" || (invite.maxUses !== null && nextUses >= invite.maxUses);
-    await tx.communityInvite.update({
-      where: { id: invite.id },
-      data: { uses: { increment: 1 }, ...(spent ? { status: "USED" } : {}) },
-    });
+    if (spent) {
+      await tx.communityInvite.update({ where: { id: invite.id }, data: { status: "USED" } });
+    }
     await communityAudit(tx, viewer, "community.invite.accept", invite.community.id, { inviteId: invite.id });
   });
   return { communityId: invite.community.id, slug: invite.community.slug };

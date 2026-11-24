@@ -139,6 +139,7 @@ export function NewCommunityForm() {
               ref={fileInput}
               type="file"
               accept="image/jpeg,image/png,image/webp"
+              aria-label="Community icon file"
               className="sr-only"
               onChange={(event) => void uploadIcon(event.target.files?.[0])}
             />

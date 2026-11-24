@@ -143,17 +143,16 @@ export async function readLocalResource(fileKey: string): Promise<Buffer | null>
   }
 }
 
-export function signedResourceUrl(fileKey: string, extension: string, ttlSeconds = 120): string | null {
+export function signedResourceUrl(fileKey: string, _extension: string, ttlSeconds = 120): string | null {
   if (fileKey.startsWith("local:")) return null;
   if (!configureCloudinary()) return null;
-  return cloudinary.url(fileKey, {
-    type: "authenticated",
-    sign_url: true,
-    secure: true,
-    expires_at: Math.floor(Date.now() / 1000) + ttlSeconds,
+  // private_download_url signs expires_at into the request, so the link is both
+  // unguessable and short-lived. cloudinary.url() cannot express an expiry.
+  return cloudinary.utils.private_download_url(fileKey, "", {
     resource_type: "raw",
-    flags: "attachment",
-    attachment: `resource.${extension}`,
+    type: "authenticated",
+    attachment: true,
+    expires_at: Math.floor(Date.now() / 1000) + ttlSeconds,
   });
 }
 

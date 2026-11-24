@@ -358,6 +358,9 @@ export function communityJoinState(input: {
   if (access.status === "DELETED" || access.status === "SUSPENDED") return "UNAVAILABLE";
   if (isBanned(access)) return "BANNED";
   if (isActiveMember(access)) return "JOINED";
+  // Archived communities are read-only for existing members and closed to
+  // everyone else, so no join affordance should be offered.
+  if (access.status === "ARCHIVED") return "UNAVAILABLE";
   if (input.pendingRequest) return "REQUESTED";
   if (input.hasInvite) return "INVITED";
   if (access.privacy === "PUBLIC") return "CAN_JOIN";

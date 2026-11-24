@@ -39,6 +39,42 @@ test("student shell and settings pass axe", async ({ page }) => {
   }
 });
 
+test("Phase 2 community screens pass axe", async ({ page }) => {
+  await loginAs(page, "admin");
+  for (const path of ["/communities", "/communities/new"]) {
+    await page.goto(path, { waitUntil: "networkidle" });
+    await scan(page, `communities ${path}`);
+  }
+
+  const token = (await page.context().cookies()).find((cookie) => cookie.name === "konnekt_csrf")?.value ?? "";
+  const created = await page.request.fetch("/api/admin/communities", {
+    method: "POST",
+    headers: { "x-konnekt-csrf": token },
+    data: {
+      name: `A11y Circle ${Date.now().toString(36)}`,
+      description: "A community created for the accessibility scan.",
+      category: "ACADEMIC",
+      privacy: "PUBLIC",
+    },
+  });
+  expect(created.status()).toBe(201);
+  const community = (await created.json()) as { slug: string };
+
+  await page.goto(`/c/${community.slug}`, { waitUntil: "networkidle" });
+  await scan(page, "community posts");
+  await page.getByRole("button", { name: "Resources" }).click();
+  await scan(page, "community resources");
+  await page.getByRole("button", { name: "Members" }).click();
+  await scan(page, "community members");
+  await page.getByRole("button", { name: "About" }).click();
+  await scan(page, "community about");
+
+  await page.goto(`/c/${community.slug}/settings`, { waitUntil: "networkidle" });
+  await scan(page, "community settings");
+  await page.goto("/admin/communities", { waitUntil: "networkidle" });
+  await scan(page, "admin communities");
+});
+
 test("verification queue passes axe", async ({ page }) => {
   await loginAs(page, "admin");
   await page.goto("/admin/verification", { waitUntil: "networkidle" });

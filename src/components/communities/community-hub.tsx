@@ -118,7 +118,13 @@ export function CommunityHub({
               Course groups, halls, teams and societies — only for verified students at your university.
             </p>
           </div>
-          <ButtonLink href="/communities/new" size="sm" className="mt-1 shrink-0" leftIcon={<Plus className="size-4" />}>
+          <ButtonLink
+            href="/communities/new"
+            size="sm"
+            className="mt-1 shrink-0"
+            aria-label="Create a community"
+            leftIcon={<Plus className="size-4" />}
+          >
             <span className="hidden sm:inline">New</span>
           </ButtonLink>
         </div>
