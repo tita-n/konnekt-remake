@@ -17,7 +17,11 @@ export default async function PrivacySettingsPage() {
           You are in control of what other students can see. We never share data across universities.
         </p>
         <div className="mt-5">
-          <PrivacyForm departmentVisibility={user.departmentVisibility} levelVisibility={user.levelVisibility} />
+          <PrivacyForm
+            departmentVisibility={user.departmentVisibility}
+            levelVisibility={user.levelVisibility}
+            showEventAttendance={user.showEventAttendance}
+          />
         </div>
         <p className="mt-5 text-tiny leading-relaxed text-fg-subtle">
           Under the Nigeria Data Protection Act 2023 you can export or delete your data at any time. Both options live in

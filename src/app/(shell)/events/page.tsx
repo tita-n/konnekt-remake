@@ -1,28 +1,24 @@
 import type { Metadata } from "next";
-import { ButtonLink } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/feedback";
+import { redirect } from "next/navigation";
+import { requireStudent } from "@/lib/auth/guards";
+import { loadSocialViewer } from "@/lib/services/social";
+import { listEvents } from "@/lib/services/events";
+import { EventsHub } from "@/components/events/events-hub";
 
 export const metadata: Metadata = { title: "Events" };
+export const dynamic = "force-dynamic";
 
-export default function EventsPage() {
+export default async function EventsPage() {
+  const user = await requireStudent("/events");
+  const viewer = await loadSocialViewer(user);
+  if (!viewer) redirect("/onboarding");
+  const feed = await listEvents(viewer, { tab: "for-you" });
+
   return (
-    <div className="px-1 pt-2">
-      <header className="px-3 pb-3 pt-4">
-        <h1 className="text-h1 text-fg">Events</h1>
-        <p className="mt-1 text-small text-fg-muted">Lectures, meetups, parties and revision sessions on your campus.</p>
-      </header>
-      <div className="rounded-card border border-border bg-surface">
-        <EmptyState
-          illustration="events"
-          title="No events on the calendar"
-          description="Events arrive with the next release. Only students of your university will be able to see and join them."
-          action={
-            <ButtonLink href="/settings/profile" variant="secondary">
-              Set up your profile
-            </ButtonLink>
-          }
-        />
-      </div>
-    </div>
+    <EventsHub
+      initial={feed}
+      timezone={viewer.timezone}
+      canCreate={viewer.accountAgeHours >= 24}
+    />
   );
 }
