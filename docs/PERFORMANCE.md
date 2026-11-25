@@ -131,3 +131,26 @@ npm run test:integration -- feed-plan
 ```
 
 For a real deployment, run `LHCI_URL=https://staging.example npx lhci autorun` after warm-up and compare the plan, not just the absolute millisecond value.
+
+## Phase 3 build snapshot
+
+Measured with `npm run build` on 2026-11-25 after the Phase 3 pages landed:
+
+| Metric | Baseline | Phase 3 |
+| --- | --- | --- |
+| Shared first-load JS | 104 kB | 104 kB |
+| Middleware | 34.1 kB | 34.1 kB |
+| `/events` | new | 4.0 kB page, 133 kB first load |
+| `/official` | new | 4.5 kB page, 129 kB first load |
+| `/events/[id]` | new | 8.6 kB page, 131 kB first load |
+| `/events/[id]/dashboard` | new | 7.4 kB page, 126 kB first load |
+| `/events/[id]/scan` | new | 6.5 kB page, 125 kB first load |
+| `/events/[id]/ticket` | new | 11.0 kB page, 126 kB first load (QR renderer is route-local) |
+| `/admin/events` | new | 3.1 kB page, 122 kB first load |
+| `/admin/places` | new | 4.1 kB page, 119 kB first load |
+| `/admin/official` | new | 6.1 kB page, 125 kB first load |
+| `/admin/announcements` | new | 3.0 kB page, 121 kB first load |
+
+The QR renderer is route-local to the ticket screen. Shared JS and middleware are
+unchanged, so Pulse, auth, signup and the Phase 2 community routes keep their
+previous budgets. The extra page weight is entirely in the new event routes.

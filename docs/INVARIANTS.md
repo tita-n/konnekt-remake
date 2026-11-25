@@ -38,3 +38,15 @@
 | E2E cannot touch the demo database | `tests/unit/e2e-guard.test.ts`, `e2e/isolation.spec.ts`, CI before/after checksum |
 | Test count cannot silently drop | `ci/test-floor.json` + `scripts/check-test-floor.mjs` |
 | UI-only branches cannot alter protected paths | `.github/ui-guard.json` + `scripts/check-ui-guard.mjs` |
+
+### Phase 3 invariants
+
+| Invariant | Test file | Named test(s) |
+| --- | --- | --- |
+| Hidden and nonexistent events are indistinguishable | `tests/integration/events.test.ts` | `gives hidden and nonexistent events the same response` |
+| Event capacity never oversells and promotes exactly one waiter | `tests/integration/events.test.ts` | `never oversells under concurrent RSVPs and promotes exactly one waiter` |
+| Attendance privacy holds in public previews | `tests/integration/events.test.ts` | `does not leak attendee identity when a student hides attendance` |
+| Tickets are hashed, single-active and idempotent at check-in | `tests/integration/events.test.ts` | `issues a ticket once, revokes on regeneration and makes scans idempotent` |
+| Public sharing requires an explicit toggle | `tests/integration/events.test.ts` | `returns no public preview until the organiser opts in` |
+| Scheduled announcements publish exactly once | `tests/integration/events.test.ts` | `publishes a due announcement exactly once across repeated cron runs` |
+| Event permissions and audiences are table-driven | `tests/unit/events.test.ts` | `gives the creator edit, staff and check-in rights only while bookable`; `never lets an organiser compose above their own path` |

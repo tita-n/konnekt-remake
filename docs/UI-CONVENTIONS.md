@@ -88,3 +88,18 @@ rules are for presentation changes only.
   symmetric, so they must be removed through the authenticated API with the
   CSRF header.
 - Do not add `.skip`/`.only` or weaken assertions to make a visual check pass.
+
+## Phase 3 event surfaces
+
+- Event cards use a **ticket shape**: a 16:9 cover, a date block, then a dashed
+  perforation above the RSVP stub with two circular notches cut into the card
+  edge. This is the only card shape that deviates from the standard 16px card.
+- The RSVP confirmation is the only **neo-brutalist** surface (3px border, hard
+  offset shadow). It is not reused for panels or buttons.
+- Critical notices use the amber highlight tokens and always sit above the feed
+  or channel list. Normal official banners are a single quiet row and are not
+  sticky.
+- Event cover defaults are generated from the category accent, so a missing
+  photo still looks intentional and never falls back to a grey placeholder.
+- The floating **Create event** button follows the same raised `create` button
+  treatment as the composer trigger and respects the bottom safe area.

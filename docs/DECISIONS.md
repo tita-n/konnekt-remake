@@ -88,3 +88,88 @@ reachable from the network. Follow-up: the script default should do this too.
   typecheck of the repo and the Next.js plugin.
 
 None were merged in this branch: the audit should not also move the toolchain.
+
+## Phase 3 — Events and the Official Channel
+
+### Two schema additions beyond the brief
+
+- `Community.allowMemberEvents` is the server-side switch behind the requirement
+  that a community may (or may not) let ordinary members create events. Without
+  it the setting would have been UI-only.
+- `Event.materialChanges` is an append-only JSON log of time and venue edits.
+  The brief requires an “Updated” state that tells attendees what changed; a
+  single timestamp cannot do that without a second table.
+- `University.timezone`, `User.showEventAttendance` and the Phase 3 enums/models
+  are additive. All migrations are forward-only and were applied with
+  `prisma migrate diff` because `migrate dev` cannot create a shadow database in
+  this sandbox.
+
+### Visibility stays in the domain layer
+
+`canSeeEvent`, `audienceIsOnViewerPath`, `organizerAudienceIsValid`,
+`canSeeAnnouncement` and `eventPermissions` are pure functions. Feeds, detail
+pages, share cards, .ics files, attendee lists and mutations all call them, so a
+hidden event and a missing event produce the same 404 and the same generic share
+card.
+
+### Tickets are hashes, not codes
+
+The database stores only `SHA-256(code)`; the raw 128-bit code is returned once
+when a ticket is generated and is never recoverable from the server. A partial
+unique index (`EventTicket_one_active_per_user`) allows history but exactly one
+active code per student per event. Regenerating revokes the previous code.
+
+### Capacity and waitlist are conditional updates
+
+`Event.goingCount` is the counter and the conditional `updateMany` is the lock:
+a going slot is claimed only when `goingCount < capacity`. Cancellation promotes
+the oldest waiter with another conditional claim. The pure `goingOutcome` helper
+mirrors the decision for unit tests. This avoids serializable-transaction
+retries while remaining correct under concurrent RSVPs (integration test).
+
+### Check-in is idempotent per device action
+
+Every scan carries a client-generated `clientScanId`; `EventCheckIn` is unique
+on `(eventId, clientScanId)` and on `(eventId, userId)`. A retry returns
+`duplicate: true` instead of double-counting. The counter is incremented in the
+same transaction as the insert.
+
+### Scheduled announcements use per-row claims
+
+The cron route and the lazy read-time publisher both call
+`publishDueAnnouncements`, which claims each row with
+`updateMany({ id, status: "SCHEDULED", publishAt: { lte: now } })`. Only one
+caller can flip a row, so double firing is harmless. The cron secret is compared
+in constant time and fails closed in production.
+
+### Official accounts are separate from communities
+
+Official accounts have their own staff table and posting rights. They may author
+announcements and events, never ordinary posts. Critical rights are a per-staff
+flag; university admins implicitly hold them. Staff and critical rights are
+re-read on every write, never trusted from a JWT or the client.
+
+### Phase 3 UI adds one dependency
+
+`react-qr-code` renders the ticket QR locally; no ticket code or student data is
+sent to a third party to render it. It is the only Phase 3 runtime dependency.
+
+### Event and announcement audiences are built from the viewer’s real path
+
+The composer derives university / college / faculty / department / level
+audiences from `studentPath` and `lineage`, not from client-supplied labels. The
+server re-validates the chosen prefix, so a crafted request cannot target a
+different department.
+
+### Public share cards are generic unless explicitly shared
+
+A PUBLIC event still needs `allowOutsideSharing`. Both the HTML preview and the
+OG image return a generic “something’s happening” card otherwise, with no title,
+venue, counts or organiser identity.
+
+### Official work is attributed to the account, not the staff member
+
+Events and announcements are shown under the official account or community name.
+Serializers never include the creating/posting user, even for admin lists, so a
+staff member's name cannot leak through an API payload. The staff identity stays
+server-side for permission checks and the audit trail.

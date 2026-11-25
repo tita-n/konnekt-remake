@@ -12,7 +12,9 @@
     {
       "name": "Hidden and nonexistent are indistinguishable",
       "file": "e2e/social.spec.ts",
-      "tests": ["level and public posts reach exactly the right students"]
+      "tests": [
+        "level and public posts reach exactly the right students"
+      ]
     },
     {
       "name": "Blocks are symmetric and mutes are private",
@@ -25,7 +27,9 @@
     {
       "name": "Reposts inherit the original audience",
       "file": "tests/unit/posts.test.ts",
-      "tests": ["inherits the original audience on every repost"]
+      "tests": [
+        "inherits the original audience on every repost"
+      ]
     },
     {
       "name": "Role boundaries",
@@ -39,32 +43,45 @@
     {
       "name": "Private ID images require reviewer access",
       "file": "e2e/admin.spec.ts",
-      "tests": ["admin sees the queue and a private ID image"]
+      "tests": [
+        "admin sees the queue and a private ID image"
+      ]
     },
     {
       "name": "Public preview privacy",
       "file": "e2e/privacy.spec.ts",
-      "tests": ["public share preview reveals no author, counts or metadata"]
+      "tests": [
+        "public share preview reveals no author, counts or metadata"
+      ]
     },
     {
       "name": "Service worker never caches private data",
       "file": "tests/unit/service-worker.test.ts",
-      "tests": ["forces API responses to the network and every navigation is network-only"]
+      "tests": [
+        "forces API responses to the network and every navigation is network-only"
+      ]
     },
     {
       "name": "Logout clears caches, IndexedDB and account storage",
       "file": "e2e/social.spec.ts",
-      "tests": ["logout clears the cached feed, cookies and IndexedDB"]
+      "tests": [
+        "logout clears the cached feed, cookies and IndexedDB"
+      ]
     },
     {
       "name": "Offline outbox is idempotent",
       "file": "e2e/social.spec.ts",
-      "tests": ["offline outbox publishes once after reconnect"]
+      "tests": [
+        "offline outbox publishes once after reconnect"
+      ]
     },
     {
       "name": "Community names normalize and reserved names stay blocked",
       "file": "tests/unit/communities.test.ts",
-      "tests": ["normalizes lookalike names before uniqueness checks", "reserves official, university and academic names"]
+      "tests": [
+        "normalizes lookalike names before uniqueness checks",
+        "reserves official, university and academic names"
+      ]
     },
     {
       "name": "Community visibility follows privacy, archived and suspended rules",
@@ -86,12 +103,16 @@
     {
       "name": "Community posts never widen into academic feeds",
       "file": "tests/unit/communities.test.ts",
-      "tests": ["keeps community posts out of academic feeds and honours access"]
+      "tests": [
+        "keeps community posts out of academic feeds and honours access"
+      ]
     },
     {
       "name": "Community invites are hashed and single-purpose",
       "file": "tests/unit/communities.test.ts",
-      "tests": ["stores only a hash of a high-entropy invite token"]
+      "tests": [
+        "stores only a hash of a high-entropy invite token"
+      ]
     },
     {
       "name": "Community discovery and request joins are server-authorized",
@@ -113,7 +134,51 @@
     {
       "name": "Invite-only communities are indistinguishable from missing ones",
       "file": "e2e/communities.spec.ts",
-      "tests": ["invite-only communities are indistinguishable from missing ones for outsiders"]
+      "tests": [
+        "invite-only communities are indistinguishable from missing ones for outsiders"
+      ]
+    },
+    {
+      "name": "Hidden and nonexistent events are indistinguishable",
+      "file": "tests/integration/events.test.ts",
+      "tests": [
+        "gives hidden and nonexistent events the same response"
+      ]
+    },
+    {
+      "name": "Event capacity never oversells and promotes exactly one waiter",
+      "file": "tests/integration/events.test.ts",
+      "tests": [
+        "never oversells under concurrent RSVPs and promotes exactly one waiter"
+      ]
+    },
+    {
+      "name": "Event attendance privacy is enforced in public previews",
+      "file": "tests/integration/events.test.ts",
+      "tests": [
+        "does not leak attendee identity when a student hides attendance"
+      ]
+    },
+    {
+      "name": "Ticket codes are hashed, single-active and check-in is idempotent",
+      "file": "tests/integration/events.test.ts",
+      "tests": [
+        "issues a ticket once, revokes on regeneration and makes scans idempotent"
+      ]
+    },
+    {
+      "name": "Public event sharing requires an explicit toggle",
+      "file": "tests/integration/events.test.ts",
+      "tests": [
+        "returns no public preview until the organiser opts in"
+      ]
+    },
+    {
+      "name": "Scheduled announcements publish exactly once",
+      "file": "tests/integration/events.test.ts",
+      "tests": [
+        "publishes a due announcement exactly once across repeated cron runs"
+      ]
     }
   ]
 }
