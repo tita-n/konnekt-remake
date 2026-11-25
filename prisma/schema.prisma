@@ -121,6 +121,9 @@ enum MentionSourceType {
 enum ReportTargetType {
   POST
   COMMENT
+  EVENT
+  EVENT_COMMENT
+  ANNOUNCEMENT
 }
 
 enum CommunityCategory {
@@ -197,6 +200,96 @@ enum CommunityOfficialRequestStatus {
   REJECTED
 }
 
+enum EventOrganiserKind {
+  USER
+  COMMUNITY
+  OFFICIAL
+}
+
+enum EventAudienceKind {
+  PUBLIC
+  COLLEGE
+  FACULTY
+  DEPARTMENT
+  LEVEL
+  COMMUNITY
+}
+
+enum EventCategory {
+  TECH
+  ACADEMIC
+  DEPARTMENTAL
+  PARTY
+  COMPETITION
+  SPORTS
+  SEMINAR
+  RELIGIOUS
+  CULTURAL
+  MEETUP
+  OTHER
+}
+
+enum EventStatus {
+  SCHEDULED
+  CANCELLED
+  REMOVED
+}
+
+enum EventRsvpStatus {
+  GOING
+  INTERESTED
+  WAITLISTED
+  CANCELLED
+}
+
+enum EventStaffRole {
+  HOST
+  CHECKIN
+}
+
+enum EventCheckInMethod {
+  QR
+  MANUAL
+}
+
+enum EventCommentStatus {
+  ACTIVE
+  REMOVED
+  DELETED
+}
+
+enum OfficialAccountCategory {
+  ICT
+  STUDENT_AFFAIRS
+  REGISTRY
+  LIBRARY
+  STUDENTS_UNION
+  ACADEMIC
+  SPORTS
+  SECURITY
+  OTHER
+}
+
+enum OfficialAccountStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum AnnouncementCategory {
+  ACADEMIC
+  ICT
+  EVENTS
+  STUDENT_AFFAIRS
+  GENERAL
+}
+
+enum AnnouncementStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  ARCHIVED
+}
+
 enum ReportReason {
   SPAM
   HARASSMENT
@@ -217,6 +310,9 @@ enum ModerationTargetType {
   POST
   COMMENT
   USER
+  EVENT
+  EVENT_COMMENT
+  ANNOUNCEMENT
 }
 
 enum ModerationActionType {
@@ -242,6 +338,8 @@ model University {
   idCardEnabled       Boolean          @default(true)
   vouchingEnabled     Boolean          @default(false)
   matricPattern       String           @default("^\\d{2}/\\d{4,5}/\\d{3}$")
+  /// IANA timezone used to display event and announcement times.
+  timezone            String           @default("Africa/Lagos")
   /// Required consent version for this university's signup, e.g. "2026-01-01"
   policyVersion       String           @default("2026-01-01")
   createdAt           DateTime         @default(now())
@@ -288,35 +386,37 @@ model AcademicNode {
 }
 
 model User {
-  id                   String     @id @default(cuid())
-  universityId         String
-  email                String     @unique
-  emailVerified        Boolean    @default(false)
-  username             String     @unique
-  passwordHash         String
-  fullName             String
-  photoUrl             String?
-  bio                  String?
-  status               UserStatus @default(UNVERIFIED)
-  matricNumber         String?
-  matricNormalized     String?
-  departmentNodeId     String?
-  level                Int?
-  isPostgraduate       Boolean    @default(false)
-  interests            String[]   @default([])
-  consentPolicyVersion String?
-  consentAcceptedAt    DateTime?
-  departmentVisibility Visibility @default(UNIVERSITY)
-  levelVisibility      Visibility @default(UNIVERSITY)
-  createdAt            DateTime   @default(now())
-  updatedAt            DateTime   @updatedAt
-  lastActiveAt         DateTime?
-  verifiedAt           DateTime?
+  id                    String     @id @default(cuid())
+  universityId          String
+  email                 String     @unique
+  emailVerified         Boolean    @default(false)
+  username              String     @unique
+  passwordHash          String
+  fullName              String
+  photoUrl              String?
+  bio                   String?
+  status                UserStatus @default(UNVERIFIED)
+  matricNumber          String?
+  matricNormalized      String?
+  departmentNodeId      String?
+  level                 Int?
+  isPostgraduate        Boolean    @default(false)
+  interests             String[]   @default([])
+  consentPolicyVersion  String?
+  consentAcceptedAt     DateTime?
+  departmentVisibility  Visibility @default(UNIVERSITY)
+  levelVisibility       Visibility @default(UNIVERSITY)
+  /// Show this student's name and avatar on event attendee lists.
+  showEventAttendance   Boolean    @default(true)
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+  lastActiveAt          DateTime?
+  verifiedAt            DateTime?
   onboardingCompletedAt DateTime?
-  deletedRequestedAt   DateTime?
-  purgeAfter           DateTime?
-  suspendedUntil       DateTime?
-  flaggedForReviewAt   DateTime?
+  deletedRequestedAt    DateTime?
+  purgeAfter            DateTime?
+  suspendedUntil        DateTime?
+  flaggedForReviewAt    DateTime?
 
   university           University                 @relation(fields: [universityId], references: [id], onDelete: Restrict)
   department           AcademicNode?              @relation(fields: [departmentNodeId], references: [id], onDelete: Restrict)
@@ -352,6 +452,18 @@ model User {
   communityPins        CommunityPin[]             @relation("CommunityPinAuthor")
   officialRequests     CommunityOfficialRequest[] @relation("CommunityOfficialRequester")
   officialDecisions    CommunityOfficialRequest[] @relation("CommunityOfficialDecider")
+  eventsCreated        Event[]                    @relation("EventCreator")
+  eventRsvps           EventRsvp[]
+  eventTickets         EventTicket[]
+  eventStaffRoles      EventStaff[]
+  eventScans           EventCheckIn[]             @relation("EventScanner")
+  eventUpdates         EventUpdate[]
+  eventComments        EventComment[]
+  eventViews           EventViewDaily[]
+  officialAccountRoles OfficialAccountStaff[]
+  announcements        Announcement[]             @relation("AnnouncementAuthor")
+  announcementAcks     AnnouncementAck[]
+  eventCheckIns        EventCheckIn[]
 
   @@index([universityId])
   @@index([universityId, status])
@@ -845,6 +957,8 @@ model Community {
   iconPublicId       String?
   bannerPublicId     String?
   allowMemberUploads Boolean           @default(false)
+  /// When true, ordinary members may create community events (staff-only by default).
+  allowMemberEvents  Boolean           @default(false)
   createdById        String
   memberCount        Int               @default(0)
   postCount          Int               @default(0)
@@ -866,6 +980,7 @@ model Community {
   officialRequests CommunityOfficialRequest[]
   posts            Post[]
   reports          Report[]                   @relation("CommunityReports")
+  events           Event[]                    @relation("EventCommunity")
 
   @@unique([universityId, nameNormalized])
   @@unique([universityId, slug])
@@ -1043,4 +1158,307 @@ model AuditLog {
   @@index([universityId, createdAt])
   @@index([actorId, createdAt])
   @@index([action, createdAt])
+}
+
+/**
+ * ----------------------------- Phase 3: events -----------------------------
+ */
+
+/// An admin-managed campus venue suggestion. Never an external map integration.
+model CampusPlace {
+  id           String   @id @default(cuid())
+  universityId String
+  name         String
+  active       Boolean  @default(true)
+  latitude     Float?
+  longitude    Float?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  events Event[]
+
+  @@unique([universityId, name])
+  @@index([universityId, active, name])
+}
+
+model Event {
+  id                   String             @id @default(cuid())
+  universityId         String
+  createdById          String
+  organiserKind        EventOrganiserKind
+  communityId          String?
+  officialAccountId    String?
+  audienceKind         EventAudienceKind
+  /// Audience prefix from the Phase 1 path model, or ["PUBLIC"].
+  audiencePath         String[]           @default([])
+  title                String
+  description          String             @db.Text
+  category             EventCategory
+  startsAt             DateTime
+  endsAt               DateTime
+  /// Snapshot of the university timezone at creation, used for display and .ics.
+  timezone             String             @default("Africa/Lagos")
+  venueName            String
+  placeId              String?
+  venueNote            String?
+  coverPublicId        String?
+  capacity             Int?
+  waitlistEnabled      Boolean            @default(false)
+  checkInEnabled       Boolean            @default(true)
+  allowOutsideSharing  Boolean            @default(false)
+  status               EventStatus        @default(SCHEDULED)
+  cancelReason         String?
+  cancelledAt          DateTime?
+  lastMaterialChangeAt DateTime?
+  /// Append-only change log of time and venue edits, shown to attendees.
+  materialChanges      Json               @default("[]")
+  goingCount           Int                @default(0)
+  interestedCount      Int                @default(0)
+  waitlistCount        Int                @default(0)
+  checkedInCount       Int                @default(0)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  createdBy       User             @relation("EventCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  community       Community?       @relation("EventCommunity", fields: [communityId], references: [id], onDelete: SetNull)
+  officialAccount OfficialAccount? @relation(fields: [officialAccountId], references: [id], onDelete: SetNull)
+  place           CampusPlace?     @relation(fields: [placeId], references: [id], onDelete: SetNull)
+
+  rsvps    EventRsvp[]
+  tickets  EventTicket[]
+  staff    EventStaff[]
+  checkIns EventCheckIn[]
+  updates  EventUpdate[]
+  comments EventComment[]
+  views    EventViewDaily[]
+
+  @@index([universityId, status, startsAt])
+  @@index([universityId, audienceKind, startsAt])
+  @@index([universityId, communityId, status, startsAt])
+  @@index([universityId, officialAccountId, status, startsAt])
+  @@index([universityId, createdById, createdAt])
+}
+
+model EventRsvp {
+  id               String          @id @default(cuid())
+  universityId     String
+  eventId          String
+  userId           String
+  status           EventRsvpStatus @default(GOING)
+  showPublicly     Boolean         @default(true)
+  waitlistPosition Int?
+  promotedAt       DateTime?
+  cancelledAt      DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([universityId, userId, status])
+  @@index([eventId, status, waitlistPosition])
+}
+
+model EventTicket {
+  id           String    @id @default(cuid())
+  universityId String
+  eventId      String
+  userId       String
+  /// SHA-256 of the opaque 128-bit ticket code. The raw code is shown once.
+  codeHash     String    @unique
+  revokedAt    DateTime?
+  createdAt    DateTime  @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([universityId, eventId, userId])
+  @@index([eventId, revokedAt])
+}
+
+model EventStaff {
+  id           String         @id @default(cuid())
+  universityId String
+  eventId      String
+  userId       String
+  role         EventStaffRole @default(CHECKIN)
+  createdAt    DateTime       @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([universityId, userId])
+}
+
+model EventCheckIn {
+  id           String             @id @default(cuid())
+  universityId String
+  eventId      String
+  userId       String
+  scannedById  String
+  method       EventCheckInMethod
+  /// Client-generated idempotency key; replaying it returns the first result.
+  clientScanId String
+  scannedAt    DateTime           @default(now())
+  deviceLabel  String?
+
+  event     Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scannedBy User  @relation("EventScanner", fields: [scannedById], references: [id], onDelete: Restrict)
+
+  @@unique([eventId, userId])
+  @@unique([eventId, clientScanId])
+  @@index([universityId, eventId, scannedAt])
+}
+
+model EventUpdate {
+  id           String   @id @default(cuid())
+  universityId String
+  eventId      String
+  authorId     String
+  body         String   @db.Text
+  createdAt    DateTime @default(now())
+
+  event  Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  author User  @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([universityId, eventId, createdAt])
+}
+
+model EventComment {
+  id               String             @id @default(cuid())
+  universityId     String
+  eventId          String
+  authorId         String
+  parentId         String?
+  body             String             @db.Text
+  status           EventCommentStatus @default(ACTIVE)
+  removedAt        DateTime?
+  moderationReason String?
+  editedAt         DateTime?
+  createdAt        DateTime           @default(now())
+
+  event   Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  author  User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent  EventComment?  @relation("EventCommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies EventComment[] @relation("EventCommentReplies")
+
+  @@index([universityId, eventId, parentId, status, createdAt])
+  @@index([universityId, authorId, createdAt])
+}
+
+model EventViewDaily {
+  id           String   @id @default(cuid())
+  universityId String
+  eventId      String
+  userId       String
+  date         DateTime @db.Date
+  createdAt    DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId, date])
+  @@index([universityId, eventId, date])
+}
+
+/**
+ * ----------------------- Phase 3: the official channel ----------------------
+ */
+
+model OfficialAccount {
+  id             String                  @id @default(cuid())
+  universityId   String
+  name           String
+  nameNormalized String
+  slug           String
+  category       OfficialAccountCategory
+  avatarPublicId String?
+  description    String                  @db.Text
+  status         OfficialAccountStatus   @default(ACTIVE)
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+
+  staff         OfficialAccountStaff[]
+  announcements Announcement[]
+  events        Event[]
+
+  @@unique([universityId, slug])
+  @@unique([universityId, nameNormalized])
+  @@index([universityId, status, category])
+}
+
+model OfficialAccountStaff {
+  id                 String   @id @default(cuid())
+  universityId       String
+  officialAccountId  String
+  userId             String
+  canPublishCritical Boolean  @default(false)
+  createdAt          DateTime @default(now())
+
+  officialAccount OfficialAccount @relation(fields: [officialAccountId], references: [id], onDelete: Cascade)
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([officialAccountId, userId])
+  @@index([universityId, userId])
+}
+
+model Announcement {
+  id                String               @id @default(cuid())
+  universityId      String
+  officialAccountId String
+  authorId          String
+  category          AnnouncementCategory
+  title             String
+  body              String               @db.Text
+  critical          Boolean              @default(false)
+  audienceKind      EventAudienceKind
+  audiencePath      String[]             @default([])
+  status            AnnouncementStatus   @default(DRAFT)
+  publishAt         DateTime
+  publishedAt       DateTime?
+  editedAt          DateTime?
+  archivedAt        DateTime?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  officialAccount OfficialAccount          @relation(fields: [officialAccountId], references: [id], onDelete: Cascade)
+  author          User                     @relation("AnnouncementAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  attachments     AnnouncementAttachment[]
+  acks            AnnouncementAck[]
+
+  @@index([universityId, status, publishedAt])
+  @@index([universityId, officialAccountId, status, publishAt])
+  @@index([universityId, audienceKind, publishedAt])
+}
+
+model AnnouncementAttachment {
+  id             String   @id @default(cuid())
+  universityId   String
+  announcementId String
+  fileKey        String
+  name           String
+  mimeType       String
+  sizeBytes      Int
+  createdAt      DateTime @default(now())
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+
+  @@index([universityId, announcementId])
+}
+
+model AnnouncementAck {
+  id             String   @id @default(cuid())
+  universityId   String
+  announcementId String
+  userId         String
+  ackedAt        DateTime @default(now())
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, userId])
+  @@index([universityId, userId, ackedAt])
 }
