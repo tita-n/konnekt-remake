@@ -4,23 +4,15 @@ import type { SessionUser } from "@/lib/auth/guards";
 import { writeAudit } from "@/lib/audit";
 import { tenantDb, withTenantTransaction } from "@/lib/db/tenant";
 import { canSeePostInCommunity } from "@/lib/domain/posts";
+import { canSeeEvent, canSeeEventInCommunity, eventHasEnded } from "@/lib/domain/events";
+import { canSeeAnnouncement } from "@/lib/domain/announcements";
 import { SocialError } from "@/lib/posts/errors";
 import { rateLimit } from "@/lib/security/rate-limit";
 import { loadCommunityAccessMap } from "./community-access";
 import { isHiddenAuthor, loadRelationships, type SocialViewer } from "./social";
 
-export const REPORT_REASON_LABELS: Record<ReportReason, string> = {
-  SPAM: "Spam",
-  HARASSMENT: "Harassment or bullying",
-  HATE_OR_ABUSE: "Hate or abuse",
-  NUDITY_OR_SEXUAL_CONTENT: "Nudity or sexual content",
-  VIOLENCE_OR_THREATS: "Violence or threats",
-  IMPERSONATION: "Impersonation",
-  FALSE_INFORMATION: "False information",
-  SOMETHING_ELSE: "Something else",
-};
-
-export const REPORT_REASONS = Object.keys(REPORT_REASON_LABELS) as ReportReason[];
+export { REPORT_REASON_LABELS, REPORT_REASONS } from "@/lib/domain/moderation";
+import { REPORT_REASON_LABELS, REPORT_REASONS } from "@/lib/domain/moderation";
 
 const REASON_WEIGHT: Record<ReportReason, number> = {
   SPAM: 1,
@@ -72,7 +64,7 @@ export async function reportContent(
     if (isHiddenAuthor(relationships, post.authorId, viewer.userId)) throw new SocialError("This post isn't available.", 404);
     authorId = post.authorId;
     communityId = post.communityId;
-  } else {
+  } else if (input.targetType === "COMMENT") {
     const comment = await db.comment.findFirst({
       where: { id: input.targetId },
       select: {
@@ -99,6 +91,90 @@ export async function reportContent(
     }
     authorId = comment.authorId;
     communityId = comment.post.communityId;
+  } else if (input.targetType === "EVENT") {
+    const event = await db.event.findFirst({
+      where: { id: input.targetId },
+      select: {
+        id: true,
+        status: true,
+        organiserKind: true,
+        createdById: true,
+        communityId: true,
+        audienceKind: true,
+        audiencePath: true,
+      },
+    });
+    const access = event?.communityId
+      ? (await loadCommunityAccessMap(db, viewer.userId, [event.communityId])).get(event.communityId) ?? null
+      : null;
+    const visible = event
+      ? event.audienceKind === "COMMUNITY"
+        ? canSeeEventInCommunity(viewer.studentPath, event, access)
+        : canSeeEvent(viewer.studentPath, event)
+      : false;
+    if (!event || !visible) throw new SocialError("This event isn't available.", 404);
+    const relationships = await loadRelationships(db, viewer.userId);
+    if (event.organiserKind === "USER" && isHiddenAuthor(relationships, event.createdById, viewer.userId)) {
+      throw new SocialError("This event isn't available.", 404);
+    }
+    authorId = event.createdById;
+    communityId = event.communityId;
+  } else if (input.targetType === "EVENT_COMMENT") {
+    const comment = await db.eventComment.findFirst({
+      where: { id: input.targetId },
+      select: {
+        id: true,
+        status: true,
+        authorId: true,
+        event: {
+          select: {
+            id: true,
+            status: true,
+            organiserKind: true,
+            createdById: true,
+            communityId: true,
+            audienceKind: true,
+            audiencePath: true,
+            startsAt: true,
+            endsAt: true,
+          },
+        },
+      },
+    });
+    const access = comment?.event.communityId
+      ? (await loadCommunityAccessMap(db, viewer.userId, [comment.event.communityId])).get(comment.event.communityId) ?? null
+      : null;
+    const visible = comment
+      ? comment.event.audienceKind === "COMMUNITY"
+        ? canSeeEventInCommunity(viewer.studentPath, comment.event, access)
+        : canSeeEvent(viewer.studentPath, comment.event)
+      : false;
+    if (!comment || comment.status !== "ACTIVE" || !visible) {
+      throw new SocialError("This comment isn't available.", 404);
+    }
+    const relationships = await loadRelationships(db, viewer.userId);
+    if (isHiddenAuthor(relationships, comment.authorId, viewer.userId)) {
+      throw new SocialError("This comment isn't available.", 404);
+    }
+    authorId = comment.authorId;
+    communityId = comment.event.communityId;
+  } else {
+    const announcement = await db.announcement.findFirst({
+      where: { id: input.targetId },
+      select: {
+        id: true,
+        status: true,
+        authorId: true,
+        audienceKind: true,
+        audiencePath: true,
+        publishAt: true,
+        publishedAt: true,
+      },
+    });
+    if (!announcement || !canSeeAnnouncement(viewer.studentPath, announcement)) {
+      throw new SocialError("This announcement isn't available.", 404);
+    }
+    authorId = announcement.authorId;
   }
   if (authorId === viewer.userId) throw new SocialError("You can't report your own content.");
 
@@ -239,7 +315,10 @@ export interface ReportQueueItem {
 
 export async function listReports(
   user: SessionUser,
-  filter: { status?: "PENDING" | "RESOLVED"; type?: "ALL" | "POST" | "COMMENT" } = {},
+  filter: {
+    status?: "PENDING" | "RESOLVED";
+    type?: "ALL" | "POST" | "COMMENT" | "EVENT" | "EVENT_COMMENT" | "ANNOUNCEMENT";
+  } = {},
 ): Promise<ReportQueueItem[]> {
   assertModerator(user);
   const db = tenantDb(user.universityId);
@@ -264,7 +343,10 @@ export async function listReports(
 
   const postIds = rows.filter((row) => row.targetType === "POST").map((row) => row.targetId);
   const commentIds = rows.filter((row) => row.targetType === "COMMENT").map((row) => row.targetId);
-  const [posts, comments, grouped] = await Promise.all([
+  const eventIds = rows.filter((row) => row.targetType === "EVENT").map((row) => row.targetId);
+  const eventCommentIds = rows.filter((row) => row.targetType === "EVENT_COMMENT").map((row) => row.targetId);
+  const announcementIds = rows.filter((row) => row.targetType === "ANNOUNCEMENT").map((row) => row.targetId);
+  const [posts, comments, events, eventComments, announcements, grouped] = await Promise.all([
     postIds.length
       ? db.post.findMany({
           where: { id: { in: postIds } },
@@ -277,14 +359,46 @@ export async function listReports(
           select: { id: true, body: true, author: { select: { fullName: true, username: true } } },
         })
       : Promise.resolve([]),
+    eventIds.length
+      ? db.event.findMany({
+          where: { id: { in: eventIds } },
+          select: { id: true, title: true, createdBy: { select: { fullName: true, username: true } } },
+        })
+      : Promise.resolve([]),
+    eventCommentIds.length
+      ? db.eventComment.findMany({
+          where: { id: { in: eventCommentIds } },
+          select: { id: true, body: true, author: { select: { fullName: true, username: true } } },
+        })
+      : Promise.resolve([]),
+    announcementIds.length
+      ? db.announcement.findMany({
+          where: { id: { in: announcementIds } },
+          select: { id: true, title: true, author: { select: { fullName: true, username: true } } },
+        })
+      : Promise.resolve([]),
     db.report.groupBy({
       by: ["targetType", "targetId"],
       where: { status: "PENDING" },
       _count: { reporterId: true },
     }),
   ]);
-  const postsById = new Map(posts.map((post) => [post.id, post]));
-  const commentsById = new Map(comments.map((comment) => [comment.id, comment]));
+  const targetInfo = new Map<string, { body: string; authorName: string; authorUsername: string }>();
+  for (const post of posts) {
+    targetInfo.set(`POST:${post.id}`, { body: post.body, authorName: post.author.fullName, authorUsername: post.author.username });
+  }
+  for (const comment of comments) {
+    targetInfo.set(`COMMENT:${comment.id}`, { body: comment.body, authorName: comment.author.fullName, authorUsername: comment.author.username });
+  }
+  for (const event of events) {
+    targetInfo.set(`EVENT:${event.id}`, { body: event.title, authorName: event.createdBy.fullName, authorUsername: event.createdBy.username });
+  }
+  for (const comment of eventComments) {
+    targetInfo.set(`EVENT_COMMENT:${comment.id}`, { body: comment.body, authorName: comment.author.fullName, authorUsername: comment.author.username });
+  }
+  for (const announcement of announcements) {
+    targetInfo.set(`ANNOUNCEMENT:${announcement.id}`, { body: announcement.title, authorName: announcement.author.fullName, authorUsername: announcement.author.username });
+  }
   const counts = new Map(grouped.map((row) => [`${row.targetType}:${row.targetId}`, row._count.reporterId]));
   const reasonsByTarget = new Map<string, ReportReason[]>();
   for (const row of rows) {
@@ -295,10 +409,8 @@ export async function listReports(
   }
 
   return rows.map((row) => {
-    const post = postsById.get(row.targetId);
-    const comment = commentsById.get(row.targetId);
-    const target = post ?? comment;
     const key = `${row.targetType}:${row.targetId}`;
+    const target = targetInfo.get(key);
     const reporterCount = counts.get(key) ?? 1;
     const excerptSource = target?.body ?? "Content unavailable";
     return {
@@ -312,8 +424,8 @@ export async function listReports(
       targetType: row.targetType,
       targetId: row.targetId,
       excerpt: excerptSource.replace(/\s+/g, " ").slice(0, 150),
-      authorName: target?.author.fullName ?? "Unknown",
-      authorUsername: target?.author.username ?? "unknown",
+      authorName: target?.authorName ?? "Unknown",
+      authorUsername: target?.authorUsername ?? "unknown",
     };
   });
 }
@@ -361,29 +473,120 @@ export async function getReportDetail(user: SessionUser, reportId: string): Prom
   });
   if (!report) return null;
 
-  const target =
-    report.targetType === "POST"
-      ? await db.post.findFirst({
-          where: { id: report.targetId },
-          select: {
-            body: true,
-            status: true,
-            createdAt: true,
-            authorId: true,
-            author: { select: { fullName: true, username: true, status: true } },
-            media: { orderBy: { order: "asc" }, select: { publicId: true, url: true, width: true, height: true } },
-          },
-        })
-      : await db.comment.findFirst({
-          where: { id: report.targetId },
-          select: {
-            body: true,
-            status: true,
-            createdAt: true,
-            authorId: true,
-            author: { select: { fullName: true, username: true, status: true } },
-          },
-        });
+  type ReportTargetView = {
+    body: string;
+    status: "ACTIVE" | "REMOVED";
+    createdAt: string;
+    authorId: string;
+    author: { fullName: string; username: string; status: string };
+    media?: Array<{ url: string | null; width: number; height: number }>;
+  };
+  let target: ReportTargetView | null = null;
+  if (report.targetType === "POST") {
+    const row = await db.post.findFirst({
+      where: { id: report.targetId },
+      select: {
+        body: true,
+        status: true,
+        createdAt: true,
+        authorId: true,
+        author: { select: { fullName: true, username: true, status: true } },
+        media: { orderBy: { order: "asc" }, select: { publicId: true, url: true, width: true, height: true } },
+      },
+    });
+    if (row) {
+      target = {
+        body: row.body,
+        status: row.status === "ACTIVE" ? "ACTIVE" : "REMOVED",
+        createdAt: row.createdAt.toISOString(),
+        authorId: row.authorId,
+        author: row.author,
+        media: row.media,
+      };
+    }
+  } else if (report.targetType === "COMMENT") {
+    const row = await db.comment.findFirst({
+      where: { id: report.targetId },
+      select: {
+        body: true,
+        status: true,
+        createdAt: true,
+        authorId: true,
+        author: { select: { fullName: true, username: true, status: true } },
+      },
+    });
+    if (row) {
+      target = {
+        body: row.body,
+        status: row.status === "ACTIVE" ? "ACTIVE" : "REMOVED",
+        createdAt: row.createdAt.toISOString(),
+        authorId: row.authorId,
+        author: row.author,
+      };
+    }
+  } else if (report.targetType === "EVENT") {
+    const row = await db.event.findFirst({
+      where: { id: report.targetId },
+      select: {
+        title: true,
+        description: true,
+        status: true,
+        createdAt: true,
+        createdById: true,
+        createdBy: { select: { fullName: true, username: true, status: true } },
+      },
+    });
+    if (row) {
+      target = {
+        body: `${row.title}\n\n${row.description}`,
+        status: row.status === "REMOVED" ? "REMOVED" : "ACTIVE",
+        createdAt: row.createdAt.toISOString(),
+        authorId: row.createdById,
+        author: row.createdBy,
+      };
+    }
+  } else if (report.targetType === "EVENT_COMMENT") {
+    const row = await db.eventComment.findFirst({
+      where: { id: report.targetId },
+      select: {
+        body: true,
+        status: true,
+        createdAt: true,
+        authorId: true,
+        author: { select: { fullName: true, username: true, status: true } },
+      },
+    });
+    if (row) {
+      target = {
+        body: row.body,
+        status: row.status === "ACTIVE" ? "ACTIVE" : "REMOVED",
+        createdAt: row.createdAt.toISOString(),
+        authorId: row.authorId,
+        author: row.author,
+      };
+    }
+  } else {
+    const row = await db.announcement.findFirst({
+      where: { id: report.targetId },
+      select: {
+        title: true,
+        body: true,
+        status: true,
+        createdAt: true,
+        authorId: true,
+        author: { select: { fullName: true, username: true, status: true } },
+      },
+    });
+    if (row) {
+      target = {
+        body: `${row.title}\n\n${row.body}`,
+        status: row.status === "ARCHIVED" ? "REMOVED" : "ACTIVE",
+        createdAt: row.createdAt.toISOString(),
+        authorId: row.authorId,
+        author: row.author,
+      };
+    }
+  }
   const authorId = target?.authorId ?? null;
   const [reportCount, strikes, actions, allReasons] = await Promise.all([
     authorId ? db.report.count({ where: { targetType: report.targetType, targetId: report.targetId } }) : Promise.resolve(1),
@@ -430,8 +633,8 @@ export async function getReportDetail(user: SessionUser, reportId: string): Prom
     target: target
       ? {
           body: target.body,
-          status: target.status === "ACTIVE" ? "ACTIVE" : "REMOVED",
-          createdAt: target.createdAt.toISOString(),
+          status: target.status,
+          createdAt: target.createdAt,
           authorId: target.authorId,
           authorName: target.author.fullName,
           authorUsername: target.author.username,
@@ -494,16 +697,38 @@ export async function moderateReport(
   });
   if (!report) throw new SocialError("That report isn't available.");
 
-  const target =
-    report.targetType === "POST"
-      ? await db.post.findFirst({
-          where: { id: report.targetId },
-          select: { id: true, authorId: true, status: true, communityId: true },
-        })
-      : await db.comment.findFirst({
-          where: { id: report.targetId },
-          select: { id: true, authorId: true, status: true, postId: true },
-        });
+  let target: { id: string; authorId: string; status: string; communityId?: string | null; postId?: string } | null = null;
+  if (report.targetType === "POST") {
+    const row = await db.post.findFirst({
+      where: { id: report.targetId },
+      select: { id: true, authorId: true, status: true, communityId: true },
+    });
+    if (row) target = row;
+  } else if (report.targetType === "COMMENT") {
+    const row = await db.comment.findFirst({
+      where: { id: report.targetId },
+      select: { id: true, authorId: true, status: true, postId: true },
+    });
+    if (row) target = row;
+  } else if (report.targetType === "EVENT") {
+    const row = await db.event.findFirst({
+      where: { id: report.targetId },
+      select: { id: true, createdById: true, status: true },
+    });
+    if (row) target = { id: row.id, authorId: row.createdById, status: row.status };
+  } else if (report.targetType === "EVENT_COMMENT") {
+    const row = await db.eventComment.findFirst({
+      where: { id: report.targetId },
+      select: { id: true, authorId: true, status: true },
+    });
+    if (row) target = row;
+  } else {
+    const row = await db.announcement.findFirst({
+      where: { id: report.targetId },
+      select: { id: true, authorId: true, status: true },
+    });
+    if (row) target = row;
+  }
   if (!target) throw new SocialError("The reported content no longer exists.");
   const authorId = target.authorId;
 
@@ -530,7 +755,7 @@ export async function moderateReport(
             data: { postCount: { decrement: 1 } },
           });
         }
-      } else {
+      } else if (report.targetType === "COMMENT") {
         await tx.comment.update({
           where: { id: target.id },
           data: { status: "REMOVED", moderationReason: reason, removedAt: new Date() },
@@ -541,6 +766,25 @@ export async function moderateReport(
             data: { acceptedCommentId: null },
           });
         }
+      } else if (report.targetType === "EVENT") {
+        await tx.event.update({
+          where: { id: target.id },
+          data: { status: "REMOVED" },
+        });
+        await tx.eventTicket.updateMany({
+          where: { eventId: target.id, revokedAt: null },
+          data: { revokedAt: new Date() },
+        });
+      } else if (report.targetType === "EVENT_COMMENT") {
+        await tx.eventComment.update({
+          where: { id: target.id },
+          data: { status: "REMOVED", moderationReason: reason, removedAt: new Date() },
+        });
+      } else {
+        await tx.announcement.update({
+          where: { id: target.id },
+          data: { status: "ARCHIVED", archivedAt: new Date() },
+        });
       }
     }
 

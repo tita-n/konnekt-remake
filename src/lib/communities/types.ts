@@ -119,7 +119,7 @@ export interface CommunityReportView {
   details: string | null;
   status: "PENDING" | "RESOLVED";
   createdAt: string;
-  targetType: "POST" | "COMMENT";
+  targetType: "POST" | "COMMENT" | "EVENT" | "EVENT_COMMENT" | "ANNOUNCEMENT";
   targetId: string;
   targetExcerpt: string;
   reporter: { username: string; fullName: string };

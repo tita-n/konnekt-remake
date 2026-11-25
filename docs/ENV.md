@@ -28,6 +28,7 @@ Copy `.env.example` to `.env` (or `.env.local`). Never commit real secrets. Only
 | `NEXT_PUBLIC_SENTRY_DSN` / `SENTRY_DSN` | — | Error monitoring. |
 | `SENTRY_ENVIRONMENT` | — | Sentry environment label. |
 | `SEED_PLATFORM_ADMIN_EMAIL` | `admin@konnekt.ng` | Platform admin created by the seed. |
+| `ANNOUNCEMENT_CRON_SECRET` | — | Bearer/query secret for `/api/cron/announcements`. Leave unset to keep the cron endpoint closed; feed reads still publish due announcements lazily. |
 
 ## Dedicated e2e database
 

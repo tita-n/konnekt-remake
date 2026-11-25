@@ -28,6 +28,7 @@ export interface SessionUser {
   interests: string[];
   departmentVisibility: "EVERYONE" | "UNIVERSITY" | "NOBODY";
   levelVisibility: "EVERYONE" | "UNIVERSITY" | "NOBODY";
+  showEventAttendance: boolean;
   createdAt: Date;
   onboardingCompletedAt: Date | null;
   deletedRequestedAt: Date | null;
@@ -48,6 +49,7 @@ export interface SessionUser {
     studentEmailDomains: string[];
     matricPattern: string;
     policyVersion: string;
+    timezone: string;
   };
 }
 
@@ -170,6 +172,7 @@ export async function getSession(): Promise<{ session: SessionRecord; user: Sess
       interests: true,
       departmentVisibility: true,
       levelVisibility: true,
+      showEventAttendance: true,
       createdAt: true,
       onboardingCompletedAt: true,
       deletedRequestedAt: true,
@@ -191,6 +194,7 @@ export async function getSession(): Promise<{ session: SessionRecord; user: Sess
           studentEmailDomains: true,
           matricPattern: true,
           policyVersion: true,
+          timezone: true,
         },
       },
     },

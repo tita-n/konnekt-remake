@@ -44,6 +44,20 @@ const TENANT_MODELS = [
   "CommunityResource",
   "CommunityPin",
   "CommunityOfficialRequest",
+  "CampusPlace",
+  "Event",
+  "EventRsvp",
+  "EventTicket",
+  "EventStaff",
+  "EventCheckIn",
+  "EventUpdate",
+  "EventComment",
+  "EventViewDaily",
+  "OfficialAccount",
+  "OfficialAccountStaff",
+  "Announcement",
+  "AnnouncementAttachment",
+  "AnnouncementAck",
 ] as const;
 
 const TENANT_MODEL_SET = new Set<string>(TENANT_MODELS);

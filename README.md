@@ -150,3 +150,12 @@ Built through Phase 1: feed, posts, questions, polls, comments, reactions, repos
 Built in Phase 2: communities with creation and management, discovery, PUBLIC/REQUEST/INVITE_ONLY joins, invites, posts, resources, members, rules, community and university moderation, onboarding step 3, and the admin Communities console with official status.
 
 Not built, by design: events, announcements, following, messaging/chat, Campus Voice, push notifications, short video and marketplace. Their tabs remain final empty states; no placeholder APIs or tables exist for them.
+
+### Phase 3 demo data
+
+The Nova seed also creates official accounts (`Nova Registrar`, `Nova ICT
+Service Desk`), campus places, five events (live, upcoming, department clinic,
+full/waitlist and past) and three announcements, including one critical notice.
+Sign in as `student@nova.edu.ng` to RSVP and generate a ticket, `admin@nova.edu.ng`
+to see the official, places, announcements and event moderation consoles, or
+`reviewer@nova.edu.ng` for ICT announcements.

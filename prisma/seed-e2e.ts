@@ -346,6 +346,103 @@ async function main() {
     },
   });
 
+  // Phase 3 fixtures: one event the student already joined and one open event,
+  // plus an official critical notice the student has not acknowledged.
+  const e2ePlace = await db.campusPlace.upsert({
+    where: { universityId_name: { universityId: university.id, name: "E2E Main Hall" } },
+    update: {},
+    create: { universityId: university.id, name: "E2E Main Hall", latitude: 6.52, longitude: 3.37 },
+  });
+  const e2eEvent = await db.event.upsert({
+    where: { id: "e2e-event-robotics" },
+    update: {},
+    create: {
+      id: "e2e-event-robotics",
+      universityId: university.id,
+      createdById: student.id,
+      organiserKind: "USER",
+      audienceKind: "PUBLIC",
+      audiencePath: ["PUBLIC"],
+      title: "E2E Robotics Night",
+      description: "Deterministic event fixture for check-in and ticket flows.",
+      category: "TECH",
+      startsAt: new Date(Date.now() - 30 * 60 * 1000),
+      endsAt: new Date(Date.now() + 2 * 60 * 60 * 1000),
+      timezone: "Africa/Lagos",
+      venueName: "E2E Main Hall",
+      placeId: e2ePlace.id,
+      capacity: 50,
+      waitlistEnabled: true,
+      checkInEnabled: true,
+      goingCount: 1,
+    },
+  });
+  await db.eventRsvp.upsert({
+    where: { eventId_userId: { eventId: e2eEvent.id, userId: student.id } },
+    update: {},
+    create: { universityId: university.id, eventId: e2eEvent.id, userId: student.id, status: "GOING" },
+  });
+  await db.event.upsert({
+    where: { id: "e2e-event-open" },
+    update: {},
+    create: {
+      id: "e2e-event-open",
+      universityId: university.id,
+      createdById: levelmate.id,
+      organiserKind: "USER",
+      audienceKind: "PUBLIC",
+      audiencePath: ["PUBLIC"],
+      title: "E2E Open Mic",
+      description: "A deterministic event the student can RSVP to in e2e.",
+      category: "CULTURAL",
+      startsAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      endsAt: new Date(Date.now() + 26 * 60 * 60 * 1000),
+      timezone: "Africa/Lagos",
+      venueName: "E2E Main Hall",
+      placeId: e2ePlace.id,
+      capacity: 30,
+      waitlistEnabled: true,
+      checkInEnabled: true,
+    },
+  });
+  const e2eOfficial = await db.officialAccount.upsert({
+    where: { universityId_slug: { universityId: university.id, slug: "e2e-registrar" } },
+    update: {},
+    create: {
+      universityId: university.id,
+      name: "E2E Registrar",
+      nameNormalized: "e2eregistrar",
+      slug: "e2e-registrar",
+      category: "REGISTRY",
+      description: "E2E official account.",
+      status: "ACTIVE",
+    },
+  });
+  await db.officialAccountStaff.upsert({
+    where: { officialAccountId_userId: { officialAccountId: e2eOfficial.id, userId: admin.id } },
+    update: {},
+    create: { universityId: university.id, officialAccountId: e2eOfficial.id, userId: admin.id, canPublishCritical: true },
+  });
+  await db.announcement.upsert({
+    where: { id: "e2e-announcement-critical" },
+    update: {},
+    create: {
+      id: "e2e-announcement-critical",
+      universityId: university.id,
+      officialAccountId: e2eOfficial.id,
+      authorId: admin.id,
+      category: "ACADEMIC",
+      title: "E2E registration closes Friday",
+      body: "A deterministic critical notice used to prove acknowledgement clears the banner.",
+      critical: true,
+      audienceKind: "PUBLIC",
+      audiencePath: ["PUBLIC"],
+      status: "PUBLISHED",
+      publishAt: new Date(Date.now() - 60 * 60 * 1000),
+      publishedAt: new Date(Date.now() - 60 * 60 * 1000),
+    },
+  });
+
   // Platform audit needs an actor; keep one harmless bootstrap entry.
   const audit = await db.auditLog.findFirst({
     where: { universityId: university.id, action: "e2e.seed" },

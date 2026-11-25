@@ -70,6 +70,11 @@ const SHOTS = [
   { name: "community-settings", path: "/design/preview/community-settings", viewports: ["mobile", "desktop"] },
   { name: "admin-communities", path: "/design/preview/admin-communities", viewports: ["desktop"] },
   { name: "public-share-preview", path: "/design/preview/public-share-preview", viewports: ["mobile"] },
+
+  // Phase 3 authenticated product screens (Nova demo seed)
+  { name: "events-hub", path: "/events", viewports: ["mobile", "desktop"], auth: true },
+  { name: "event-detail", path: "/events/seed-event-upcoming", viewports: ["mobile"], auth: true },
+  { name: "official-channel", path: "/official", viewports: ["mobile"], auth: true },
   { name: "admin-reports", path: "/design/preview/admin-reports", viewports: ["desktop"] },
   { name: "admin-students", path: "/design/preview/admin-students", viewports: ["desktop"] },
   { name: "admin-verification", path: "/design/preview/admin-verification", viewports: ["desktop"] },
@@ -96,8 +101,19 @@ async function run() {
           colorScheme: mode,
         });
         const page = await context.newPage();
+        let authed = false;
 
+        const only = process.env.SHOTS_ONLY ? new Set(process.env.SHOTS_ONLY.split(",").map((name) => name.trim())) : null;
         for (const shot of SHOTS) {
+          if (only && !only.has(shot.name)) continue;
+          if (shot.auth && !authed) {
+            await page.goto(`${BASE_URL}/login`, { waitUntil: "networkidle", timeout: 30_000 });
+            await page.getByLabel("Email or username").fill("student@nova.edu.ng");
+            await page.getByLabel("Password", { exact: true }).fill("KonnektDemo123!");
+            await page.getByRole("button", { name: "Log in" }).click();
+            await page.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 30_000 });
+            authed = true;
+          }
           if (!shot.viewports.includes(vpKey)) continue;
           const sep = shot.path.includes("?") ? "&" : "?";
           const targetUrl = shot.path.startsWith("/design/")

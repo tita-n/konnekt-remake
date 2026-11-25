@@ -69,6 +69,9 @@ function viewer(input: {
     interests: ["Coding"],
     isUniversityStaff: input.staff ?? false,
     isUniversityAdmin: input.staff ?? false,
+    isUniversityModerator: false,
+    timezone: "Africa/Lagos",
+    showEventAttendance: true,
   };
 }
 

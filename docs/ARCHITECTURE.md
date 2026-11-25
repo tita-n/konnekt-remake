@@ -150,3 +150,36 @@ CI runs quality + integration, e2e, Lighthouse, production security invariants, 
 - Storage failures abort uploads with a generic message; no partial record is written.
 - Database errors on decisions surface as “Could not save that decision” and never as success.
 - Missing Upstash/Cloudinary in development degrade to in-memory/local implementations; production validation prevents that.
+
+## Phase 3 — Events and official announcements
+
+Phase 3 adds two verticals on top of the Phase 1 audience primitive and Phase 2
+communities:
+
+- **Events** (`src/lib/domain/events.ts`, `event-ticket.ts`, `event-time.ts`,
+  `src/lib/services/events.ts`, `src/components/events/**`). An event carries
+  the same academic audience prefix as a post, or is community-scoped. A user,
+  community or official account may organise. RSVPs, a capacity counter,
+  ordered waitlist, hashed QR tickets and idempotent check-ins live in their own
+  tables. Every read goes through `canSeeEvent`; every mutation through
+  `eventPermissions`.
+- **Official channel** (`src/lib/domain/announcements.ts`, `official.ts`,
+  `src/lib/services/announcements.ts`, `official.ts`,
+  `src/components/official/**`). Official accounts are university-managed,
+  verified voices with their own staff table. They publish announcements (never
+  ordinary posts) with academic audiences, optional PDFs, critical flags and
+  scheduling. Acknowledgements are per-student and drive both the critical and
+  normal banners.
+
+`src/lib/services/event-admin.ts` adds campus places and the event moderation
+queue. `/api/cron/announcements` is the only infrastructure entry point; it
+enumerates universities and enters tenant scope for each, because cron has no
+logged-in tenant. Scheduled announcements also publish lazily when a student
+reads the feed, so a missed cron run cannot hide a notice indefinitely.
+
+The public share routes (`/e/[id]` and its OG image) deliberately bypass the
+session and query `platformDb` for a narrow preview gated by PUBLIC + explicit
+share + scheduled status. They never reveal attendees, counts, descriptions or
+organiser identity. `src/components/pulse/event-modules.tsx` places at most one
+critical banner, one official banner, one live rail and one upcoming card above
+the Pulse feed.

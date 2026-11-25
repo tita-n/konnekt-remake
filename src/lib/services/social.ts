@@ -27,6 +27,9 @@ export interface SocialViewer {
   interests: string[];
   isUniversityStaff: boolean;
   isUniversityAdmin: boolean;
+  isUniversityModerator: boolean;
+  timezone: string;
+  showEventAttendance: boolean;
 }
 
 export async function loadSocialViewer(user: SessionUser): Promise<SocialViewer | null> {
@@ -68,6 +71,11 @@ export async function loadSocialViewer(user: SessionUser): Promise<SocialViewer 
     isUniversityAdmin: user.roles.some(
       (role) => role.universityId === user.universityId && role.role === "UNIVERSITY_ADMIN",
     ),
+    isUniversityModerator: user.roles.some(
+      (role) => role.universityId === user.universityId && role.role === "MODERATOR",
+    ),
+    timezone: user.university.timezone ?? "Africa/Lagos",
+    showEventAttendance: user.showEventAttendance,
   };
 }
 

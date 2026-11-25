@@ -4,8 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   ArrowLeft,
+  BadgeCheck,
+  CalendarDays,
   ClipboardCheck,
   Flag,
+  MapPin,
+  Megaphone,
   Home,
   Layers,
   MessagesSquare,
@@ -52,6 +56,10 @@ export function AdminShell({
     { href: "/admin/verification", label: "Verification", icon: ClipboardCheck, badge: pendingCount },
     { href: "/admin/reports", label: "Reports", icon: Flag, moderatorOnly: true, badge: reportCount, dangerBadge: true },
     { href: "/admin/communities", label: "Communities", icon: MessagesSquare, moderatorOnly: true },
+    { href: "/admin/events", label: "Events", icon: CalendarDays, moderatorOnly: true },
+    { href: "/admin/announcements", label: "Announcements", icon: Megaphone, moderatorOnly: true },
+    { href: "/admin/places", label: "Campus places", icon: MapPin, adminOnly: true },
+    { href: "/admin/official", label: "Official accounts", icon: BadgeCheck, adminOnly: true },
     { href: "/admin/academic", label: "Academic structure", icon: Layers, adminOnly: true },
     { href: "/admin/team", label: "Team", icon: ShieldCheck, adminOnly: true },
     { href: "/admin/settings", label: "Settings", icon: Settings, adminOnly: true },

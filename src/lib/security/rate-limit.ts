@@ -50,6 +50,17 @@ export const POLICIES = {
   reactionYoung: { limit: 60, windowSeconds: 60 },
   reportYoung: { limit: 5, windowSeconds: 24 * 60 * 60 },
   pollVoteYoung: { limit: 30, windowSeconds: 60 * 60 },
+  eventCreate: { limit: 3, windowSeconds: 24 * 60 * 60 },
+  eventRsvp: { limit: 60, windowSeconds: 60 * 60 },
+  eventComment: { limit: 5, windowSeconds: 60 },
+  eventCommentHourly: { limit: 60, windowSeconds: 60 * 60 },
+  eventUpdate: { limit: 20, windowSeconds: 60 * 60 },
+  eventCheckIn: { limit: 600, windowSeconds: 60 * 60 },
+  eventCsvExport: { limit: 10, windowSeconds: 24 * 60 * 60 },
+  eventShareCard: { limit: 20, windowSeconds: 60 * 60 },
+  announcementCreate: { limit: 10, windowSeconds: 24 * 60 * 60 },
+  announcementCritical: { limit: 2, windowSeconds: 24 * 60 * 60 },
+  announcementAck: { limit: 120, windowSeconds: 60 * 60 },
 } as const satisfies Record<string, Policy>;
 
 export type PolicyName = keyof typeof POLICIES;

@@ -44,10 +44,14 @@ export async function apiPatch<T>(url: string, body?: unknown): Promise<T> {
   return parse<T>(response);
 }
 
-export async function apiDelete<T>(url: string): Promise<T> {
+export async function apiDelete<T>(url: string, body?: unknown): Promise<T> {
   const response = await fetch(url, {
     method: "DELETE",
-    headers: { "x-konnekt-csrf": csrfToken() },
+    headers: {
+      "x-konnekt-csrf": csrfToken(),
+      ...(body === undefined ? {} : { "Content-Type": "application/json" }),
+    },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
   return parse<T>(response);
 }

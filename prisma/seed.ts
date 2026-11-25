@@ -13,6 +13,7 @@ import sharp from "sharp";
 import { assertSeedAllowed } from "./seed-guard";
 import { seedSocialContent } from "./seed-social";
 import { seedCommunities } from "./seed-communities";
+import { seedEvents } from "./seed-events";
 
 try {
   assertSeedAllowed();
@@ -497,6 +498,13 @@ async function main() {
   await seedCommunities(db, {
     universityId: university.id,
     moderatorId: uniAdmin.id,
+    demoAuthors,
+  });
+
+  await seedEvents(db, {
+    universityId: university.id,
+    adminId: uniAdmin.id,
+    reviewerId: reviewer.id,
     demoAuthors,
   });
 

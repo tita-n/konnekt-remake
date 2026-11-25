@@ -216,3 +216,55 @@ dialog.modal::backdrop {
     --accent-soft-fg: color-mix(in srgb, var(--accent-ink) 75%, #f2f3f5);
   }
 }
+
+/* --------------------------------------------------------------------------
+ * Phase 3 event surfaces.
+ * Ticket shapes and the QR ticket card are the only skeuomorphic surfaces;
+ * neo-brutalism is limited to the RSVP confirmation and generated share card.
+ * ------------------------------------------------------------------------ */
+.event-ticket {
+  position: relative;
+}
+
+.event-ticket::before,
+.event-ticket::after {
+  content: "";
+  position: absolute;
+  top: 58%;
+  z-index: 1;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  pointer-events: none;
+}
+
+.event-ticket::before {
+  left: -10px;
+}
+
+.event-ticket::after {
+  right: -10px;
+}
+
+.event-ticket-perforation {
+  border-top: 2px dashed var(--border-strong);
+}
+
+.neo-brutal {
+  border: 3px solid var(--fg);
+  box-shadow: 6px 6px 0 0 var(--fg);
+}
+
+[data-theme="dark"] .neo-brutal {
+  box-shadow: 6px 6px 0 0 var(--border-strong);
+  border-color: var(--border-strong);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .event-ticket::before,
+  .event-ticket::after {
+    transition: none;
+  }
+}
