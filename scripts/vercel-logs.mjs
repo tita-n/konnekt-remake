@@ -26,11 +26,20 @@ function redact(text) {
     .slice(0, 900);
 }
 
-const deploymentResponse = await fetch(
-  `https://api.vercel.com/v13/deployments/${encodeURIComponent(idOrUrl)}${team ? `?${team}` : ""}`,
-  { headers: auth },
-);
-const deployment = await deploymentResponse.json().catch(() => ({}));
+async function resolveDeployment(withTeam) {
+  const suffix = withTeam && team ? `?${team}` : "";
+  const response = await fetch(
+    `https://api.vercel.com/v13/deployments/${encodeURIComponent(idOrUrl)}${suffix}`,
+    { headers: auth },
+  );
+  const body = await response.json().catch(() => ({}));
+  return { response, body };
+}
+
+let { response: deploymentResponse, body: deployment } = await resolveDeployment(true);
+if (deploymentResponse.status === 404 && team) {
+  ({ response: deploymentResponse, body: deployment } = await resolveDeployment(false));
+}
 if (!deploymentResponse.ok || !deployment?.id) {
   console.error(`Could not resolve the deployment (HTTP ${deploymentResponse.status}).`);
   process.exit(0);
