@@ -3,6 +3,20 @@
 Real failures found while bringing staging up, with the fix and its guard. No
 secret values appear here.
 
+## 2026-11-26 — final staging verification is green
+
+After the database redeploy and the private-URL fix, Deploy run `45878826316`
+passed env validation, the runtime/migration agreement check, migrations, the
+remote Vercel deployment and smoke. Verification run `45879563844` passed all
+**11** real-service checks and all **12** Vercel variable-name checks; smoke
+passed with health and the public preview at 200.
+
+The account smoke login remains skipped because `SMOKE_TEST_EMAIL` and
+`SMOKE_TEST_PASSWORD` are not set. The scheduler probe run `45879936349`
+returned HTTP 401, so the GitHub staging and Vercel Production
+`ANNOUNCEMENT_CRON_SECRET` values still differ; both must be set to the exact
+same value and Vercel redeployed.
+
 ## 2026-11-26 — staged database repaired; health and signup recovered
 
 **Symptom:** after the provider values were corrected, the previously deployed
