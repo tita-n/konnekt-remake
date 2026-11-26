@@ -10,7 +10,10 @@ export type ClayIllustrationKind =
   | "happyPadlock"
   | "magnifier"
   | "hourglass"
-  | "welcomeHero";
+  | "welcomeHero"
+  | "noEvents"
+  | "noAnnouncements"
+  | "ticketOffline";
 
 /**
  * Inline clay-style SVG illustrations (Spec Section 5 #52 & Section 5B).
@@ -237,6 +240,68 @@ export function ClayIllustration({
           {/* Sparks */}
           <circle cx="198" cy="40" r="5" fill={`url(#${uid}-spark)`} />
           <circle cx="24" cy="36" r="4" fill={`url(#${uid}-leaf)`} />
+        </g>
+      ) : null}
+      {kind === "noEvents" ? (
+        <g>
+          <path d="M54 141c-13-7-19-21-15-30 4-9 16-3 20 11 3 10-1 17-5 19Z" fill={`url(#${uid}-leaf)`} />
+          <path d="M166 141c13-7 19-21 15-30-4-9-16-3-20 11-3 10 1 17 5 19Z" fill={`url(#${uid}-leaf)`} />
+          {/* Calendar block */}
+          <rect x="64" y="40" width="92" height="86" rx="20" fill={`url(#${uid}-paper)`} stroke="#D8DCF0" strokeWidth="2.5" />
+          <path d="M64 60c0-11 9-20 20-20h48c11 0 20 9 20 20v10H64V60Z" fill={`url(#${uid}-lav)`} />
+          {[82, 108, 134].map((x) => (
+            <rect key={x} x={x} y="30" width="8" height="18" rx="4" fill={`url(#${uid}-lav-soft)`} />
+          ))}
+          <rect x="78" y="82" width="18" height="14" rx="6" fill="#E3E6F6" />
+          <rect x="101" y="82" width="18" height="14" rx="6" fill="#E3E6F6" />
+          <rect x="124" y="82" width="18" height="14" rx="6" fill={`url(#${uid}-spark)`} />
+          <rect x="78" y="102" width="18" height="14" rx="6" fill="#ECEEF9" />
+          <rect x="101" y="102" width="18" height="14" rx="6" fill="#ECEEF9" />
+          {/* Ticket resting on the corner */}
+          <g transform="rotate(-9 132 108)">
+            <rect x="122" y="102" width="58" height="34" rx="10" fill={`url(#${uid}-lav)`} />
+            <rect x="130" y="112" width="24" height="6" rx="3" fill="white" fillOpacity="0.45" />
+            <rect x="130" y="122" width="14" height="5" rx="2.5" fill="white" fillOpacity="0.3" />
+            <path d="M160 106v26" stroke="white" strokeOpacity="0.35" strokeWidth="2" strokeDasharray="3 4" />
+          </g>
+        </g>
+      ) : null}
+
+      {kind === "noAnnouncements" ? (
+        <g>
+          <path d="M52 140c-12-7-17-20-13-29 4-9 16-2 19 11 3 9-1 16-6 18Z" fill={`url(#${uid}-leaf)`} />
+          {/* Handle */}
+          <rect x="74" y="106" width="34" height="14" rx="7" transform="rotate(-16 74 106)" fill={`url(#${uid}-lav-soft)`} />
+          {/* Megaphone cone */}
+          <path d="M96 60l58-24c8-3 15 3 15 11v66c0 8-7 14-15 11L96 100V60Z" fill={`url(#${uid}-lav)`} />
+          <path d="M104 68l46-19v56l-46-19V68Z" fill={`url(#${uid}-paper)`} />
+          <path d="M96 60v40l-14 6c-6 2-11-2-11-8V62c0-6 5-10 11-8l14 6Z" fill={`url(#${uid}-lav-soft)`} />
+          {/* Quiet sound arcs and a spark */}
+          <path d="M176 74c6 6 6 22 0 28" stroke={`url(#${uid}-lav-soft)`} strokeWidth="5" strokeLinecap="round" />
+          <path d="M188 66c10 10 10 34 0 44" stroke={`url(#${uid}-lav-soft)`} strokeWidth="5" strokeLinecap="round" opacity="0.6" />
+          <circle cx="150" cy="30" r="5" fill={`url(#${uid}-spark)`} />
+        </g>
+      ) : null}
+
+      {kind === "ticketOffline" ? (
+        <g>
+          <path d="M58 141c-13-7-19-20-15-29 4-9 17-3 20 11 3 10-1 16-5 18Z" fill={`url(#${uid}-leaf)`} />
+          {/* Ticket body with a perforated stub */}
+          <rect x="48" y="56" width="124" height="66" rx="16" fill={`url(#${uid}-lav)`} />
+          <rect x="56" y="66" width="44" height="20" rx="8" fill={`url(#${uid}-paper)`} />
+          <rect x="56" y="94" width="30" height="7" rx="3.5" fill="white" fillOpacity="0.5" />
+          <rect x="56" y="105" width="20" height="6" rx="3" fill="white" fillOpacity="0.32" />
+          <path d="M112 60v58" stroke="white" strokeOpacity="0.4" strokeWidth="2.5" strokeDasharray="4 5" />
+          <rect x="122" y="70" width="38" height="38" rx="8" fill={`url(#${uid}-paper)`} />
+          <rect x="129" y="77" width="8" height="8" rx="2" fill={`url(#${uid}-lav)`} />
+          <rect x="145" y="77" width="8" height="8" rx="2" fill={`url(#${uid}-lav)`} />
+          <rect x="129" y="93" width="8" height="8" rx="2" fill={`url(#${uid}-lav)`} />
+          <rect x="145" y="93" width="8" height="8" rx="2" fill={`url(#${uid}-spark)`} />
+          {/* Offline slash */}
+          <path d="M160 40l30 26" stroke={`url(#${uid}-coral)`} strokeWidth="7" strokeLinecap="round" />
+          <circle cx="158" cy="38" r="13" fill={`url(#${uid}-paper)`} stroke="#E1E3F1" strokeWidth="2" />
+          <path d="M151 33c4-4 10-4 14 0m-11 6c2-2 6-2 8 0" stroke={`url(#${uid}-lav)`} strokeWidth="2.6" strokeLinecap="round" />
+          <path d="M150 44l16-16" stroke={`url(#${uid}-coral)`} strokeWidth="2.6" strokeLinecap="round" />
         </g>
       ) : null}
     </svg>
