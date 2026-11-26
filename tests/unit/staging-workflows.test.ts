@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -24,6 +25,19 @@ describe("staging-only workflows", () => {
     }
     expect(workflow("staging-announcements.yml")).toContain('github.ref == \'refs/heads/main\'');
     expect(workflow("staging-verify.yml")).toContain("scripts/check-vercel-env.mjs --target=production");
+  });
+
+  it("runs the bootstrap CLI and refuses a non-staging invocation before touching services", () => {
+    const env: NodeJS.ProcessEnv = { ...process.env };
+    delete env.DEPLOY_ENVIRONMENT;
+    const result = spawnSync(process.execPath, ["--import", "tsx", "scripts/staging-bootstrap.ts"], {
+      cwd: process.cwd(),
+      env,
+      encoding: "utf8",
+      timeout: 20_000,
+    });
+    expect(result.status).not.toBe(0);
+    expect(`${result.stdout ?? ""}${result.stderr ?? ""}`).toContain("DEPLOY_ENVIRONMENT");
   });
 
   it("fails the deploy when runtime and migration databases disagree", () => {
