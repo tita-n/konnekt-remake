@@ -126,6 +126,7 @@ jobs:
       SMOKE_PROTECTION_BYPASS: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -138,3 +139,8 @@ jobs:
       - name: Show redacted runtime errors
         if: failure()
         run: node scripts/vercel-logs.mjs "${{ needs.deploy.outputs.url }}"
+      - name: Show database schema facts
+        if: failure()
+        env:
+          DATABASE_URL: ${{ secrets.DIRECT_URL }}
+        run: node scripts/staging-db-diagnose.mjs

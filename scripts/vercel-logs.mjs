@@ -9,6 +9,7 @@ if (!idOrUrl) {
 }
 const token = process.env.VERCEL_TOKEN;
 const teamId = process.env.VERCEL_ORG_ID;
+const projectId = process.env.VERCEL_PROJECT_ID;
 if (!token) {
   console.error("VERCEL_TOKEN is not available.");
   process.exit(1);
@@ -36,8 +37,22 @@ async function resolveDeployment(withTeam) {
   return { response, body };
 }
 
-let { response: deploymentResponse, body: deployment } = await resolveDeployment(true);
-if (deploymentResponse.status === 404 && team) {
+let deploymentResponse;
+let deployment;
+if (projectId) {
+  const listed = await fetch(
+    `https://api.vercel.com/v6/deployments?projectId=${encodeURIComponent(projectId)}&limit=10${team ? `&${team}` : ""}`,
+    { headers: auth },
+  );
+  const list = await listed.json().catch(() => ({}));
+  const candidates = Array.isArray(list?.deployments) ? list.deployments : [];
+  deployment = candidates.find((entry) => entry?.readyState === "READY") ?? candidates[0];
+  deploymentResponse = { ok: listed.ok && Boolean(deployment?.id), status: listed.status };
+}
+({ response: deploymentResponse, body: deployment } = deploymentResponse
+  ? { response: deploymentResponse, body: deployment }
+  : await resolveDeployment(true));
+if (!deploymentResponse.ok && deploymentResponse.status === 404 && team) {
   ({ response: deploymentResponse, body: deployment } = await resolveDeployment(false));
 }
 if (!deploymentResponse.ok || !deployment?.id) {
