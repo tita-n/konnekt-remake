@@ -115,7 +115,10 @@ jobs:
     runs-on: ubuntu-24.04
     environment: staging
     env:
-      SMOKE_BASE_URL: ${{ needs.deploy.outputs.url }}
+      # Smoke the public staging domain. Deployment URLs are protected by
+      # Vercel Authentication and correctly 302 to login when no bypass secret
+      # is configured; protection must not be disabled for a smoke test.
+      SMOKE_BASE_URL: ${{ secrets.APP_URL }}
       SMOKE_TEST_EMAIL: ${{ secrets.SMOKE_TEST_EMAIL }}
       SMOKE_TEST_PASSWORD: ${{ secrets.SMOKE_TEST_PASSWORD }}
       SMOKE_PUBLIC_POST_PATH: ${{ secrets.SMOKE_PUBLIC_POST_PATH }}

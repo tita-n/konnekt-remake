@@ -56,6 +56,19 @@ moved to 26.04 while the project pins Playwright 1.56.1.
 `ubuntu-24.04`, matching the existing CI. **Guard:**
 `tests/unit/staging-workflows.test.ts` asserts the pinned runners.
 
+## 2026-11-26 — smoke hit Vercel Deployment Protection
+
+**Symptom:** deployment succeeded, then every smoke request returned HTTP 302.
+
+The smoke job used the raw deployment URL
+(`konnekt-remake-*.vercel.app`), which is protected by Vercel Authentication.
+The public staging domain (`APP_URL`) is the user-facing site and was already
+healthy.
+
+**Fix:** smoke the public staging domain instead of disabling Deployment
+Protection or inventing a bypass. **Guard:** `tests/unit/staging-workflows.test.ts`
+asserts smoke uses `secrets.APP_URL`, not the protected deployment URL.
+
 ## 2026-11-26 — startup validation stopped at the first bad variable
 
 **Symptom:** the reported production 500 named only `APP_URL`, so every other
