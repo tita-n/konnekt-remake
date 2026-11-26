@@ -232,11 +232,11 @@ export function AnnouncementComposer({
       </div>
 
       {canCritical ? (
-        <label className="flex items-start gap-2 rounded-card border border-highlight/50 bg-highlight-soft/40 p-3 text-small text-fg">
-          <input type="checkbox" checked={critical} onChange={(change) => setCritical(change.target.checked)} className="mt-0.5 size-5 accent-[var(--highlight)]" />
+        <label className="flex cursor-pointer items-start gap-2 rounded-card border-2 border-danger/55 bg-danger-soft p-3 text-small text-fg transition-colors">
+          <input type="checkbox" checked={critical} onChange={(change) => setCritical(change.target.checked)} className="mt-0.5 size-5 accent-[var(--danger-btn)]" />
           <span>
             <span className="flex items-center gap-1 font-semibold">
-              <AlertTriangle aria-hidden="true" className="size-4 text-highlight-fg" />
+              <AlertTriangle aria-hidden="true" className="size-4 shrink-0 text-danger" />
               Critical announcement
             </span>
             <span className="mt-0.5 block text-tiny text-fg-muted">
@@ -259,7 +259,7 @@ export function AnnouncementComposer({
                 type="button"
                 onClick={() => setAttachments((current) => current.filter((_, position) => position !== index))}
                 aria-label={`Remove ${attachment.name}`}
-                className="inline-flex size-8 items-center justify-center rounded-full text-fg-muted hover:bg-surface-2"
+                className="inline-flex size-11 shrink-0 items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
               >
                 <Trash2 aria-hidden="true" className="size-4" />
               </button>
@@ -267,7 +267,7 @@ export function AnnouncementComposer({
           ))}
         </ul>
         {mode === "create" ? (
-          <label className="mt-2 inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-button border border-border px-3 text-small font-semibold text-fg hover:bg-surface-2">
+          <label className="mt-2 inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-button border border-border px-3 text-small font-semibold text-fg transition-colors hover:bg-surface-2 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus">
             <Paperclip aria-hidden="true" className="size-4" />
             {uploading ? "Uploading…" : "Attach a PDF"}
             <input
@@ -293,7 +293,7 @@ export function AnnouncementComposer({
               { value: "draft", label: "Save as draft" },
             ] as const
           ).map((option) => (
-            <label key={option.value} className="flex min-h-10 items-center gap-2 text-small text-fg">
+            <label key={option.value} className="flex min-h-11 cursor-pointer items-center gap-2 rounded-button px-1 text-small text-fg transition-colors hover:bg-surface-2 focus-within:bg-surface-2">
               <input
                 type="radio"
                 name="publish-mode"
