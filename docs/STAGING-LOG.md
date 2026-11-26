@@ -3,6 +3,53 @@
 Real failures found while bringing staging up, with the fix and its guard. No
 secret values appear here.
 
+## 2026-11-26 — staged database repaired; health and signup recovered
+
+**Symptom:** after the provider values were corrected, the previously deployed
+build still returned `503` with `schemaReady: false`, and `/signup` returned
+`500`.
+
+**Root cause:** Vercel environment changes do not reach an already-built
+deployment. The runtime was still using the old, wrong `DATABASE_URL`.
+
+**Fix:** the Deploy workflow re-ran, confirmed the runtime and migration URLs
+agree, migrated the staging branch and deployed remotely. Health is now `200`,
+`/signup` is `200` and the public preview is `200`. The app was always using
+the **Neon staging branch**; the Vercel Production label is just the deployment
+slot for `konnekt-remake.vercel.app`, not permission to use the production
+database.
+
+## 2026-11-26 — private ID-image links never expired
+
+**Symptom:** the real-service check waited past the signed URL's expiry and the
+image was still readable.
+
+**Root cause:** `scripts/staging-verify.mjs` and production's
+`signedPrivateUrl()` both used `cloudinary.url({ expires_at })`. The Cloudinary
+SDK silently ignores `expires_at` in `url()`, so the link was signed but had no
+expiry at all.
+
+**Fix:** both now use `cloudinary.utils.private_download_url()`, which binds
+`expires_at` into the request signature. **Guard:**
+`tests/unit/private-url.test.ts` checks the expiry parameter, the signed
+download path and that changing the lifetime changes the signature. The staging
+check now signs the same way production does, so it tests the real mechanism.
+
+## 2026-11-26 — generic event preview inherited Open Graph tags
+
+**Symptom:** `/e/<unknown>` returned the generic “This event is private” card
+with the root layout's site-wide Open Graph metadata.
+
+**Root cause:** the no-preview metadata branch set robots tags but did not
+override `openGraph`/`twitter`, so Next.js inherited the root card. An opted-in
+PUBLIC event intentionally has its own share card; the generic/private fallback
+must have none.
+
+**Fix:** `/e/[id]` now sets `openGraph: null` and `twitter: null` only on the
+private/missing fallback. **Guard:** the E2E privacy test checks the generic
+event page has no OG tags and is `noindex`; opted-in public event cards still
+work as designed.
+
 ## 2026-11-26 — first Deploy run failed before validation
 
 **Symptom:** the run stopped in `Validate deployment environment` with

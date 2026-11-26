@@ -24,6 +24,13 @@ test("public share preview reveals no author, counts or metadata", async ({ page
     expect(levelHtml).not.toContain("Aisha Bello");
     expect(levelHtml).not.toContain("deterministic e2e campus feed");
     expect(levelHtml).not.toMatch(/<meta[^>]+property=["']og:/i);
+
+    const eventResponse = await page.goto("/e/00000000-0000-4000-8000-000000000000");
+    expect(eventResponse?.status()).toBe(200);
+    const eventHtml = await page.content();
+    expect(eventHtml).toContain("This event is private");
+    expect(eventHtml).not.toMatch(/<meta[^>]+property=["']og:/i);
+    expect(eventHtml).toContain("noindex");
   } finally {
     await db.$disconnect();
   }

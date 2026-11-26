@@ -196,11 +196,12 @@ await check("Cloudinary signed private image access, expiry and deletion", async
     "image",
   );
   try {
-    const signed = cloudinary.url(uploaded.public_id, {
-      type: "authenticated",
-      sign_url: true,
-      secure: true,
+    // Match production: private_download_url binds expires_at into the
+    // signature. cloudinary.url() ignores expires_at entirely.
+    const signed = cloudinary.utils.private_download_url(uploaded.public_id, "", {
       resource_type: "image",
+      type: "authenticated",
+      attachment: true,
       expires_at: Math.floor(Date.now() / 1000) + 6,
     });
     const signedResponse = await fetch(signed, { cache: "no-store" });
@@ -218,11 +219,10 @@ await check("Cloudinary signed private image access, expiry and deletion", async
       invalidate: true,
     });
   }
-  const afterDelete = cloudinary.url(uploaded.public_id, {
-    type: "authenticated",
-    sign_url: true,
-    secure: true,
+  const afterDelete = cloudinary.utils.private_download_url(uploaded.public_id, "", {
     resource_type: "image",
+    type: "authenticated",
+    attachment: true,
     expires_at: Math.floor(Date.now() / 1000) + 300,
   });
   const deleted = await fetch(afterDelete, { cache: "no-store" });
