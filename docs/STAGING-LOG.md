@@ -56,6 +56,27 @@ moved to 26.04 while the project pins Playwright 1.56.1.
 `ubuntu-24.04`, matching the existing CI. **Guard:**
 `tests/unit/staging-workflows.test.ts` asserts the pinned runners.
 
+## 2026-11-26 — Cloudinary key cannot create assets
+
+**Symptom:** the real-service verification uploaded a signed authenticated image
+and got HTTP 403:
+`Request forbidden due to missing permissions (actions=["create"])`.
+
+**Root cause:** the staging Cloudinary API key is restricted and lacks the
+`create` permission. Signing itself was accepted; the account policy refused the
+upload.
+
+**Status:** blocked on the environment owner creating/using a Cloudinary key
+with upload (`create`) permission for the staging cloud. No check was weakened
+or skipped. The verification reports the provider's static reason only.
+
+## 2026-11-26 — bootstrap succeeded
+
+`Staging bootstrap` created Nova University with all 15 academic nodes and the
+first platform admin, then sent the normal 30-minute password-set link through
+Resend to `EMAIL_REDIRECT_TO`. It wrote the `staging.bootstrap` audit entry. A
+second run is intentionally a no-op for the tenant, role and email.
+
 ## 2026-11-26 — runtime database was not the migrated database
 
 **Symptom:** health passed, `/e/...` worked, but `/p/...` returned 500 with
