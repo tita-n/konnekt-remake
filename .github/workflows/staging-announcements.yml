@@ -1,0 +1,48 @@
+name: Staging announcement scheduler
+
+# Optional. Staging-only by construction: this workflow names the staging
+# environment and refuses to run from a non-main ref. If the secret is absent,
+# it records a notice and exits successfully because scheduled publishing also
+# happens lazily when a student reads the feed.
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: staging-announcements
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish due announcements
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      APP_URL: ${{ secrets.APP_URL }}
+      ANNOUNCEMENT_CRON_SECRET: ${{ secrets.ANNOUNCEMENT_CRON_SECRET }}
+    steps:
+      - name: Call the cron endpoint
+        run: |
+          set -euo pipefail
+          if [ -z "${ANNOUNCEMENT_CRON_SECRET:-}" ]; then
+            echo "::notice title=Announcement scheduler skipped::ANNOUNCEMENT_CRON_SECRET is not set in the staging environment."
+            exit 0
+          fi
+          if [ -z "${APP_URL:-}" ]; then
+            echo "::error title=Announcement scheduler misconfigured::APP_URL is not set in the staging environment."
+            exit 1
+          fi
+          status=$(curl -sS -o /tmp/cron-body -w "%{http_code}" -X POST "${APP_URL%/}/api/cron/announcements" \
+            -H "Authorization: Bearer ${ANNOUNCEMENT_CRON_SECRET}" \
+            -H "Cache-Control: no-store")
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "::error title=Announcement scheduler failed::HTTP ${status}"
+            cat /tmp/cron-body
+            exit 1
+          fi
+          echo "Announcement cron accepted (HTTP ${status})."

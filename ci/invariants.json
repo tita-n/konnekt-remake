@@ -224,6 +224,31 @@
       "tests": [
         "the scanner checks in once, reports duplicates and replays an offline scan"
       ]
+    },
+    {
+      "name": "Production configuration reports every problem without a value",
+      "file": "tests/unit/part-a.test.ts",
+      "tests": [
+        "reports every missing required variable in one failure",
+        "reports every malformed value with a name and a reason",
+        "never includes any configured value in a startup error"
+      ]
+    },
+    {
+      "name": "The staging deploy targets the staging project's Production environment",
+      "file": "tests/unit/deploy-workflow.test.ts",
+      "tests": [
+        "installs dev dependencies even though validation runs in production mode",
+        "deploys the staging project's Production environment, never Preview"
+      ]
+    },
+    {
+      "name": "Staging bootstrap refuses production and is idempotent",
+      "file": "tests/integration/staging-bootstrap.test.ts",
+      "tests": [
+        "refuses any environment except explicit staging",
+        "creates the Nova tenant and one must-set-password platform admin, then is safe to rerun"
+      ]
     }
   ]
 }

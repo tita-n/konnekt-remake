@@ -15,11 +15,22 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(): Promise<NextResponse> {
   let database = false;
+  let schemaReady = false;
   try {
     await platformDb.$queryRaw`SELECT 1`;
     database = true;
+    // A reachable database is not necessarily the migrated one. Checking the
+    // Phase 3 tables here turns a wrong DATABASE_URL into a failed readiness
+    // probe instead of a first-request 500.
+    const tables = await platformDb.$queryRaw<Array<{ post: string | null; event: string | null; announcement: string | null }>>`
+      SELECT to_regclass('public."Post"')::text AS post,
+             to_regclass('public."Event"')::text AS event,
+             to_regclass('public."Announcement"')::text AS announcement
+    `;
+    schemaReady = Boolean(tables[0]?.post && tables[0]?.event && tables[0]?.announcement);
   } catch {
     database = false;
+    schemaReady = false;
   }
 
   const adapters = adapterStatus().map(({ service, provider, mode, configured, requiredInProduction }) => ({
@@ -30,12 +41,13 @@ export async function GET(): Promise<NextResponse> {
     requiredInProduction,
   }));
   const servicesReady = env.NODE_ENV !== "production" || adapters.every((adapter) => !adapter.requiredInProduction || adapter.configured);
-  const ok = database && servicesReady;
+  const ok = database && schemaReady && servicesReady;
 
   return NextResponse.json(
     {
       status: ok ? "ok" : "unavailable",
       database,
+      schemaReady,
       environment: env.NODE_ENV,
       services: adapters,
     },

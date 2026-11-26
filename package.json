@@ -27,6 +27,8 @@
     "e2e:db:reset": "tsx scripts/e2e-db.ts reset",
     "check:env": "tsx scripts/check-env.ts",
     "smoke:staging": "node scripts/smoke-staging.mjs",
+    "verify:staging": "node scripts/staging-verify.mjs",
+    "bootstrap:staging": "tsx scripts/staging-bootstrap.ts",
     "check:pwa": "node scripts/check-pwa.mjs",
     "check:test-floor": "node scripts/check-test-floor.mjs",
     "check:ui-guard": "node scripts/check-ui-guard.mjs",

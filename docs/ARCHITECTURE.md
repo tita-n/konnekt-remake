@@ -147,6 +147,7 @@ CI runs quality + integration, e2e, Lighthouse, production security invariants, 
 ## Failure behaviour
 
 - Env validation fails fast at server start in production. During `next build` validation is skipped because runtime secrets are absent by definition.
+- `/api/health` returns 503 unless the runtime database is both reachable and contains the migrated `Post`, `Event` and `Announcement` tables. A pooled URL pointed at the wrong Neon branch cannot masquerade as healthy.
 - Email delivery failures are logged and surfaced where the flow can continue; verification decisions commit before email is attempted.
 - Storage failures abort uploads with a generic message; no partial record is written.
 - Database errors on decisions surface as “Could not save that decision” and never as success.

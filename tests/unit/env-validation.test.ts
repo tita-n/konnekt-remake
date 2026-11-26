@@ -5,6 +5,7 @@ const BASE: Record<string, string> = {
   NODE_ENV: "production",
   APP_URL: "https://konnekt.example",
   DATABASE_URL: "postgresql://user:pass@db.example/konnekt",
+  DIRECT_URL: "postgresql://user:pass@db.example/konnekt",
   AUTH_SECRET: "0123456789abcdef0123456789abcdef01234567",
   TURNSTILE_BYPASS: "0",
   RESEND_API_KEY: "re_test",
@@ -37,6 +38,20 @@ function loadEnv(overrides: Record<string, string | undefined>): { status: numbe
   return { status: result.status ?? 1, output: `${result.stdout ?? ""}${result.stderr ?? ""}` };
 }
 
+function checkDeployEnv(overrides: Record<string, string | undefined>): { status: number; output: string } {
+  const childEnv: NodeJS.ProcessEnv = { ...process.env, ...BASE, ...overrides };
+  delete childEnv.NEXT_PHASE;
+  for (const [key, value] of Object.entries(overrides)) {
+    if (value === undefined) delete childEnv[key];
+  }
+  const result = spawnSync(
+    process.execPath,
+    ["--import", "tsx", "scripts/check-env.ts", "staging"],
+    { cwd: process.cwd(), env: childEnv, encoding: "utf8", timeout: 20_000 },
+  );
+  return { status: result.status ?? 1, output: `${result.stdout ?? ""}${result.stderr ?? ""}` };
+}
+
 describe("production environment validation", () => {
   it("accepts a complete production environment", () => {
     const result = loadEnv({});
@@ -62,6 +77,31 @@ describe("production environment validation", () => {
       expect(result.output).toContain(key);
     });
   }
+
+  it("deploy validation reports all problems at once and never prints values", () => {
+    const secret = "do-not-print-this-value-0123456789abcdef";
+    const result = checkDeployEnv({
+      APP_URL: "https://konnekt.example/",
+      AUTH_SECRET: "short",
+      RESEND_API_KEY: undefined,
+      DIRECT_URL: undefined,
+      CLOUDINARY_API_SECRET: secret,
+    });
+    expect(result.status).not.toBe(0);
+    expect(result.output).toContain("APP_URL");
+    expect(result.output).toContain("trailing slash");
+    expect(result.output).toContain("AUTH_SECRET");
+    expect(result.output).toContain("RESEND_API_KEY");
+    expect(result.output).toContain("DIRECT_URL");
+    expect(result.output).not.toContain("https://konnekt.example/");
+    expect(result.output).not.toContain(secret);
+  });
+
+  it("deploy validation accepts a complete staging environment", () => {
+    const result = checkDeployEnv({});
+    expect(result.status, result.output).toBe(0);
+    expect(result.output).toContain("Environment check passed for staging");
+  });
 
   it("rejects malformed service values and a production Turnstile bypass", () => {
     for (const [key, value] of [
