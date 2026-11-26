@@ -56,14 +56,14 @@ export function MyEvents({ initialTab, initialEvents }: { initialTab: Tab; initi
         {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
         <a
           href="/api/events/ics"
-          className="mt-1 inline-flex min-h-9 items-center gap-1 rounded-button border border-border px-3 text-tiny font-semibold text-fg hover:bg-surface-2"
+          className="mt-1 inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-button border border-border px-3 text-tiny font-semibold text-fg transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus min-h-11"
         >
           <CalendarPlus aria-hidden="true" className="size-4" />
           Export .ics
         </a>
       </header>
 
-      <div className="flex gap-2 overflow-x-auto" role="tablist" aria-label="My event lists">
+      <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4" role="tablist" aria-label="My event lists">
         {TABS.map((entry) => (
           <button
             key={entry.tab}
@@ -71,7 +71,7 @@ export function MyEvents({ initialTab, initialEvents }: { initialTab: Tab; initi
             role="tab"
             aria-selected={tab === entry.tab}
             onClick={() => setTab(entry.tab)}
-            className={`min-h-9 shrink-0 rounded-chip border px-3 text-small font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ${
+            className={`min-h-11 shrink-0 whitespace-nowrap rounded-chip border px-3.5 text-small font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ${
               tab === entry.tab ? "border-accent bg-accent-soft text-accent-soft-fg" : "border-border text-fg-muted hover:bg-surface-2"
             }`}
           >
@@ -83,7 +83,7 @@ export function MyEvents({ initialTab, initialEvents }: { initialTab: Tab; initi
       {loading ? (
         <div className="space-y-3" aria-busy="true" aria-label="Loading your events">
           {[0, 1].map((key) => (
-            <Skeleton key={key} className="h-72 w-full" rounded="rounded-card" />
+            <Skeleton key={key} className="h-[352px] w-full" rounded="rounded-card" />
           ))}
         </div>
       ) : error ? (
@@ -106,14 +106,14 @@ export function MyEvents({ initialTab, initialEvents }: { initialTab: Tab; initi
               <EventCard event={event} rsvpStatus={event.rsvpStatus} />
               <div className="flex items-center gap-2">
                 {event.rsvpStatus === "GOING" && event.checkInEnabled && !event.ended ? (
-                  <ButtonLink href={`/events/${event.id}/ticket`} size="sm" variant="secondary">
+                  <ButtonLink href={`/events/${event.id}/ticket`} size="sm" variant="secondary" className="min-h-11">
                     <Ticket aria-hidden="true" className="size-4" />
                     {event.hasTicket ? "My ticket" : "Get ticket"}
                   </ButtonLink>
                 ) : null}
                 <a
                   href={`/api/events/${event.id}/ics`}
-                  className="inline-flex min-h-8 items-center gap-1 rounded-button px-2 text-tiny font-semibold text-fg-muted underline underline-offset-4"
+                  className="inline-flex min-h-11 items-center gap-1 rounded-button px-2 text-tiny font-semibold text-fg-muted underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                 >
                   Add to calendar
                 </a>

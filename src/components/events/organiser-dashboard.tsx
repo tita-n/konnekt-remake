@@ -143,9 +143,9 @@ export function OrganiserDashboard({
           { label: "Checked in", value: stats.checkedIn },
           { label: "Check-in rate", value: `${stats.checkInRate}%` },
         ].map((stat) => (
-          <div key={stat.label} className="rounded-card border border-border bg-surface p-3">
-            <p className="text-h2 font-extrabold tabular-nums text-fg">{stat.value}</p>
-            <p className="text-tiny text-fg-muted">{stat.label}</p>
+          <div key={stat.label} className="rounded-card border border-border bg-surface px-3 py-2.5">
+            <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.04em] text-fg-subtle">{stat.label}</p>
+            <p className="mt-0.5 font-display text-h2 font-extrabold nums text-fg">{stat.value}</p>
           </div>
         ))}
       </section>
@@ -174,7 +174,7 @@ export function OrganiserDashboard({
           {canExport ? (
             <a
               href={`/api/events/${event.id}/attendees/export`}
-              className="inline-flex min-h-9 items-center gap-1 rounded-button border border-border px-3 text-tiny font-semibold text-fg hover:bg-surface-2"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-button border border-border px-3 text-tiny font-semibold text-fg transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
             >
               <Download aria-hidden="true" className="size-4" />
               Export CSV
@@ -191,7 +191,7 @@ export function OrganiserDashboard({
             value={query}
             onChange={(change) => setQuery(change.target.value)}
             placeholder="Search name, username or department"
-            className="min-h-11 flex-1 bg-transparent text-small text-fg focus:outline-none"
+            className="min-h-12 flex-1 bg-transparent text-small text-fg focus:outline-none"
           />
         </div>
         <div className="no-scrollbar mt-2 flex gap-2 overflow-x-auto" role="group" aria-label="Filter attendees">
@@ -214,7 +214,7 @@ export function OrganiserDashboard({
             <li className="p-4 text-small text-fg-muted">No attendees match yet.</li>
           ) : (
             filtered.map((attendee) => (
-              <li key={attendee.userId} className="flex items-center gap-3 p-3">
+              <li key={attendee.userId} className="flex min-h-16 items-center gap-3 px-3 py-2.5">
                 <Avatar name={attendee.fullName} src={attendee.photoUrl} size="sm" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-small font-semibold text-fg">{attendee.fullName}</p>
@@ -225,11 +225,9 @@ export function OrganiserDashboard({
                   </p>
                 </div>
                 {attendee.checkedInAt ? (
-                  <span className="text-tiny font-semibold text-success">
-                    In at {formatEventTime(attendee.checkedInAt, event.timezone)}
-                  </span>
+                  <span className="success-tile nums inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-chip px-2 py-1 text-[0.6875rem] font-semibold">In at {formatEventTime(attendee.checkedInAt, event.timezone)}</span>
                 ) : (
-                  <span className="text-tiny text-fg-subtle">Not yet</span>
+                  <span className="neutral-tile inline-flex shrink-0 items-center whitespace-nowrap rounded-chip px-2 py-1 text-[0.6875rem] font-semibold">Not yet</span>
                 )}
               </li>
             ))
@@ -261,10 +259,13 @@ export function OrganiserDashboard({
                 <Avatar name={member.user.fullName} src={member.user.photoUrl} size="sm" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-small font-semibold text-fg">{member.user.fullName}</p>
-                  <p className="text-tiny text-fg-muted">{member.role === "HOST" ? "Host" : "Check-in"}</p>
+                  <p className="text-tiny text-fg-muted">@{member.user.username}</p>
                 </div>
+                <span className="neutral-tile inline-flex shrink-0 items-center whitespace-nowrap rounded-chip px-2 py-1 text-[0.6875rem] font-semibold">
+                  {member.role === "HOST" ? "Host" : "Check-in"}
+                </span>
                 {canManageStaff ? (
-                  <Button size="sm" variant="ghost" onClick={() => void removeStaff(member.user.id)} disabled={busy}>
+                  <Button size="sm" variant="ghost" className="min-h-11 shrink-0" onClick={() => void removeStaff(member.user.id)} disabled={busy}>
                     Remove
                   </Button>
                 ) : null}
@@ -321,7 +322,7 @@ export function OrganiserDashboard({
               value={staffQuery}
               onChange={(change) => setStaffQuery(change.target.value)}
               placeholder="Search by name or username"
-              className="min-h-11 flex-1 bg-transparent text-small text-fg focus:outline-none"
+              className="min-h-12 flex-1 bg-transparent text-small text-fg focus:outline-none"
             />
           </div>
           <ul className="divide-y divide-border">
@@ -348,17 +349,39 @@ export function OrganiserDashboard({
   );
 }
 
+/*
+ * A 14-day sparkline drawn as inline SVG: one path, no runtime image requests
+ * and no layout shift. The fixed height reserves the space before it paints.
+ */
 function TrendChart({ points }: { points: Array<{ date: string; value: number }> }) {
   if (points.length === 0) return <p className="mt-2 text-tiny text-fg-muted">No activity yet.</p>;
   const max = Math.max(...points.map((point) => point.value), 1);
+  const width = 280;
+  const height = 72;
+  const step = points.length > 1 ? width / (points.length - 1) : width;
+  const coords = points.map((point, index) => [index * step, height - (point.value / max) * (height - 8) - 2] as const);
+  const line = coords.map(([x, y], index) => `${index === 0 ? "M" : "L"}${x.toFixed(1)} ${y.toFixed(1)}`).join(" ");
+  const area = `${line} L${width} ${height} L0 ${height} Z`;
+  const summary = points.map((point) => `${point.date.slice(8)}: ${point.value}`).join(", ");
   return (
-    <div className="mt-2 flex h-24 items-end gap-1" role="img" aria-label="Daily activity chart">
-      {points.map((point) => (
-        <div key={point.date} className="flex flex-1 flex-col items-center gap-1">
-          <div className="w-full rounded-t-[3px] bg-accent-soft" style={{ height: `${Math.max(4, (point.value / max) * 72)}px` }} />
-          <span className="text-[0.5rem] text-fg-subtle">{point.date.slice(8)}</span>
-        </div>
-      ))}
+    <div className="mt-2">
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        preserveAspectRatio="none"
+        className="h-[72px] w-full"
+        role="img"
+        aria-label={`Daily activity chart: ${summary}`}
+      >
+        <path d={area} className="fill-accent-soft" />
+        <path d={line} fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        {coords.map(([x, y]) => (
+          <circle key={`${x}`} cx={x} cy={y} r="2" fill="var(--accent)" />
+        ))}
+      </svg>
+      <div className="mt-1 flex justify-between text-[0.625rem] text-fg-subtle" aria-hidden="true">
+        <span>{points[0]?.date.slice(8)}</span>
+        <span>{points[points.length - 1]?.date.slice(8)}</span>
+      </div>
     </div>
   );
 }

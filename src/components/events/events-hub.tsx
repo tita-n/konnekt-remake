@@ -121,7 +121,7 @@ function CalendarGrid({
               {cell.day}
               {byDay.get(cell.key) ? (
                 <span
-                  className={cn("mt-0.5 size-1.5 rounded-full", selectedDay === cell.key ? "bg-accent-fg" : "bg-accent-ink")}
+                  className={cn("mt-0.5 size-[5px] rounded-full", selectedDay === cell.key ? "bg-accent-fg" : "bg-accent-ink")}
                   aria-hidden="true"
                 />
               ) : null}
@@ -246,7 +246,7 @@ export function EventsHub({
         ) : loading ? (
           <div className="space-y-3" aria-busy="true" aria-label="Loading events">
             {[0, 1, 2].map((key) => (
-              <Skeleton key={key} className="h-72 w-full" rounded="rounded-card" />
+              <Skeleton key={key} className="h-[352px] w-full" rounded="rounded-card" />
             ))}
           </div>
         ) : tab === "calendar" ? (
@@ -286,15 +286,18 @@ export function EventsHub({
         ) : (
           <div className="space-y-6">
             {tab === "for-you" && feed.happeningNow.length > 0 ? (
-              <section aria-labelledby="happening-now">
+              <section
+                aria-labelledby="happening-now"
+                className="rounded-card border border-[color-mix(in_srgb,var(--highlight)_40%,transparent)] bg-highlight-soft p-3"
+              >
                 <h2 id="happening-now" className="mb-2 flex items-center gap-2 text-h3 text-fg">
-                  <span className="inline-flex items-center gap-1 rounded-chip bg-highlight-soft px-2 py-0.5 text-[0.6875rem] font-extrabold uppercase tracking-wide text-highlight-fg">
-                    <span className="size-1.5 rounded-full bg-highlight" aria-hidden="true" />
+                  <span className="inline-flex items-center gap-1 rounded-chip bg-highlight px-1.5 py-0.5 text-[0.6875rem] font-extrabold uppercase tracking-[0.04em] text-highlight-fg">
+                    <span className="size-1.5 rounded-full bg-highlight-fg" aria-hidden="true" />
                     Live
                   </span>
                   Happening now
                 </h2>
-                <div className="no-scrollbar flex gap-3 overflow-x-auto pb-1">
+                <div className="no-scrollbar -mx-3 flex gap-3 overflow-x-auto px-3 pb-1">
                   {feed.happeningNow.map((event) => (
                     <EventCard
                       key={event.id}
@@ -357,7 +360,7 @@ export function EventsHub({
                     setLoading(false);
                   }
                 }}
-                className="mx-auto flex min-h-11 items-center gap-2 rounded-button border border-border px-4 text-small font-semibold text-fg hover:bg-surface-2"
+                className="mx-auto flex min-h-12 items-center gap-2 rounded-button border border-border px-4 text-small font-semibold text-fg transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
               >
                 <RefreshCw aria-hidden="true" className="size-4" />
                 Load more
