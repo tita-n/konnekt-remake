@@ -124,6 +124,8 @@ jobs:
       SMOKE_PUBLIC_POST_PATH: ${{ secrets.SMOKE_PUBLIC_POST_PATH }}
       SMOKE_PRIVATE_MARKER: ${{ secrets.SMOKE_PRIVATE_MARKER }}
       SMOKE_PROTECTION_BYPASS: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -133,3 +135,6 @@ jobs:
       - run: npm ci --include=dev
       - run: npx playwright install --with-deps chromium
       - run: npm run smoke:staging -- "$SMOKE_BASE_URL"
+      - name: Show redacted runtime errors
+        if: failure()
+        run: node scripts/vercel-logs.mjs "${{ needs.deploy.outputs.url }}"
