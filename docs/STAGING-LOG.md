@@ -3,6 +3,20 @@
 Real failures found while bringing staging up, with the fix and its guard. No
 secret values appear here.
 
+## 2026-11-26 — smoke login is manual because Turnstile is real
+
+With `SMOKE_TEST_EMAIL` and `SMOKE_TEST_PASSWORD` present, the smoke run
+reached `/login` but the submit button stayed disabled because the real
+Turnstile challenge cannot be completed by headless CI. This is not a bad
+credential or a cookie regression. The smoke script now waits briefly, detects
+the rendered Turnstile widget and reports a manual-only skip; a disabled button
+without a Turnstile widget still fails the run. Production Turnstile was not
+weakened or bypassed.
+
+The scheduler is now green: run `45884050982` returned HTTP 200 after the
+exact-same `ANNOUNCEMENT_CRON_SECRET` was set in GitHub staging and Vercel
+Production.
+
 ## 2026-11-26 — final staging verification is green
 
 After the database redeploy and the private-URL fix, Deploy run `45878826316`
@@ -11,11 +25,11 @@ remote Vercel deployment and smoke. Verification run `45879563844` passed all
 **11** real-service checks and all **12** Vercel variable-name checks; smoke
 passed with health and the public preview at 200.
 
-The account smoke login remains skipped because `SMOKE_TEST_EMAIL` and
-`SMOKE_TEST_PASSWORD` are not set. The scheduler probe run `45879936349`
-returned HTTP 401, so the GitHub staging and Vercel Production
-`ANNOUNCEMENT_CRON_SECRET` values still differ; both must be set to the exact
-same value and Vercel redeployed.
+At that point the account smoke login was skipped because `SMOKE_TEST_EMAIL`
+and `SMOKE_TEST_PASSWORD` were not set, and scheduler probe `45879936349`
+returned HTTP 401 because the cron secrets differed. Both were addressed in
+the entries above: the scheduler is green, and the login now reaches the real
+Turnstile challenge and is reported as a manual-only check.
 
 ## 2026-11-26 — staged database repaired; health and signup recovered
 
