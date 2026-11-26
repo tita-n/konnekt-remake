@@ -65,14 +65,34 @@ if (process.env.SMOKE_TEST_EMAIL && process.env.SMOKE_TEST_PASSWORD) {
     await page.goto("/login");
     await page.getByLabel("Email or username").fill(process.env.SMOKE_TEST_EMAIL);
     await page.getByLabel("Password", { exact: true }).fill(process.env.SMOKE_TEST_PASSWORD);
-    await page.getByRole("button", { name: "Log in" }).click();
-    await page.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 30_000 });
-    const cookies = await context.cookies();
-    const session = cookies.find((cookie) => cookie.name === "konnekt_session");
-    const csrf = cookies.find((cookie) => cookie.name === "konnekt_csrf");
-    check(Boolean(session), "login sets the session cookie");
-    check(session?.httpOnly === true && session?.secure === true && session?.sameSite === "Lax", "session cookie is httpOnly, Secure, SameSite=Lax");
-    check(Boolean(csrf) && csrf?.httpOnly === false, "CSRF cookie is readable");
+    const loginButton = page.getByRole("button", { name: "Log in" });
+    let enabled = await loginButton.isEnabled();
+    for (let attempt = 0; attempt < 20 && !enabled; attempt += 1) {
+      await page.waitForTimeout(500);
+      enabled = await loginButton.isEnabled();
+    }
+    if (!enabled) {
+      // A real Turnstile key intentionally blocks automation. Only skip when
+      // the challenge widget is actually present; a disabled button without it
+      // is a real UI failure.
+      const challenge = page.locator(
+        'iframe[src*="challenges.cloudflare.com"], input[name="cf-turnstile-response"]',
+      );
+      if ((await challenge.count()) > 0) {
+        console.log("skip real login: Turnstile requires a real browser; verify login and cookie flags manually.");
+      } else {
+        check(false, "login button stayed disabled without a Turnstile challenge");
+      }
+    } else {
+      await loginButton.click();
+      await page.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 30_000 });
+      const cookies = await context.cookies();
+      const session = cookies.find((cookie) => cookie.name === "konnekt_session");
+      const csrf = cookies.find((cookie) => cookie.name === "konnekt_csrf");
+      check(Boolean(session), "login sets the session cookie");
+      check(session?.httpOnly === true && session?.secure === true && session?.sameSite === "Lax", "session cookie is httpOnly, Secure, SameSite=Lax");
+      check(Boolean(csrf) && csrf?.httpOnly === false, "CSRF cookie is readable");
+    }
   } finally {
     await browser.close();
   }
