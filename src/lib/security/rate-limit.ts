@@ -2,6 +2,7 @@ import "server-only";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { env, hasRedis, isProduction } from "@/lib/env";
+import { recordRedisCommand } from "@/lib/perf/trace";
 
 /**
  * Sliding-window rate limits. Redis in deployed environments; an in-process
@@ -140,7 +141,9 @@ async function limitInternal(name: PolicyName, policy: Policy, identifier: strin
     return memoryLimit(`${name}:${identifier}`, policy);
   }
   try {
+    const start = process.hrtime.bigint();
     const result = await limiter.limit(identifier);
+    recordRedisCommand(Number(process.hrtime.bigint() - start) / 1_000_000);
     return {
       success: result.success,
       remaining: result.remaining,
@@ -158,7 +161,10 @@ async function limitInternal(name: PolicyName, policy: Policy, identifier: strin
 export async function resetRateLimit(name: PolicyName, identifier: string): Promise<void> {
   const limiter = limiterFor(name, POLICIES[name]);
   if (limiter) {
-    await limiter.resetUsedTokens(identifier).catch(() => undefined);
+    const start = process.hrtime.bigint();
+    await limiter.resetUsedTokens(identifier)
+      .catch(() => undefined)
+      .finally(() => recordRedisCommand(Number(process.hrtime.bigint() - start) / 1_000_000));
   } else {
     memory.delete(`${name}:${identifier}`);
   }

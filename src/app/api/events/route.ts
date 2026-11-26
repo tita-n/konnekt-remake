@@ -2,10 +2,15 @@ import type { NextRequest } from "next/server";
 import { apiError, noStore, readJson, socialApi } from "@/lib/api/social";
 import { isEventCategory, type EventAudienceKind, type EventCategory } from "@/lib/domain/events";
 import { createEvent, listEvents, type EventListTab } from "@/lib/services/events";
+import { withPerfTrace } from "@/lib/perf/trace";
 
 const AUDIENCE_KINDS: EventAudienceKind[] = ["PUBLIC", "COLLEGE", "FACULTY", "DEPARTMENT", "LEVEL", "COMMUNITY"];
 
-export async function GET(request: NextRequest) {
+export function GET(request: NextRequest) {
+  return withPerfTrace(request, () => eventsRoute(request));
+}
+
+async function eventsRoute(request: NextRequest) {
   const context = await socialApi(request);
   if ("response" in context) return context.response;
   try {

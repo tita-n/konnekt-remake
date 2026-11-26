@@ -2,8 +2,13 @@ import type { NextRequest } from "next/server";
 import { apiError, noStore, readJson, socialApi } from "@/lib/api/social";
 import { isEventCategory } from "@/lib/domain/events";
 import { cancelEvent, getEventDetail, updateEvent } from "@/lib/services/events";
+import { withPerfTrace } from "@/lib/perf/trace";
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  return withPerfTrace(request, () => eventDetailRoute(request, { params }));
+}
+
+async function eventDetailRoute(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const context = await socialApi(request);
   if ("response" in context) return context.response;
   try {

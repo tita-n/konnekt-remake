@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { apiError, noStore, readJson, socialApi } from "@/lib/api/social";
 import { COMMUNITY_CATEGORIES, type CommunityCategory } from "@/lib/domain/community";
 import { createCommunity, listDiscoverCommunities } from "@/lib/services/communities";
+import { withPerfTrace } from "@/lib/perf/trace";
 
 function category(value: unknown): CommunityCategory | null {
   return typeof value === "string" && COMMUNITY_CATEGORIES.some((entry) => entry.value === value)
@@ -9,7 +10,11 @@ function category(value: unknown): CommunityCategory | null {
     : null;
 }
 
-export async function GET(request: NextRequest) {
+export function GET(request: NextRequest) {
+  return withPerfTrace(request, () => communitiesRoute(request));
+}
+
+async function communitiesRoute(request: NextRequest) {
   const context = await socialApi(request);
   if ("response" in context) return context.response;
   try {
