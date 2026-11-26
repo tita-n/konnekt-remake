@@ -93,12 +93,24 @@ await check("manifest and service worker are served", async () => {
 });
 
 await check("public share previews stay private", async () => {
-  for (const path of ["/p/00000000-0000-4000-8000-000000000000", "/e/00000000-0000-4000-8000-000000000000"]) {
-    const response = await request(path);
-    const html = await response.text();
-    assert(response.status < 500, `${path} returned HTTP ${response.status}`);
-    assert(/noindex/i.test(html), `${path} is not noindex`);
-    assert(!/<meta[^>]+property=["']og:/i.test(html), `${path} exposes Open Graph metadata`);
+  // A post preview must not emit any Open Graph metadata at all.
+  const postPath = "/p/00000000-0000-4000-8000-000000000000";
+  const postResponse = await request(postPath);
+  const postHtml = await postResponse.text();
+  assert(postResponse.status < 500, `${postPath} returned HTTP ${postResponse.status}`);
+  assert(/noindex/i.test(postHtml), `${postPath} is not noindex`);
+  assert(!/<meta[^>]+property=["']og:/i.test(postHtml), `${postPath} exposes Open Graph metadata`);
+
+  // An event deliberately falls back to a generic share card. It must still be
+  // noindex and must never expose the event itself, only generic copy.
+  const eventPath = "/e/00000000-0000-4000-8000-000000000000";
+  const eventResponse = await request(eventPath);
+  const eventHtml = await eventResponse.text();
+  assert(eventResponse.status < 500, `${eventPath} returned HTTP ${eventResponse.status}`);
+  assert(/noindex/i.test(eventHtml), `${eventPath} is not noindex`);
+  assert(eventHtml.includes("This event is private"), `${eventPath} is not the generic card`);
+
+  for (const [path, html] of [[postPath, postHtml], [eventPath, eventHtml]]) {
     if (process.env.SMOKE_PRIVATE_MARKER) {
       assert(!html.includes(process.env.SMOKE_PRIVATE_MARKER), `${path} leaks the private marker`);
     }
@@ -196,11 +208,12 @@ await check("Cloudinary signed private image access, expiry and deletion", async
     "image",
   );
   try {
-    const signed = cloudinary.url(uploaded.public_id, {
-      type: "authenticated",
-      sign_url: true,
-      secure: true,
+    // Match production: private_download_url binds expires_at into the
+    // signature. cloudinary.url() ignores expires_at entirely.
+    const signed = cloudinary.utils.private_download_url(uploaded.public_id, "", {
       resource_type: "image",
+      type: "authenticated",
+      attachment: true,
       expires_at: Math.floor(Date.now() / 1000) + 6,
     });
     const signedResponse = await fetch(signed, { cache: "no-store" });
@@ -218,11 +231,10 @@ await check("Cloudinary signed private image access, expiry and deletion", async
       invalidate: true,
     });
   }
-  const afterDelete = cloudinary.url(uploaded.public_id, {
-    type: "authenticated",
-    sign_url: true,
-    secure: true,
+  const afterDelete = cloudinary.utils.private_download_url(uploaded.public_id, "", {
     resource_type: "image",
+    type: "authenticated",
+    attachment: true,
     expires_at: Math.floor(Date.now() / 1000) + 300,
   });
   const deleted = await fetch(afterDelete, { cache: "no-store" });

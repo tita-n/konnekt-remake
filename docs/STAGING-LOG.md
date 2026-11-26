@@ -3,6 +3,53 @@
 Real failures found while bringing staging up, with the fix and its guard. No
 secret values appear here.
 
+## 2026-11-26 — staged database repaired; health and signup recovered
+
+**Symptom:** after the provider values were corrected, the previously deployed
+build still returned `503` with `schemaReady: false`, and `/signup` returned
+`500`.
+
+**Root cause:** Vercel environment changes do not reach an already-built
+deployment. The runtime was still using the old, wrong `DATABASE_URL`.
+
+**Fix:** the Deploy workflow re-ran, confirmed the runtime and migration URLs
+agree, migrated the staging branch and deployed remotely. Health is now `200`,
+`/signup` is `200` and the public preview is `200`. The app was always using
+the **Neon staging branch**; the Vercel Production label is just the deployment
+slot for `konnekt-remake.vercel.app`, not permission to use the production
+database.
+
+## 2026-11-26 — private ID-image links never expired
+
+**Symptom:** the real-service check waited past the signed URL's expiry and the
+image was still readable.
+
+**Root cause:** `scripts/staging-verify.mjs` and production's
+`signedPrivateUrl()` both used `cloudinary.url({ expires_at })`. The Cloudinary
+SDK silently ignores `expires_at` in `url()`, so the link was signed but had no
+expiry at all.
+
+**Fix:** both now use `cloudinary.utils.private_download_url()`, which binds
+`expires_at` into the request signature. **Guard:**
+`tests/unit/private-url.test.ts` checks the expiry parameter, the signed
+download path and that changing the lifetime changes the signature. The staging
+check now signs the same way production does, so it tests the real mechanism.
+
+## 2026-11-26 — verification over-applied the post rule to event cards
+
+**Symptom:** `/e/<unknown>` failed the “public share previews stay private”
+check for exposing Open Graph metadata.
+
+**Root cause:** the check applied the `/p` rule (never emit any Open Graph
+tags) to `/e` as well. Events are different by design: private or missing
+events fall back to a **generic** share card, while an opted-in PUBLIC event
+has its own title/time/venue card. Neither exposes attendee or organiser data.
+
+**Fix:** the verification now requires no OG metadata only for `/p`, and for
+`/e` requires `noindex`, the generic private copy and no private marker. The
+E2E privacy test now checks the same distinction. The event page itself was
+not changed; the generic card is intentional.
+
 ## 2026-11-26 — first Deploy run failed before validation
 
 **Symptom:** the run stopped in `Validate deployment environment` with

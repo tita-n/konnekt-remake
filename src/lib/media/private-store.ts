@@ -63,13 +63,13 @@ export async function putPrivateImage(buffer: Buffer, folder: string): Promise<s
 export function signedPrivateUrl(publicId: string, ttlSeconds = 120): string | null {
   if (publicId.startsWith("local:")) return null;
   if (!configureCloudinary()) return null;
-  return cloudinary.url(publicId, {
-    type: "authenticated",
-    sign_url: true,
-    secure: true,
-    expires_at: Math.floor(Date.now() / 1000) + ttlSeconds,
+  // cloudinary.url() silently ignores expires_at. Use the signed download API,
+  // which binds the expiry into the signature and rejects it afterwards.
+  return cloudinary.utils.private_download_url(publicId, "", {
     resource_type: "image",
-    flags: "attachment",
+    type: "authenticated",
+    attachment: true,
+    expires_at: Math.floor(Date.now() / 1000) + ttlSeconds,
   });
 }
 
