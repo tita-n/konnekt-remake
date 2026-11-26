@@ -16,6 +16,10 @@ const child = spawn(process.execPath, [nextBin, "dev", "-p", port], {
     ...process.env,
     NODE_ENV: "development",
     E2E: "1",
+    // Next dev restarts itself at 80% of the V8 heap limit. The full suite is
+    // long enough to cross the default limit, so give the test server headroom
+    // and keep one process for deterministic navigation timing.
+    NODE_OPTIONS: `${process.env.NODE_OPTIONS ?? ""} --max-old-space-size=6144`.trim(),
     DATABASE_URL: e2eUrl,
     // Keep scripts that inspect the dedicated DB explicit, never the demo URL.
     DEV_DATABASE_URL: process.env.DEV_DATABASE_URL,

@@ -5,6 +5,7 @@ import type { NextRequest } from "next/server";
 import { platformDb } from "@/lib/db/platform";
 import { tenantDb } from "@/lib/db/tenant";
 import { publishDueAnnouncements } from "@/lib/services/announcements";
+import { rateLimit } from "@/lib/security/rate-limit";
 
 function secretMatches(provided: string | null): boolean {
   const expected = process.env.ANNOUNCEMENT_CRON_SECRET;
@@ -16,6 +17,12 @@ function secretMatches(provided: string | null): boolean {
 }
 
 async function run(request: NextRequest) {
+  const forwarded = request.headers.get("x-forwarded-for");
+  const ip = forwarded?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "unknown";
+  const limit = await rateLimit("announcementCron", ip);
+  if (!limit.success) {
+    return Response.json({ error: "Too many requests." }, { status: 429, headers: { "Cache-Control": "no-store" } });
+  }
   const header = request.headers.get("authorization");
   const bearer = header?.startsWith("Bearer ") ? header.slice("Bearer ".length) : null;
   const provided = bearer ?? new URL(request.url).searchParams.get("secret");

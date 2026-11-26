@@ -136,6 +136,31 @@ In Resend → Domains → your domain:
 4. The smoke test checks health, headers, `/design` 404, PWA manifest/service worker, public-preview privacy and (when credentials are set) a real login with cookie flags.
 5. If smoke fails, do not promote. Fix the reported check and rerun the workflow.
 
+## 10. Announcement scheduler
+
+Scheduled announcements need one recurring caller for
+`/api/cron/announcements`. Set `ANNOUNCEMENT_CRON_SECRET` in the staging and
+production environments (at least 32 random bytes, separate per environment),
+and never put it in a public URL that is logged.
+
+Use Vercel Cron or any external scheduler to send a `POST` (or `GET`) every
+minute, for example:
+
+```bash
+curl -fsS -X POST https://staging.example/api/cron/announcements \
+  -H "Authorization: Bearer $ANNOUNCEMENT_CRON_SECRET"
+```
+
+The endpoint accepts a Bearer token or `?secret=` for providers that cannot set
+headers. It compares the secret in constant time, returns a generic 401 for a
+missing or wrong secret, fails closed if the variable is unset in production,
+is limited to 30 calls per 10 minutes per caller and sends `Cache-Control:
+no-store`. A due notice is claimed conditionally, so overlapping cron runs and
+lazy read-time publishing still publish it exactly once. If the scheduler is
+down, reads still publish due notices on demand; the scheduler is not the only
+correctness mechanism. Do not enable Vercel's own cron for this route unless it
+sends the secret.
+
 ## What you must do by hand (minimum)
 
 1. Create the Vercel, Neon, Resend, Cloudinary, Upstash, Turnstile and Sentry accounts.

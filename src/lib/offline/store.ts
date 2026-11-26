@@ -9,9 +9,10 @@ import type { PostView } from "@/lib/posts/types";
  * leaking one student's feed to the next.
  */
 const DB_NAME = "konnekt-offline";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const FEED_STORE = "feeds";
 const OUTBOX_STORE = "outbox";
+const CHECKIN_STORE = "checkins";
 
 export interface CachedFeed {
   userId: string;
@@ -30,6 +31,23 @@ export interface OutboxItem {
   payload: Record<string, unknown>;
 }
 
+/**
+ * A scan captured on a staff device. `id` is the clientScanId sent to the
+ * server, so replaying the same row can never check a student in twice. Rows
+ * are deleted only after the server confirms the scan or a duplicate.
+ */
+export interface QueuedCheckIn {
+  id: string;
+  eventId: string;
+  method: "QR" | "MANUAL";
+  code?: string;
+  userId?: string;
+  createdAt: string;
+  attempts: number;
+  status: "pending" | "failed";
+  error?: string;
+}
+
 function openDb(): Promise<IDBDatabase | null> {
   if (typeof indexedDB === "undefined") return Promise.resolve(null);
   return new Promise((resolve) => {
@@ -38,6 +56,7 @@ function openDb(): Promise<IDBDatabase | null> {
       const db = request.result;
       if (!db.objectStoreNames.contains(FEED_STORE)) db.createObjectStore(FEED_STORE, { keyPath: "userId" });
       if (!db.objectStoreNames.contains(OUTBOX_STORE)) db.createObjectStore(OUTBOX_STORE, { keyPath: "id" });
+      if (!db.objectStoreNames.contains(CHECKIN_STORE)) db.createObjectStore(CHECKIN_STORE, { keyPath: "id" });
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => resolve(null);
@@ -91,6 +110,25 @@ export async function removeOutbox(id: string): Promise<void> {
 
 export async function updateOutbox(item: OutboxItem): Promise<void> {
   await withStore<IDBValidKey>(OUTBOX_STORE, "readwrite", (store) => store.put(item));
+}
+
+export async function enqueueCheckIn(item: QueuedCheckIn): Promise<void> {
+  await withStore<IDBValidKey>(CHECKIN_STORE, "readwrite", (store) => store.put(item));
+}
+
+export async function listQueuedCheckIns(eventId: string): Promise<QueuedCheckIn[]> {
+  const rows = await withStore<QueuedCheckIn[]>(CHECKIN_STORE, "readonly", (store) => store.getAll());
+  return (rows ?? [])
+    .filter((item) => item.eventId === eventId)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+}
+
+export async function updateQueuedCheckIn(item: QueuedCheckIn): Promise<void> {
+  await withStore<IDBValidKey>(CHECKIN_STORE, "readwrite", (store) => store.put(item));
+}
+
+export async function removeQueuedCheckIn(id: string): Promise<void> {
+  await withStore<undefined>(CHECKIN_STORE, "readwrite", (store) => store.delete(id));
 }
 
 /**

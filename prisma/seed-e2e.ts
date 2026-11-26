@@ -4,6 +4,7 @@
  * post that the specs depend on. It refuses production and requires the
  * dedicated e2e database guard.
  */
+import { createHash } from "node:crypto";
 import { PrismaClient, type Prisma } from "@prisma/client";
 import { hash } from "@node-rs/argon2";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -26,6 +27,7 @@ try {
 
 const db = new PrismaClient();
 const ACCENT = "#4F46E5";
+const FIXTURE_CREATED = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
 
 interface NodeSeed {
   key: string;
@@ -81,7 +83,7 @@ async function main() {
       vouchingEnabled: true,
       matricPattern: "^[A-Z]{2,4}/\\d{4}/\\d{3,4}$",
       labels: { college: "College", faculty: "Faculty", department: "Department" },
-      featureFlags: { campusVoice: false, communities: false, events: false, messaging: false },
+      featureFlags: { campusVoice: false, communities: true, events: true, messaging: false },
     },
     create: {
       name: "Nova University",
@@ -94,7 +96,7 @@ async function main() {
       vouchingEnabled: true,
       matricPattern: "^[A-Z]{2,4}/\\d{4}/\\d{3,4}$",
       labels: { college: "College", faculty: "Faculty", department: "Department" },
-      featureFlags: { campusVoice: false, communities: false, events: false, messaging: false },
+      featureFlags: { campusVoice: false, communities: true, events: true, messaging: false },
     },
   });
 
@@ -249,16 +251,7 @@ async function main() {
     level: 300,
     matric: "SWE/2023/0021",
   });
-  await account({
-    email: "otherlevel@nova.edu.ng",
-    username: "tunde_adeyemi",
-    fullName: "Tunde Adeyemi",
-    status: "VERIFIED",
-    departmentKey: "swe",
-    level: 400,
-    matric: "SWE/2022/1187",
-  });
-  await account({
+  const otherDept = await account({
     email: "otherdept@nova.edu.ng",
     username: "ngozi_eze",
     fullName: "Ngozi Eze",
@@ -267,7 +260,16 @@ async function main() {
     level: 300,
     matric: "MEC/2023/0775",
   });
-  await account({
+  const otherLevel = await account({
+    email: "otherlevel@nova.edu.ng",
+    username: "tunde_adeyemi",
+    fullName: "Tunde Adeyemi",
+    status: "VERIFIED",
+    departmentKey: "swe",
+    level: 400,
+    matric: "SWE/2022/1187",
+  });
+  const otherCollege = await account({
     email: "othercollege@nova.edu.ng",
     username: "ibrahim_musa",
     fullName: "Ibrahim Musa",
@@ -364,6 +366,7 @@ async function main() {
       audienceKind: "PUBLIC",
       audiencePath: ["PUBLIC"],
       title: "E2E Robotics Night",
+      createdAt: FIXTURE_CREATED,
       description: "Deterministic event fixture for check-in and ticket flows.",
       category: "TECH",
       startsAt: new Date(Date.now() - 30 * 60 * 1000),
@@ -374,13 +377,199 @@ async function main() {
       capacity: 50,
       waitlistEnabled: true,
       checkInEnabled: true,
-      goingCount: 1,
+      goingCount: 3,
     },
   });
   await db.eventRsvp.upsert({
     where: { eventId_userId: { eventId: e2eEvent.id, userId: student.id } },
     update: {},
     create: { universityId: university.id, eventId: e2eEvent.id, userId: student.id, status: "GOING" },
+  });
+  // Two more attendees with fixed ticket codes let the scanner spec prove a
+  // real, idempotent check-in and an offline replay without reading a QR image.
+  const checkinHash = createHash("sha256").update("E2E_CHECKIN_TICKET_ALPHA_0001").digest("hex");
+  const offlineHash = createHash("sha256").update("E2E_OFFLINE_TICKET_BRAVO_0001").digest("hex");
+  for (const [attendee, codeHash] of [
+    [levelmate, checkinHash],
+    [otherLevel, offlineHash],
+  ] as const) {
+    await db.eventRsvp.upsert({
+      where: { eventId_userId: { eventId: e2eEvent.id, userId: attendee.id } },
+      update: {},
+      create: { universityId: university.id, eventId: e2eEvent.id, userId: attendee.id, status: "GOING" },
+    });
+    await db.eventTicket.upsert({
+      where: { codeHash },
+      update: {},
+      create: { universityId: university.id, eventId: e2eEvent.id, userId: attendee.id, codeHash },
+    });
+  }
+  await db.event.upsert({
+    where: { id: "e2e-event-full" },
+    update: {},
+    create: {
+      id: "e2e-event-full",
+      universityId: university.id,
+      createdById: levelmate.id,
+      organiserKind: "USER",
+      audienceKind: "PUBLIC",
+      audiencePath: ["PUBLIC"],
+      title: "E2E Full Workshop",
+      description: "One seat only, with a waitlist, for the capacity flow.",
+      category: "ACADEMIC",
+      startsAt: new Date(Date.now() + 48 * 60 * 60 * 1000),
+      endsAt: new Date(Date.now() + 50 * 60 * 60 * 1000),
+      timezone: "Africa/Lagos",
+      venueName: "E2E Main Hall",
+      placeId: e2ePlace.id,
+      capacity: 1,
+      waitlistEnabled: true,
+      goingCount: 1,
+      waitlistCount: 1,
+    },
+  });
+  await db.eventRsvp.upsert({
+    where: { eventId_userId: { eventId: "e2e-event-full", userId: student.id } },
+    update: {},
+    create: { universityId: university.id, eventId: "e2e-event-full", userId: student.id, status: "GOING" },
+  });
+  await db.eventRsvp.upsert({
+    where: { eventId_userId: { eventId: "e2e-event-full", userId: levelmate.id } },
+    update: {},
+    create: {
+      universityId: university.id,
+      eventId: "e2e-event-full",
+      userId: levelmate.id,
+      status: "WAITLISTED",
+      waitlistPosition: 1,
+    },
+  });
+  await db.event.upsert({
+    where: { id: "e2e-event-updated" },
+    update: {},
+    create: {
+      id: "e2e-event-updated",
+      universityId: university.id,
+      createdById: student.id,
+      organiserKind: "USER",
+      audienceKind: "PUBLIC",
+      audiencePath: ["PUBLIC"],
+      title: "E2E Updated Event",
+      createdAt: FIXTURE_CREATED,
+      description: "An event with a visible material change log.",
+      category: "TECH",
+      startsAt: new Date(Date.now() + 72 * 60 * 60 * 1000),
+      endsAt: new Date(Date.now() + 74 * 60 * 60 * 1000),
+      timezone: "Africa/Lagos",
+      venueName: "E2E New Hall",
+      placeId: e2ePlace.id,
+      capacity: 40,
+      lastMaterialChangeAt: new Date(Date.now() - 30 * 60 * 1000),
+      materialChanges: [
+        {
+          at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+          fields: ["time", "venue"],
+          previous: { startsAt: new Date(Date.now() + 70 * 60 * 60 * 1000).toISOString(), venueName: "E2E Old Hall" },
+        },
+      ],
+    },
+  });
+  await db.event.upsert({
+    where: { id: "e2e-event-cancel" },
+    update: {},
+    create: {
+      id: "e2e-event-cancel",
+      universityId: university.id,
+      createdById: student.id,
+      organiserKind: "USER",
+      audienceKind: "PUBLIC",
+      audiencePath: ["PUBLIC"],
+      title: "E2E Cancellable Event",
+      createdAt: FIXTURE_CREATED,
+      description: "An event the student organiser can cancel end-to-end.",
+      category: "MEETUP",
+      startsAt: new Date(Date.now() + 96 * 60 * 60 * 1000),
+      endsAt: new Date(Date.now() + 98 * 60 * 60 * 1000),
+      timezone: "Africa/Lagos",
+      venueName: "E2E Main Hall",
+      placeId: e2ePlace.id,
+      capacity: 25,
+    },
+  });
+  await db.event.upsert({
+    where: { id: "e2e-event-private" },
+    update: {},
+    create: {
+      id: "e2e-event-private",
+      universityId: university.id,
+      createdById: levelmate.id,
+      organiserKind: "USER",
+      audienceKind: "PUBLIC",
+      audiencePath: ["PUBLIC"],
+      title: "E2E Private Share Event",
+      description: "This description must not leak through the public share card.",
+      category: "MEETUP",
+      startsAt: new Date(Date.now() + 120 * 60 * 60 * 1000),
+      endsAt: new Date(Date.now() + 122 * 60 * 60 * 1000),
+      timezone: "Africa/Lagos",
+      venueName: "E2E Secret Hall",
+      placeId: e2ePlace.id,
+      capacity: 20,
+      allowOutsideSharing: false,
+    },
+  });
+  const community = await db.community.upsert({
+    where: { universityId_slug: { universityId: university.id, slug: "e2e-robotics-club" } },
+    update: {},
+    create: {
+      universityId: university.id,
+      name: "E2E Robotics Club",
+      nameNormalized: "e2eroboticsclub",
+      slug: "e2e-robotics-club",
+      description: "A deterministic community fixture.",
+      category: "TECH",
+      privacy: "REQUEST",
+      status: "ACTIVE",
+      createdById: admin.id,
+      createdAt: FIXTURE_CREATED,
+      allowMemberEvents: true,
+      memberCount: 2,
+    },
+  });
+  for (const member of [admin, student] as const) {
+    await db.communityMember.upsert({
+      where: { communityId_userId: { communityId: community.id, userId: member.id } },
+      update: { status: "ACTIVE" },
+      create: {
+        universityId: university.id,
+        communityId: community.id,
+        userId: member.id,
+        role: member.id === admin.id ? "OWNER" : "MEMBER",
+        status: "ACTIVE",
+      },
+    });
+  }
+  await db.event.upsert({
+    where: { id: "e2e-event-community" },
+    update: {},
+    create: {
+      id: "e2e-event-community",
+      universityId: university.id,
+      createdById: admin.id,
+      organiserKind: "COMMUNITY",
+      communityId: community.id,
+      audienceKind: "COMMUNITY",
+      audiencePath: [],
+      title: "E2E Community Meetup",
+      description: "Members of the robotics club can see this; outsiders cannot.",
+      category: "TECH",
+      startsAt: new Date(Date.now() + 144 * 60 * 60 * 1000),
+      endsAt: new Date(Date.now() + 146 * 60 * 60 * 1000),
+      timezone: "Africa/Lagos",
+      venueName: "E2E Main Hall",
+      placeId: e2ePlace.id,
+      capacity: 30,
+    },
   });
   await db.event.upsert({
     where: { id: "e2e-event-open" },
@@ -394,6 +583,7 @@ async function main() {
       audiencePath: ["PUBLIC"],
       title: "E2E Open Mic",
       description: "A deterministic event the student can RSVP to in e2e.",
+      allowOutsideSharing: true,
       category: "CULTURAL",
       startsAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
       endsAt: new Date(Date.now() + 26 * 60 * 60 * 1000),
@@ -442,6 +632,24 @@ async function main() {
       publishedAt: new Date(Date.now() - 60 * 60 * 1000),
     },
   });
+  await db.announcement.upsert({
+    where: { id: "e2e-announcement-swe" },
+    update: {},
+    create: {
+      id: "e2e-announcement-swe",
+      universityId: university.id,
+      officialAccountId: e2eOfficial.id,
+      authorId: admin.id,
+      category: "ACADEMIC",
+      title: "E2E Software Engineering departmental notice",
+      body: "Only Software Engineering students should see this notice.",
+      audienceKind: "DEPARTMENT",
+      audiencePath: swePath,
+      status: "PUBLISHED",
+      publishAt: new Date(Date.now() - 60 * 60 * 1000),
+      publishedAt: new Date(Date.now() - 60 * 60 * 1000),
+    },
+  });
 
   // Platform audit needs an actor; keep one harmless bootstrap entry.
   const audit = await db.auditLog.findFirst({
@@ -463,6 +671,8 @@ async function main() {
   void admin;
   void reviewer;
   void lawPath;
+  void otherDept;
+  void otherCollege;
   console.log(`Seeded minimal e2e fixtures (${NODES.length} nodes, 8 students/staff, 2 feed posts).`);
 }
 

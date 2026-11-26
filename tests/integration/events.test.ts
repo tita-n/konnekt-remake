@@ -1,16 +1,28 @@
+import { createHash } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { platformDb } from "@/lib/db/platform";
 import { tenantDb } from "@/lib/db/tenant";
 import type { SocialViewer } from "@/lib/services/social";
 import {
+  addEventComment,
   cancelRsvp,
+  createEvent,
   getEventDetail,
+  getMyEventsForCalendar,
   getPublicEventPreview,
+  listAttendees,
   regenerateTicket,
   checkInAttendee,
   rsvpEvent,
+  updateEvent,
 } from "@/lib/services/events";
-import { publishDueAnnouncements } from "@/lib/services/announcements";
+import {
+  acknowledgeAnnouncement,
+  getAnnouncementAttachment,
+  publishDueAnnouncements,
+} from "@/lib/services/announcements";
+import { POLICIES, rateLimit, __resetMemoryRateLimits } from "@/lib/security/rate-limit";
+import { storeResourceFile } from "@/lib/media/resource-store";
 
 const suffix = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
@@ -133,7 +145,7 @@ beforeAll(async () => {
     select: { id: true },
   });
   users = await Promise.all(
-    [0, 1, 2, 3].map((index) =>
+    [0, 1, 2, 3, 4].map((index) =>
       platformDb.user.create({
         data: {
           ...base,
@@ -365,3 +377,306 @@ describe("scheduled announcements", () => {
     expect(stored?.publishedAt).not.toBeNull();
   });
 });
+
+describe("Phase 3 gap checks — concurrency and counters", () => {
+  it("promotes every waiter freed by simultaneous cancellation and Going-to-Interested switch", async () => {
+    const id = `evt_fifo_${suffix}`;
+    await makeEvent({ id, title: "FIFO event", capacity: 3 });
+    for (const user of users.slice(0, 3)) {
+      await rsvpEvent(viewerFor(user, universityA.id), id, "GOING");
+    }
+    await rsvpEvent(viewerFor(users[3]!, universityA.id), id, "GOING");
+    await rsvpEvent(viewerFor(users[4]!, universityA.id), id, "GOING");
+    await Promise.all([
+      cancelRsvp(viewerFor(users[0]!, universityA.id), id),
+      rsvpEvent(viewerFor(users[1]!, universityA.id), id, "INTERESTED"),
+    ]);
+    const event = await tenantDb(universityA.id).event.findUnique({
+      where: { id },
+      select: { goingCount: true, interestedCount: true, waitlistCount: true },
+    });
+    expect(event).toMatchObject({ goingCount: 3, interestedCount: 1, waitlistCount: 0 });
+    const promoted = await tenantDb(universityA.id).eventRsvp.findMany({
+      where: { eventId: id, userId: { in: [users[3]!.id, users[4]!.id] } },
+      orderBy: { waitlistPosition: "asc" },
+      select: { userId: true, status: true, promotedAt: true },
+    });
+    expect(promoted).toHaveLength(2);
+    expect(promoted.every((row) => row.status === "GOING" && row.promotedAt !== null)).toBe(true);
+    expect(promoted.map((row) => row.userId).sort()).toEqual([users[3]!.id, users[4]!.id].sort());
+  });
+
+  it("promotes waiters when the organiser raises capacity", async () => {
+    const id = `evt_capacity_up_${suffix}`;
+    await makeEvent({ id, title: "Capacity increase", capacity: 1 });
+    await rsvpEvent(viewerFor(users[0]!, universityA.id), id, "GOING");
+    await rsvpEvent(viewerFor(users[1]!, universityA.id), id, "GOING");
+    await updateEvent(viewerFor(adminA, universityA.id), id, { capacity: 2 });
+    const event = await tenantDb(universityA.id).event.findUnique({
+      where: { id },
+      select: { capacity: true, goingCount: true, waitlistCount: true },
+    });
+    expect(event).toMatchObject({ capacity: 2, goingCount: 2, waitlistCount: 0 });
+    const promoted = await tenantDb(universityA.id).eventRsvp.findUnique({
+      where: { eventId_userId: { eventId: id, userId: users[1]!.id } },
+      select: { status: true, promotedAt: true },
+    });
+    expect(promoted?.status).toBe("GOING");
+    expect(promoted?.promotedAt).not.toBeNull();
+  });
+
+  it("converges to exactly one active ticket under simultaneous regeneration", async () => {
+    const id = `evt_regen_race_${suffix}`;
+    await makeEvent({
+      id,
+      title: "Regeneration race",
+      startsAt: new Date(Date.now() - 30 * 60 * 1000),
+      endsAt: new Date(Date.now() + 2 * 60 * 60 * 1000),
+    });
+    const attendee = viewerFor(users[2]!, universityA.id);
+    await rsvpEvent(attendee, id, "GOING");
+    await regenerateTicket(attendee, id);
+    const results = await Promise.all([
+      regenerateTicket(attendee, id),
+      regenerateTicket(attendee, id),
+    ]);
+    const active = await tenantDb(universityA.id).eventTicket.findMany({
+      where: { eventId: id, userId: attendee.userId, revokedAt: null },
+      select: { codeHash: true },
+    });
+    expect(active).toHaveLength(1);
+    const working = results.find((result) => hashForTest(result.code) === active[0]!.codeHash);
+    expect(working).toBeDefined();
+    const checked = await checkInAttendee(viewerFor(adminA, universityA.id), id, {
+      method: "QR",
+      code: working!.code,
+      clientScanId: `regen-race-${suffix}`,
+    });
+    expect(checked.duplicate).toBe(false);
+  });
+
+  it("publishes and acknowledges exactly once under parallel cron and reads", async () => {
+    const account = await tenantDb(universityA.id).officialAccount.create({
+      data: {
+        universityId: universityA.id,
+        name: `Parallel Registry ${suffix}`,
+        nameNormalized: `parallelregistry${suffix}`,
+        slug: `parallel-registry-${suffix}`,
+        category: "REGISTRY",
+        description: "Parallel test account",
+        status: "ACTIVE",
+      },
+    });
+    const scheduled = await tenantDb(universityA.id).announcement.create({
+      data: {
+        universityId: universityA.id,
+        officialAccountId: account.id,
+        authorId: adminA.id,
+        category: "ACADEMIC",
+        title: "Parallel scheduled notice",
+        body: "Publish once even when cron and reads race.",
+        audienceKind: "PUBLIC",
+        audiencePath: ["PUBLIC"],
+        status: "SCHEDULED",
+        publishAt: new Date(Date.now() - 60 * 1000),
+      },
+    });
+    const runs = await Promise.all(
+      Array.from({ length: 6 }, () => publishDueAnnouncements(tenantDb(universityA.id))),
+    );
+    expect(runs.reduce((sum, run) => sum + run.published, 0)).toBe(1);
+    const stored = await tenantDb(universityA.id).announcement.findUnique({
+      where: { id: scheduled.id },
+      select: { status: true, publishedAt: true },
+    });
+    expect(stored?.status).toBe("PUBLISHED");
+    expect(stored?.publishedAt).not.toBeNull();
+
+    const acks = await Promise.all(
+      Array.from({ length: 4 }, () =>
+        acknowledgeAnnouncement(viewerFor(users[0]!, universityA.id), scheduled.id),
+      ),
+    );
+    expect(acks.every((ack) => ack.acknowledged)).toBe(true);
+    const ackRows = await tenantDb(universityA.id).announcementAck.count({
+      where: { announcementId: scheduled.id, userId: users[0]!.id },
+    });
+    expect(ackRows).toBe(1);
+  });
+
+  it("enforces every Phase 3 rate limit policy", async () => {
+    const expected = {
+      eventCreate: [3, 24 * 60 * 60],
+      eventRsvp: [60, 60 * 60],
+      eventCheckIn: [600, 60 * 60],
+      eventCsvExport: [10, 24 * 60 * 60],
+      eventShareCard: [20, 60 * 60],
+      eventTicketRegenerate: [5, 24 * 60 * 60],
+      announcementCreate: [10, 24 * 60 * 60],
+      announcementCritical: [2, 24 * 60 * 60],
+      announcementCron: [30, 10 * 60],
+    } as const;
+    __resetMemoryRateLimits();
+    for (const [name, [limit, windowSeconds]] of Object.entries(expected)) {
+      expect(POLICIES[name as keyof typeof POLICIES]).toEqual({ limit, windowSeconds });
+      for (let index = 0; index < limit; index += 1) {
+        expect((await rateLimit(name as keyof typeof POLICIES, `gap-${name}`)).success).toBe(true);
+      }
+      expect((await rateLimit(name as keyof typeof POLICIES, `gap-${name}`)).success).toBe(false);
+    }
+    __resetMemoryRateLimits();
+  });
+});
+
+describe("Phase 3 gap checks — privacy, calendar and attachments", () => {
+  it("removes blocked students from event counts, comments and updates but keeps the organiser list complete", async () => {
+    const id = `evt_block_${suffix}`;
+    await makeEvent({ id, title: "Blocked event", capacity: 10 });
+    const hidden = viewerFor(users[1]!, universityA.id);
+    const viewer = viewerFor(users[2]!, universityA.id);
+    await rsvpEvent(hidden, id, "GOING");
+    await rsvpEvent(viewer, id, "GOING");
+    await addEventComment(hidden, id, { body: "A blocked student comment that must disappear." });
+    await tenantDb(universityA.id).eventUpdate.create({
+      data: {
+        universityId: universityA.id,
+        eventId: id,
+        authorId: hidden.userId,
+        body: "A blocked organiser update that must disappear.",
+      },
+    });
+    await tenantDb(universityA.id).block.create({
+      data: { universityId: universityA.id, userId: viewer.userId, blockedUserId: hidden.userId },
+    });
+    try {
+      const detail = await getEventDetail(viewer, id, { recordView: false });
+      expect(detail.attendees.count).toBe(1);
+      expect(detail.attendees.preview.map((row) => row.id)).not.toContain(hidden.userId);
+      expect(detail.attendees.hiddenCount).toBe(0);
+      expect(detail.comments).toHaveLength(0);
+      expect(detail.updates).toHaveLength(0);
+      expect(detail.commentCount).toBe(0);
+      const organiser = await listAttendees(viewerFor(adminA, universityA.id), id, { status: "ALL" });
+      expect(organiser.attendees.map((row) => row.userId).sort()).toEqual(
+        [hidden.userId, viewer.userId].sort(),
+      );
+    } finally {
+      await tenantDb(universityA.id).block.deleteMany({
+        where: { userId: viewer.userId, blockedUserId: hidden.userId },
+      });
+    }
+  });
+
+  it("exports only events the student can currently see to the calendar", async () => {
+    const visibleId = `evt_calendar_visible_${suffix}`;
+    const hiddenId = `evt_calendar_hidden_${suffix}`;
+    await makeEvent({ id: visibleId, title: "Visible calendar event" });
+    await makeEvent({
+      id: hiddenId,
+      title: "Hidden calendar event",
+      audienceKind: "DEPARTMENT",
+      audiencePath: [universityA.id, "not-my-department"],
+    });
+    const student = viewerFor(users[0]!, universityA.id);
+    await rsvpEvent(student, visibleId, "GOING");
+    const rows = await getMyEventsForCalendar(student);
+    expect(rows.map((row) => row.id)).toContain(visibleId);
+    expect(rows.map((row) => row.id)).not.toContain(hiddenId);
+  });
+
+  it("checks announcement audience again before serving a private attachment", async () => {
+    const account = await tenantDb(universityA.id).officialAccount.create({
+      data: {
+        universityId: universityA.id,
+        name: `Attachment Registry ${suffix}`,
+        nameNormalized: `attachmentregistry${suffix}`,
+        slug: `attachment-registry-${suffix}`,
+        category: "REGISTRY",
+        description: "Attachment test account",
+        status: "ACTIVE",
+      },
+    });
+    const stored = await storeResourceFile({
+      filename: "notice.pdf",
+      contentType: "application/pdf",
+      bytes: Buffer.from("%PDF-1.4\nprivate notice\n"),
+    });
+    const announcement = await tenantDb(universityA.id).announcement.create({
+      data: {
+        universityId: universityA.id,
+        officialAccountId: account.id,
+        authorId: adminA.id,
+        category: "ACADEMIC",
+        title: "Department-only attachment",
+        body: "Only this department may download the file.",
+        audienceKind: "DEPARTMENT",
+        audiencePath: [universityA.id, deptA],
+        status: "PUBLISHED",
+        publishAt: new Date(Date.now() - 60 * 1000),
+        publishedAt: new Date(Date.now() - 60 * 1000),
+        attachments: {
+          create: {
+            universityId: universityA.id,
+            fileKey: stored.fileKey,
+            name: "notice.pdf",
+            mimeType: "application/pdf",
+            sizeBytes: stored.sizeBytes,
+          },
+        },
+      },
+      select: { id: true, attachments: { select: { id: true } } },
+    });
+    const allowed = await getAnnouncementAttachment(
+      viewerFor(users[0]!, universityA.id),
+      announcement.id,
+      announcement.attachments[0]!.id,
+    );
+    expect(allowed.name).toBe("notice.pdf");
+    expect(allowed.localBytes?.toString()).toContain("private notice");
+    const outsider = viewerFor(users[3]!, universityA.id, {
+      studentPath: [universityA.id, deptB, 300],
+      departmentId: deptB,
+    });
+    await expect(
+      getAnnouncementAttachment(outsider, announcement.id, announcement.attachments[0]!.id),
+    ).rejects.toMatchObject({ status: 404 });
+    await expect(
+      getAnnouncementAttachment(viewerFor(users[0]!, universityA.id), announcement.id, "not-the-attachment"),
+    ).rejects.toMatchObject({ status: 404 });
+  });
+});
+
+  it("refuses an eleventh upcoming event for the same organiser", async () => {
+    const organiser = users[4]!;
+    const startsAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await Promise.all(
+      Array.from({ length: 10 }, (_, index) =>
+        makeEvent({
+          id: `evt_limit_${suffix}_${index}`,
+          title: `Upcoming ${index}`,
+          startsAt,
+        }).then((row) =>
+          tenantDb(universityA.id).event.update({
+            where: { id: row.id },
+            data: { createdById: organiser.id, createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) },
+          }),
+        ),
+      ),
+    );
+    await expect(
+      createEvent(viewerFor(organiser, universityA.id), {
+        title: "Eleventh upcoming event",
+        description: "This must be refused before it is written.",
+        category: "MEETUP",
+        audienceKind: "PUBLIC",
+        audiencePath: ["PUBLIC"],
+        startsAt,
+        endsAt: new Date(startsAt.getTime() + 60 * 60 * 1000),
+        venueName: "Test Hall",
+        capacity: 10,
+      }),
+    ).rejects.toMatchObject({ status: 409, code: "limit_reached" });
+  });
+function hashForTest(code: string): string {
+  return createHash("sha256").update(code, "utf8").digest("hex");
+}

@@ -72,9 +72,29 @@ const SHOTS = [
   { name: "public-share-preview", path: "/design/preview/public-share-preview", viewports: ["mobile"] },
 
   // Phase 3 authenticated product screens (Nova demo seed)
-  { name: "events-hub", path: "/events", viewports: ["mobile", "desktop"], auth: true },
-  { name: "event-detail", path: "/events/seed-event-upcoming", viewports: ["mobile"], auth: true },
-  { name: "official-channel", path: "/official", viewports: ["mobile"], auth: true },
+  { name: "events-hub", path: "/events", viewports: ["mobile", "desktop"], auth: "student" },
+  { name: "event-detail-upcoming", path: "/events/seed-event-upcoming", viewports: ["mobile", "desktop"], auth: "student" },
+  { name: "event-detail-live", path: "/events/seed-event-scanner", viewports: ["mobile"], auth: "student" },
+  { name: "event-detail-full", path: "/events/seed-event-full", viewports: ["mobile"], auth: "student" },
+  { name: "event-detail-past", path: "/events/seed-event-past", viewports: ["mobile"], auth: "student" },
+  { name: "event-detail-cancelled", path: "/events/seed-event-cancelled", viewports: ["mobile"], auth: "student" },
+  { name: "event-detail-updated", path: "/events/seed-event-updated", viewports: ["mobile"], auth: "student" },
+  { name: "event-detail-swe", path: "/events/seed-event-swe", viewports: ["mobile"], auth: "student" },
+  { name: "event-rsvp-confirmation", path: "/events/seed-event-joinable", viewports: ["mobile"], auth: "student", action: "rsvp" },
+  { name: "event-waitlist-confirmation", path: "/events/seed-event-waitlist", viewports: ["mobile"], auth: "student", action: "waitlist" },
+  { name: "event-share-sheet", path: "/events/seed-event-upcoming", viewports: ["mobile"], auth: "student", action: "share" },
+  { name: "event-new", path: "/events/new", viewports: ["mobile"], auth: "student" },
+  { name: "event-edit", path: "/events/seed-event-updated/edit", viewports: ["mobile"], auth: "student" },
+  { name: "event-dashboard", path: "/events/seed-event-scanner/dashboard", viewports: ["mobile", "desktop"], auth: "student" },
+  { name: "event-scan", path: "/events/seed-event-scanner/scan", viewports: ["mobile"], auth: "student" },
+  { name: "event-ticket", path: "/events/seed-event-scanner/ticket", viewports: ["mobile"], auth: "student" },
+  { name: "event-ticket-generated", path: "/events/seed-event-scanner/ticket", viewports: ["mobile"], auth: "student", action: "ticket" },
+  { name: "event-scan-offline", path: "/events/seed-event-scanner/scan", viewports: ["mobile"], auth: "student", action: "offline" },
+  { name: "my-events", path: "/events/mine", viewports: ["mobile"], auth: "student" },
+  { name: "official-channel", path: "/official", viewports: ["mobile", "desktop"], auth: "student" },
+  { name: "announcement-detail", path: "/official/a/seed-announcement-registration", viewports: ["mobile"], auth: "student" },
+  { name: "admin-events", path: "/admin/events", viewports: ["desktop"], auth: "admin" },
+  { name: "admin-official", path: "/admin/official", viewports: ["desktop"], auth: "admin" },
   { name: "admin-reports", path: "/design/preview/admin-reports", viewports: ["desktop"] },
   { name: "admin-students", path: "/design/preview/admin-students", viewports: ["desktop"] },
   { name: "admin-verification", path: "/design/preview/admin-verification", viewports: ["desktop"] },
@@ -101,18 +121,19 @@ async function run() {
           colorScheme: mode,
         });
         const page = await context.newPage();
-        let authed = false;
+        let authedRole = null;
 
         const only = process.env.SHOTS_ONLY ? new Set(process.env.SHOTS_ONLY.split(",").map((name) => name.trim())) : null;
         for (const shot of SHOTS) {
           if (only && !only.has(shot.name)) continue;
-          if (shot.auth && !authed) {
+          if (shot.auth && authedRole !== shot.auth) {
+            await context.clearCookies();
             await page.goto(`${BASE_URL}/login`, { waitUntil: "networkidle", timeout: 30_000 });
-            await page.getByLabel("Email or username").fill("student@nova.edu.ng");
+            await page.getByLabel("Email or username").fill(shot.auth === "admin" ? "admin@nova.edu.ng" : "student@nova.edu.ng");
             await page.getByLabel("Password", { exact: true }).fill("KonnektDemo123!");
             await page.getByRole("button", { name: "Log in" }).click();
             await page.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 30_000 });
-            authed = true;
+            authedRole = shot.auth;
           }
           if (!shot.viewports.includes(vpKey)) continue;
           const sep = shot.path.includes("?") ? "&" : "?";
@@ -126,10 +147,39 @@ async function run() {
             document.documentElement.dataset.theme = theme;
             if (document.fonts?.ready) await document.fonts.ready;
           }, mode);
+          if (shot.action === "rsvp" || shot.action === "waitlist") {
+            const cancel = page.getByRole("button", { name: "Cancel RSVP", exact: true });
+            if ((await cancel.count()) > 0) {
+              await cancel.click();
+              await page.getByRole("button", { name: "I'm going", exact: true }).waitFor();
+            }
+            await page.getByRole("button", { name: "I'm going", exact: true }).click();
+            await page.getByText(/You're (going|on the list)!/).waitFor();
+          } else if (shot.action === "share") {
+            await page.getByRole("button", { name: "Share event" }).click();
+            await page.getByRole("dialog", { name: "Share event" }).waitFor();
+            await page.getByAltText("Share card preview").evaluate(async (image) => {
+              if (image.complete && image.naturalWidth > 0) return;
+              await new Promise((resolve) => {
+                image.addEventListener("load", resolve, { once: true });
+                image.addEventListener("error", resolve, { once: true });
+              });
+            });
+          } else if (shot.action === "ticket") {
+            const generate = page.getByRole("button", { name: /Generate ticket|Show a new code/ });
+            await generate.click();
+            await page.getByLabel("Ticket QR code").waitFor();
+          } else if (shot.action === "offline") {
+            await context.setOffline(true);
+            await page.getByLabel("Ticket code").fill("OFFLINE_DEMO_TICKET_0001");
+            await page.getByRole("button", { name: "Check in", exact: true }).click();
+            await page.getByText(/queued scan waiting/).waitFor({ timeout: 15_000 });
+          }
           await page.waitForTimeout(450);
 
           const filename = `${shot.name}-${mode}-${vp.label}.png`;
           await page.screenshot({ path: path.join(OUT_DIR, filename), fullPage: false });
+          if (shot.action === "offline") await context.setOffline(false);
         }
 
         await context.close();
