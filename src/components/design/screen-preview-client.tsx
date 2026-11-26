@@ -70,6 +70,7 @@ import { CommunitySettings } from "@/components/communities/community-settings";
 import { NewCommunityForm } from "@/components/communities/new-community-form";
 import { CommunityConsole } from "@/components/admin/community-console";
 import { CommunitySearch } from "@/components/communities/community-search";
+import { PHASE3_SCREENS, Phase3Showcase } from "./phase3-showcase";
 import type {
   CommunityAdminPayload,
   CommunityCardView,
@@ -573,6 +574,14 @@ const RESTRICTED: RestrictedStudentView[] = [
 export function ScreenPreviewClient({ screen, theme }: { screen: string; theme: "light" | "dark" }) {
   const [code, setCode] = useState("4829");
   const [pw, setPw] = useState("Campus@2026");
+
+  if (PHASE3_SCREENS.includes(screen)) {
+    return (
+      <div data-theme={theme} className="min-h-dvh bg-bg text-fg">
+        <Phase3Showcase screen={screen} />
+      </div>
+    );
+  }
 
   return (
     <div data-theme={theme} className="min-h-dvh bg-bg text-fg">
