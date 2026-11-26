@@ -26,6 +26,10 @@ describe("staging-only workflows", () => {
     expect(workflow("staging-verify.yml")).toContain("scripts/check-vercel-env.mjs --target=production");
   });
 
+  it("fails the deploy when runtime and migration databases disagree", () => {
+    expect(workflow("deploy.yml")).toContain("scripts/check-staging-db.mjs");
+  });
+
   it("smokes the public staging domain instead of a protected deployment URL", () => {
     const deploy = workflow("deploy.yml");
     expect(deploy).toContain("SMOKE_BASE_URL: ${{ secrets.APP_URL }}");

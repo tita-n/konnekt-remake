@@ -56,6 +56,25 @@ moved to 26.04 while the project pins Playwright 1.56.1.
 `ubuntu-24.04`, matching the existing CI. **Guard:**
 `tests/unit/staging-workflows.test.ts` asserts the pinned runners.
 
+## 2026-11-26 — runtime database was not the migrated database
+
+**Symptom:** health passed, `/e/...` worked, but `/p/...` returned 500 with
+`PrismaClientKnownRequestError P2021: The table public.Post does not exist in
+the current database`. Vercel runtime logs gave the exact Prisma error.
+
+**Root cause:** the Vercel Production `DATABASE_URL` points at a different
+database from the `DIRECT_URL` used by `prisma migrate deploy`. The migration
+database has every Phase 3 table and migration; the runtime database has no
+`Post` table. Health's `SELECT 1` cannot distinguish the two.
+
+**Status:** blocked on the environment owner setting the Vercel Production
+`DATABASE_URL` to the **pooled URL of the same Neon staging branch** as
+`DIRECT_URL`. This is a secret value, so it was not read or changed here.
+
+**Guard:** `scripts/check-staging-db.mjs` now runs before every deploy. It
+checks `Post`, `Event` and `Announcement` exist and compares the applied-migration
+fingerprint on both URLs; it prints names/status only, never a URL.
+
 ## 2026-11-26 — smoke hit Vercel Deployment Protection
 
 **Symptom:** deployment succeeded, then every smoke request returned HTTP 302.

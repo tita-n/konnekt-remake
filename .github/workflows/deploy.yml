@@ -58,6 +58,8 @@ jobs:
         # cannot run. Keep it out of the install environment.
         run: npm ci --include=dev
       - run: npm run check:env -- staging
+      - name: Check runtime and migration databases agree
+        run: node scripts/check-staging-db.mjs
       - name: Check Vercel environment names
         run: node scripts/check-vercel-env.mjs --target=production
 
