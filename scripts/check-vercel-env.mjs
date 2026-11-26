@@ -41,12 +41,19 @@ const required = [
   "TURNSTILE_SECRET_KEY",
 ];
 
-const query = new URLSearchParams({ decrypt: "false" });
-if (teamId) query.set("teamId", teamId);
-const response = await fetch(`https://api.vercel.com/v9/projects/${encodeURIComponent(projectId)}/env?${query}`, {
-  headers: { Authorization: `Bearer ${token}` },
-});
-const body = await response.json().catch(() => ({}));
+async function envList(withTeam) {
+  const query = new URLSearchParams({ decrypt: "false" });
+  if (withTeam && teamId) query.set("teamId", teamId);
+  const response = await fetch(`https://api.vercel.com/v9/projects/${encodeURIComponent(projectId)}/env?${query}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const body = await response.json().catch(() => ({}));
+  return { response, body };
+}
+
+let { response, body } = await envList(true);
+// A personal token may have no team scope even though VERCEL_ORG_ID is set.
+if (response.status === 403 && teamId) ({ response, body } = await envList(false));
 if (!response.ok) {
   const reason = typeof body?.error?.message === "string" ? body.error.message : `HTTP ${response.status}`;
   console.error(`Vercel environment check failed: ${reason}`);
