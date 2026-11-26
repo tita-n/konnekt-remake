@@ -17,7 +17,11 @@ const httpsUrl = optionalString.refine(
 export const envSchema = z
   .object({
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-    APP_URL: z.string().url().default("http://localhost:3000"),
+    APP_URL: z
+      .string()
+      .url()
+      .refine((value) => !value.endsWith("/"), "must not end with a trailing slash")
+      .default("http://localhost:3000"),
     DATABASE_URL: postgresUrl,
     DIRECT_URL: optionalString.refine(
       (value) => value === undefined || /^postgres(ql)?:\/\//i.test(value),

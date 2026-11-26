@@ -1,14 +1,15 @@
 name: Deploy
 
-# Manual by design. Staging needs the same required service keys as production.
-# See docs/STAGING.md for every value and where to find it.
+# Manual by design. This repository's Vercel project IS the staging project, so
+# its Vercel Production environment is the staging environment. The workflow is
+# deliberately staging-only: never point it at a project that serves real users.
 on:
   workflow_dispatch:
     inputs:
       environment:
-        description: Target environment
+        description: Target environment (staging only)
         type: choice
-        options: [staging, production]
+        options: [staging]
         default: staging
 
 concurrency:
@@ -21,16 +22,17 @@ permissions:
 jobs:
   validate-env:
     name: Validate deployment environment
+    if: github.event.inputs.environment == 'staging'
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment }}
+    environment: staging
     env:
-      NODE_ENV: production
       APP_URL: ${{ secrets.APP_URL }}
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       DIRECT_URL: ${{ secrets.DIRECT_URL }}
       AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
       EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+      EMAIL_REDIRECT_TO: ${{ secrets.EMAIL_REDIRECT_TO }}
       CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
       CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
       CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
@@ -38,40 +40,49 @@ jobs:
       UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
       NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ secrets.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
       TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+      TURNSTILE_BYPASS: ${{ secrets.TURNSTILE_BYPASS }}
       NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
       SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-      SENTRY_ENVIRONMENT: ${{ github.event.inputs.environment }}
+      SENTRY_ENVIRONMENT: staging
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - run: npm run check:env -- ${{ github.event.inputs.environment }}
+      - name: Install dependencies
+        # NODE_ENV=production at job level makes npm omit tsx and the validator
+        # cannot run. Keep it out of the install environment.
+        run: npm ci --include=dev
+      - run: npm run check:env -- staging
+      - name: Check Vercel environment names
+        run: node scripts/check-vercel-env.mjs --target=production
 
   migrate:
     name: Apply Prisma migrations
     needs: validate-env
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment }}
+    environment: staging
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - run: npm ci --include=dev
       - name: prisma migrate deploy
         env:
           DATABASE_URL: ${{ secrets.DIRECT_URL }}
         run: npx prisma migrate deploy
 
   deploy:
-    name: Deploy to Vercel
+    name: Deploy staging to Vercel
     needs: migrate
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment }}
+    environment: staging
     outputs:
       url: ${{ steps.deploy.outputs.url }}
     env:
@@ -83,15 +94,16 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - run: npm ci --include=dev
       - name: Pull Vercel environment
-        run: npx vercel pull --yes --environment=${{ github.event.inputs.environment == 'production' && 'production' || 'preview' }} --token=${{ secrets.VERCEL_TOKEN }}
+        # The Vercel Production environment of this project is staging.
+        run: npx vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
       - name: Build
-        run: npx vercel build ${{ github.event.inputs.environment == 'production' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}
+        run: npx vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
       - name: Deploy
         id: deploy
         run: |
-          url=$(npx vercel deploy --prebuilt ${{ github.event.inputs.environment == 'production' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }} | tail -n 1)
+          url=$(npx vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }} | tail -n 1)
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "Deployed $url"
 
@@ -99,7 +111,7 @@ jobs:
     name: Smoke test deployment
     needs: deploy
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment }}
+    environment: staging
     env:
       SMOKE_BASE_URL: ${{ needs.deploy.outputs.url }}
       SMOKE_TEST_EMAIL: ${{ secrets.SMOKE_TEST_EMAIL }}
@@ -113,6 +125,6 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - run: npm ci --include=dev
       - run: npx playwright install --with-deps chromium
       - run: npm run smoke:staging -- "$SMOKE_BASE_URL"

@@ -1,5 +1,5 @@
 import { loadEnvFile } from "./e2e-guard";
-import { envSchema } from "../src/lib/env-schema";
+import { formatEnvironmentProblems, productionEnvironmentProblems } from "../src/lib/adapters";
 
 const target = process.argv[2];
 if (target !== "staging" && target !== "production") {
@@ -12,19 +12,11 @@ if (envFile) loadEnvFile(envFile);
 
 const raw: Record<string, string | undefined> = { ...process.env, NODE_ENV: "production" };
 delete raw.NEXT_PHASE;
-const parsed = envSchema.safeParse(raw);
-const issues: Array<{ path: PropertyKey[]; message: string }> = parsed.success ? [] : parsed.error.issues;
+const problems = productionEnvironmentProblems(raw, { requireDirectUrl: true, requireHttpsAppUrl: true });
 
-if (parsed.success && !parsed.data.APP_URL.startsWith("https://")) {
-  issues.push({ path: ["APP_URL"], message: "must use https:// outside local development" });
-}
-if (parsed.success && !raw.DIRECT_URL) {
-  issues.push({ path: ["DIRECT_URL"], message: "is required for deploy-time Prisma migrations" });
-}
-
-if (issues.length) {
+if (problems.length) {
   console.error(`Environment check failed for ${target}. Missing or malformed values (values are never printed):`);
-  console.error(issues.map((issue) => `${issue.path.join(".") || "env"}: ${issue.message}`).join("\n"));
+  console.error(formatEnvironmentProblems(problems));
   process.exit(1);
 }
 
