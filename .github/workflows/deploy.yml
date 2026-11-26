@@ -95,15 +95,16 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --include=dev
-      - name: Pull Vercel environment
-        # The Vercel Production environment of this project is staging.
-        run: npx vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-      - name: Build
-        run: npx vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-      - name: Deploy
-        id: deploy
+      - name: Link the staging project without pulling values
         run: |
-          url=$(npx vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }} | tail -n 1)
+          mkdir -p .vercel
+          printf '{"projectId":"%s","orgId":"%s"}' "$VERCEL_PROJECT_ID" "$VERCEL_ORG_ID" > .vercel/project.json
+      - name: Deploy staging
+        id: deploy
+        # Build remotely. Sensitive Vercel variables are injected by the build
+        # platform; `vercel pull` cannot decrypt them onto a runner.
+        run: |
+          url=$(npx vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }} | tail -n 1)
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "Deployed $url"
 

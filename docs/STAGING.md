@@ -107,7 +107,7 @@ Smoke-only (optional):
 - `SMOKE_PRIVATE_MARKER` — a body/author string that must never appear in public HTML.
 - `VERCEL_AUTOMATION_BYPASS_SECRET` — only if deployment protection is enabled.
 
-The workflow first installs dev dependencies (the validator needs `tsx`), then runs `check:env`, checks every required Vercel variable **name**, applies migrations with `DIRECT_URL`, builds/deploys the staging project's Production environment, and runs the smoke test. `check:env` reports all missing or malformed variables in one pass and never prints a value. A failed step fails the deployment run.
+The workflow first installs dev dependencies (the validator needs `tsx`), then runs `check:env`, checks every required Vercel variable **name**, applies migrations with `DIRECT_URL`, and deploys with `vercel deploy --prod` so Vercel builds remotely with its Sensitive Production variables injected. It never pulls values onto the runner. Then it runs the smoke test. `check:env` reports all missing or malformed variables in one pass and never prints a value. A failed step fails the deployment run.
 
 ## 6. Email deliverability (SPF and DKIM)
 

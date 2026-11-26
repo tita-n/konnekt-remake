@@ -29,6 +29,22 @@ workflow is now staging-only and builds/deploys its Production environment with
 `--prod`. **Guard:** the same workflow test rejects Preview and a production
 menu option.
 
+## 2026-11-26 — local Vercel build saw empty environment values
+
+**Symptom:** validation and migrations passed, then `vercel build` failed while
+collecting page data with invalid `APP_URL`, `DATABASE_URL`, `AUTH_SECRET` and
+service variables. The live deployment still reported every service configured.
+
+**Root cause:** the project uses Vercel **Sensitive** environment variables.
+`vercel pull` cannot decrypt those onto a GitHub runner, so the local prebuilt
+build saw empty/malformed values even though Vercel's own builds receive them.
+
+**Fix:** do not pull values or build locally. The workflow writes only the
+project/org ids under `.vercel/`, then runs `vercel deploy --prod --yes` so
+Vercel builds remotely with the Production environment injected. **Guard:**
+`tests/unit/deploy-workflow.test.ts` rejects `vercel pull`, `vercel build` and
+`--prebuilt` and requires the remote `vercel deploy --prod`.
+
 ## 2026-11-26 — startup validation stopped at the first bad variable
 
 **Symptom:** the reported production 500 named only `APP_URL`, so every other

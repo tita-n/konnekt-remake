@@ -13,11 +13,16 @@ describe("staging deploy workflow", () => {
   });
 
   it("deploys the staging project's Production environment, never Preview", () => {
-    expect(workflow).toContain("--environment=production");
-    expect(workflow).toContain("vercel build --prod");
-    expect(workflow).toContain("vercel deploy --prebuilt --prod");
+    expect(workflow).toContain("vercel deploy --prod");
     expect(workflow).not.toContain("--environment=preview");
     expect(workflow).not.toContain("options: [staging, production]");
+  });
+
+  it("builds remotely so sensitive Vercel variables are not pulled to a runner", () => {
+    expect(workflow).not.toContain("vercel pull");
+    expect(workflow).not.toContain("vercel build");
+    expect(workflow).not.toContain("--prebuilt");
+    expect(workflow).toContain("vercel deploy --prod --yes");
   });
 
   it("checks Vercel variable names without decrypting values", () => {
