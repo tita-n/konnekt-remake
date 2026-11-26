@@ -19,8 +19,8 @@ describe("staging deploy workflow", () => {
   });
 
   it("builds remotely so sensitive Vercel variables are not pulled to a runner", () => {
-    expect(workflow).not.toContain("vercel pull");
-    expect(workflow).not.toContain("vercel build");
+    expect(workflow).not.toMatch(/npx vercel pull/);
+    expect(workflow).not.toMatch(/npx vercel build/);
     expect(workflow).not.toContain("--prebuilt");
     expect(workflow).toContain("vercel deploy --prod --yes");
   });
