@@ -1,0 +1,92 @@
+name: Staging verification
+
+# Manual, staging-only real-service verification. All credentials stay in the
+# GitHub staging environment; this workflow never targets production.
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Deployment environment (must be staging)
+        type: string
+        default: staging
+        required: true
+      base_url:
+        description: Public staging URL
+        type: string
+        default: https://konnekt-remake.vercel.app
+        required: true
+
+concurrency:
+  group: staging-verify
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  env-names:
+    name: Verify Vercel variable names
+    if: github.event.inputs.environment == 'staging'
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/check-vercel-env.mjs --target=production
+
+  smoke:
+    name: Smoke and cookie flags
+    if: github.event.inputs.environment == 'staging'
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      SMOKE_BASE_URL: ${{ github.event.inputs.base_url }}
+      SMOKE_TEST_EMAIL: ${{ secrets.SMOKE_TEST_EMAIL }}
+      SMOKE_TEST_PASSWORD: ${{ secrets.SMOKE_TEST_PASSWORD }}
+      SMOKE_PUBLIC_POST_PATH: ${{ secrets.SMOKE_PUBLIC_POST_PATH }}
+      SMOKE_PRIVATE_MARKER: ${{ secrets.SMOKE_PRIVATE_MARKER }}
+      SMOKE_PROTECTION_BYPASS: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --include=dev
+      - run: npx playwright install --with-deps chromium
+      - run: npm run smoke:staging -- "$SMOKE_BASE_URL"
+
+  real-services:
+    name: Real services and database
+    if: github.event.inputs.environment == 'staging'
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      STAGING_BASE_URL: ${{ github.event.inputs.base_url }}
+      SMOKE_PROTECTION_BYPASS: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+      SMOKE_PRIVATE_MARKER: ${{ secrets.SMOKE_PRIVATE_MARKER }}
+      DATABASE_URL: ${{ secrets.DIRECT_URL }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+      EMAIL_REDIRECT_TO: ${{ secrets.EMAIL_REDIRECT_TO }}
+      CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+      CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+      CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+      UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+      UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+      TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --include=dev
+      - run: npx prisma generate
+      - run: node scripts/staging-verify.mjs "$STAGING_BASE_URL"

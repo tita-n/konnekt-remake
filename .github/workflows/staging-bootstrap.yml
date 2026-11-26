@@ -1,0 +1,56 @@
+name: Staging bootstrap
+
+# Manual, staging-only, and idempotent. It never runs for production and never
+# prints a password or token. The first admin is created without a usable
+# password and receives the normal password-set link by email.
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Deployment environment (must be staging)
+        type: string
+        default: staging
+        required: true
+
+concurrency:
+  group: staging-bootstrap
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  bootstrap:
+    name: Bootstrap staging tenant and first admin
+    if: github.event.inputs.environment == 'staging'
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      DEPLOY_ENVIRONMENT: staging
+      APP_URL: ${{ secrets.APP_URL }}
+      DATABASE_URL: ${{ secrets.DIRECT_URL }}
+      SEED_PLATFORM_ADMIN_EMAIL: ${{ secrets.SEED_PLATFORM_ADMIN_EMAIL }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+      EMAIL_REDIRECT_TO: ${{ secrets.EMAIL_REDIRECT_TO }}
+    steps:
+      - name: Refuse anything except staging
+        run: |
+          if [ "${{ github.event.inputs.environment }}" != "staging" ]; then
+            echo "Refusing staging bootstrap for ${{ github.event.inputs.environment }}."
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --include=dev
+      - name: Apply Prisma migrations with the unpooled URL
+        env:
+          DATABASE_URL: ${{ secrets.DIRECT_URL }}
+        run: npx prisma migrate deploy
+      - name: Create Nova tenant and first platform admin
+        env:
+          NODE_ENV: production
+        run: npx tsx scripts/staging-bootstrap.ts

@@ -50,7 +50,7 @@ npm run check:env -- production
 npm run check:env -- staging --env-file .env.staging
 ```
 
-It prints variable names and validation messages only, never values. It requires every production service plus `DIRECT_URL`, and rejects `TURNSTILE_BYPASS=1` and non-HTTPS `APP_URL`.
+It reports **all** missing or malformed variables in one pass, using names and static reasons only, never values. It requires every production service plus `DIRECT_URL`, rejects `TURNSTILE_BYPASS=1`, and rejects a non-HTTPS, quoted or trailing-slash `APP_URL`. The boot check uses the same collector, so a deployment cannot stop at only the first bad value.
 
 ## Adapters and startup checks
 
@@ -80,7 +80,7 @@ At server start with `NODE_ENV=production` (outside `next build`), `src/instrume
 - `RESEND_API_KEY`
 - `TURNSTILE_BYPASS` must be `0`
 
-`APP_URL` and `DATABASE_URL` are always required. `NEXT_PUBLIC_SENTRY_DSN` is optional but recommended.
+`APP_URL` and `DATABASE_URL` are always required. In production `APP_URL` must be an HTTPS origin with no quotes and no trailing slash. `NEXT_PUBLIC_SENTRY_DSN` is optional but recommended.
 
 ## Suggested secret generation
 

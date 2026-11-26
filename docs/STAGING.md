@@ -42,9 +42,9 @@ Every deployed server (staging and production) requires all of these. `NEXT_PUBL
 | `NEXT_PUBLIC_SENTRY_DSN` | Sentry project settings | optional but recommended |
 | `SENTRY_DSN` | Sentry project settings | optional but recommended |
 | `SENTRY_ENVIRONMENT` | Choose a label | `staging` |
-| `SEED_PLATFORM_ADMIN_EMAIL` | Only for non-production seed runs | leave unset in staging |
+| `SEED_PLATFORM_ADMIN_EMAIL` | First platform admin for the guarded bootstrap workflow | a real inbox you control |
 
-Never set `SEED_PLATFORM_ADMIN_EMAIL` or run `db:seed` against staging. Staging is for real accounts and the smoke test; it is not a demo environment.
+Never run `db:seed` against staging: it creates demo accounts and a known password. `SEED_PLATFORM_ADMIN_EMAIL` is used only by the guarded Staging bootstrap workflow, which creates one admin with no usable password and emails a reset link.
 
 ## 3. Database setup
 
@@ -68,27 +68,37 @@ The e2e database is separate. For a Neon e2e branch, set `E2E_DATABASE_URL` to a
 - Build command: `npm run build`.
 - Install command: `npm ci`.
 - Production branch: `main`.
-- Add every variable above to **Preview/Staging** and **Production** separately. Do not copy production secrets into Preview.
-- Add the staging domain and set `APP_URL` to it.
+- **This repository's `konnekt-remake` project is the staging project.** Its
+  Vercel **Production** environment is staging, and `konnekt-remake.vercel.app`
+  is that environment. Do not add real production tenants or production secrets
+  to this project.
+- Put every variable above in the Vercel **Production** environment only. The
+  Deploy workflow is staging-only and no longer deploys Preview.
+- Set `APP_URL` to the staging origin with **no trailing slash and no quotes**.
 - Disable Vercel Authentication for the staging domain, or create an automation bypass secret and store it as `VERCEL_AUTOMATION_BYPASS_SECRET`.
 - Do not enable Vercel's own Cron or build cache overrides that skip `prisma generate`.
 
 ## 5. GitHub secrets
 
-Create a GitHub **Environment** named `staging` (and one named `production`) with these secrets. The deploy workflow selects the environment.
+Create a GitHub **Environment** named `staging` with these secrets. This repository has no production environment: every staging workflow is hard-guarded to `environment: staging`.
 
 Required:
 
 - `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`
 - `APP_URL`, `DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET`
-- `RESEND_API_KEY`, `EMAIL_FROM`
+- `RESEND_API_KEY`, `EMAIL_FROM`, `EMAIL_REDIRECT_TO`
 - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
 - `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
-- `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`
+- `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`, `TURNSTILE_BYPASS=0`
+- `SEED_PLATFORM_ADMIN_EMAIL` — the first platform admin created by the bootstrap workflow.
 
 Recommended:
 
 - `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_DSN`
+
+Scheduler (optional):
+
+- `ANNOUNCEMENT_CRON_SECRET` — must also be set in the Vercel Production environment; the scheduler skips with a notice until both exist.
 
 Smoke-only (optional):
 
@@ -97,7 +107,7 @@ Smoke-only (optional):
 - `SMOKE_PRIVATE_MARKER` — a body/author string that must never appear in public HTML.
 - `VERCEL_AUTOMATION_BYPASS_SECRET` — only if deployment protection is enabled.
 
-The workflow runs `check:env`, migrations, Vercel build/deploy, then the smoke test. A failed smoke step fails the deployment run.
+The workflow first installs dev dependencies (the validator needs `tsx`), then runs `check:env`, checks every required Vercel variable **name**, applies migrations with `DIRECT_URL`, builds/deploys the staging project's Production environment, and runs the smoke test. `check:env` reports all missing or malformed variables in one pass and never prints a value. A failed step fails the deployment run.
 
 ## 6. Email deliverability (SPF and DKIM)
 
@@ -135,6 +145,7 @@ In Resend → Domains → your domain:
 
 4. The smoke test checks health, headers, `/design` 404, PWA manifest/service worker, public-preview privacy and (when credentials are set) a real login with cookie flags.
 5. If smoke fails, do not promote. Fix the reported check and rerun the workflow.
+6. `APP_URL` with a trailing slash now fails before any deployment with the exact reason; remove the slash in the GitHub staging secret and in Vercel.
 
 ## 10. Announcement scheduler
 
@@ -160,6 +171,49 @@ lazy read-time publishing still publish it exactly once. If the scheduler is
 down, reads still publish due notices on demand; the scheduler is not the only
 correctness mechanism. Do not enable Vercel's own cron for this route unless it
 sends the secret.
+
+## 11. First staging tenant and platform admin
+
+Run **Staging bootstrap** (`workflow_dispatch`, environment `staging`) once. It:
+
+1. Refuses unless the selected environment is exactly `staging` and no
+   production marker (`VERCEL_ENV`, `APP_ENV`, `KONNEKT_ENV`, `ENVIRONMENT`) is set.
+2. Applies migrations with `DIRECT_URL`.
+3. Creates Nova University and the full seed academic tree only when missing.
+4. Creates the account in `SEED_PLATFORM_ADMIN_EMAIL` with a random,
+   unguessable password hash and the `PLATFORM_ADMIN` role, then emails the
+   normal `/reset-password?token=...` link through Resend (redirected by
+   `EMAIL_REDIRECT_TO`). No password or token is printed or stored in plaintext.
+5. Writes an append-only `staging.bootstrap` audit entry.
+
+It is safe to rerun: entities are reused, the role is not duplicated, and no
+email is sent again while a reset link is active or after one is used.
+
+## 12. Announcement scheduler
+
+The optional **Staging announcement scheduler** workflow calls
+`POST ${APP_URL}/api/cron/announcements` every five minutes with
+`Authorization: Bearer $ANNOUNCEMENT_CRON_SECRET`, exactly as §10 requires. It
+only runs on `main`, only uses the `staging` environment, and skips with a
+notice if the secret is absent. Add the secret to both GitHub staging and the
+Vercel Production environment before relying on it.
+
+## 13. Staging verification
+
+Run **Staging verification** manually with the staging URL. It has three jobs:
+
+- Check every required Vercel variable **name** in Production (no values are
+  requested).
+- Run the Playwright smoke test, including cookie flags when `SMOKE_TEST_EMAIL`
+  and `SMOKE_TEST_PASSWORD` exist.
+- Run `scripts/staging-verify.mjs` against the real services: health, exact
+  security-header snapshot, `/design` 404, PWA, public privacy, Turnstile
+  missing/invalid token rejection, Resend acceptance, Cloudinary signed
+  authenticated upload/read/expiry/deletion, Upstash limiting, applied
+  migrations and the feed index, and signed Phase 3 attachment expiry.
+
+It never prints a secret, signed URL, email address or token. Turnstile cannot
+be completed by a bot; do one real-browser sign-up manually.
 
 ## What you must do by hand (minimum)
 

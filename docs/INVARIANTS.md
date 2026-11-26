@@ -37,6 +37,9 @@
 | Feed keeps its index scan at 1,000 posts | `tests/integration/feed-plan.test.ts` |
 | E2E cannot touch the demo database | `tests/unit/e2e-guard.test.ts`, `e2e/isolation.spec.ts`, CI before/after checksum |
 | Test count cannot silently drop | `ci/test-floor.json` + `scripts/check-test-floor.mjs` |
+| Every production config problem is reported without printing a value | `tests/unit/part-a.test.ts` |
+| Staging deploy targets the staging project's Production environment | `tests/unit/deploy-workflow.test.ts` |
+| Staging bootstrap refuses production and is idempotent | `tests/integration/staging-bootstrap.test.ts` |
 | UI-only branches cannot alter protected paths | `.github/ui-guard.json` + `scripts/check-ui-guard.mjs` |
 
 ### Phase 3 invariants
