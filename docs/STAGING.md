@@ -24,7 +24,7 @@ Every deployed server (staging and production) requires all of these. `NEXT_PUBL
 | --- | --- | --- |
 | `NODE_ENV` | Set by Vercel | `production` |
 | `APP_URL` | Your staging URL, no trailing slash | `https://staging.konnekt.ng` |
-| `DATABASE_URL` | Neon → branch → pooled connection string | `postgresql://.../konnekt?sslmode=require` |
+| `DATABASE_URL` | Neon → **same staging branch** → pooled connection string | `postgresql://.../konnekt?sslmode=require` |
 | `DIRECT_URL` | Neon → branch → unpooled connection string | `postgresql://.../konnekt?sslmode=require` |
 | `AUTH_SECRET` | `openssl rand -base64 48` | 32+ random characters |
 | `SESSION_TTL_DAYS` | Choose 1–90 | `30` |
@@ -122,6 +122,9 @@ In Resend → Domains → your domain:
 ## 7. Cloudinary
 
 - Create the cloud and copy the three values.
+- The API key must allow asset creation (`create`/upload). A restricted key
+  returns HTTP 403 `missing permissions (actions=["create"])` even when the
+  signature is valid; the verification reports that reason and fails.
 - ID card uploads use **signed** uploads (`type: authenticated`) from the server. Do not create an unsigned upload preset; unsigned presets are intentionally not used.
 - Keep the default "block public access to authenticated assets" behaviour. The app generates 120-second signed URLs only after a reviewer check.
 - Post images use signed direct uploads with a server-issued signature, restricted public delivery and random IDs.
