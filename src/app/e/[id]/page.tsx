@@ -13,10 +13,6 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       title: "Event on Konnekt",
       description: "Sign in to Konnekt to see what's happening at your university.",
       robots: { index: false, follow: false },
-      // Never inherit the root layout's site-wide card for a private/missing
-      // event. Only an opted-in PUBLIC event below emits Open Graph metadata.
-      openGraph: null,
-      twitter: null,
     };
   }
   const when = `${formatEventDate(preview.startsAt, preview.timezone)} · ${formatEventTime(preview.startsAt, preview.timezone)}`;

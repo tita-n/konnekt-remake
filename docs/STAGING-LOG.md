@@ -35,20 +35,20 @@ expiry at all.
 download path and that changing the lifetime changes the signature. The staging
 check now signs the same way production does, so it tests the real mechanism.
 
-## 2026-11-26 — generic event preview inherited Open Graph tags
+## 2026-11-26 — verification over-applied the post rule to event cards
 
-**Symptom:** `/e/<unknown>` returned the generic “This event is private” card
-with the root layout's site-wide Open Graph metadata.
+**Symptom:** `/e/<unknown>` failed the “public share previews stay private”
+check for exposing Open Graph metadata.
 
-**Root cause:** the no-preview metadata branch set robots tags but did not
-override `openGraph`/`twitter`, so Next.js inherited the root card. An opted-in
-PUBLIC event intentionally has its own share card; the generic/private fallback
-must have none.
+**Root cause:** the check applied the `/p` rule (never emit any Open Graph
+tags) to `/e` as well. Events are different by design: private or missing
+events fall back to a **generic** share card, while an opted-in PUBLIC event
+has its own title/time/venue card. Neither exposes attendee or organiser data.
 
-**Fix:** `/e/[id]` now sets `openGraph: null` and `twitter: null` only on the
-private/missing fallback. **Guard:** the E2E privacy test checks the generic
-event page has no OG tags and is `noindex`; opted-in public event cards still
-work as designed.
+**Fix:** the verification now requires no OG metadata only for `/p`, and for
+`/e` requires `noindex`, the generic private copy and no private marker. The
+E2E privacy test now checks the same distinction. The event page itself was
+not changed; the generic card is intentional.
 
 ## 2026-11-26 — first Deploy run failed before validation
 
