@@ -34,7 +34,8 @@ function skip(name, reason) {
 }
 async function check(name, fn) {
   try {
-    await fn();
+    const reason = await fn();
+    pass(name, typeof reason === "string" ? reason : "");
   } catch (error) {
     fail(name, error instanceof Error ? error.message : "unknown error");
   }
@@ -171,7 +172,11 @@ async function signedUpload(bytes, mime, filename, params, resourceType) {
     method: "POST",
     body: form,
   });
-  assert(response.ok, `Cloudinary upload returned HTTP ${response.status}`);
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    const detail = body?.error?.message ?? body?.error?.code ?? "rejected";
+    throw new Error(`Cloudinary upload returned HTTP ${response.status}: ${detail}`);
+  }
   return response.json();
 }
 
