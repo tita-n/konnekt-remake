@@ -71,9 +71,11 @@ database has every Phase 3 table and migration; the runtime database has no
 `DATABASE_URL` to the **pooled URL of the same Neon staging branch** as
 `DIRECT_URL`. This is a secret value, so it was not read or changed here.
 
-**Guard:** `scripts/check-staging-db.mjs` now runs before every deploy. It
-checks `Post`, `Event` and `Announcement` exist and compares the applied-migration
-fingerprint on both URLs; it prints names/status only, never a URL.
+**Guard:** `scripts/check-staging-db.mjs` now runs before every deploy and
+compares the GitHub runtime/migration URLs. Health also checks that `Post`,
+`Event` and `Announcement` actually exist, so a wrong Vercel runtime URL becomes
+a failed readiness probe instead of a first-request 500. It prints table names
+and status only, never a URL.
 
 ## 2026-11-26 — smoke hit Vercel Deployment Protection
 

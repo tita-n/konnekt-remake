@@ -58,6 +58,7 @@ await check("health endpoint", async () => {
   const body = await response.json().catch(() => ({}));
   assert(response.status === 200 && body.status === "ok", `health returned HTTP ${response.status}`);
   assert(body.database === true, "health reports database unavailable");
+  assert(body.schemaReady === true, "health reports the runtime database is missing the migrated schema");
   const configured = (body.services ?? []).filter((service) => service.requiredInProduction && !service.configured);
   assert(configured.length === 0, "health reports a required real service unconfigured");
 });

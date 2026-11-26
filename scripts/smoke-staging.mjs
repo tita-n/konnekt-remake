@@ -24,6 +24,7 @@ async function request(path, init = {}) {
 const health = await request("/api/health");
 const healthBody = await health.json().catch(() => ({}));
 check(health.status === 200 && healthBody.status === "ok", `health endpoint (${health.status})`);
+check(healthBody.schemaReady === true, "health reports the migrated schema");
 
 const home = await request("/");
 const csp = home.headers.get("content-security-policy") ?? "";
