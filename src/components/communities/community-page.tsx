@@ -4,9 +4,15 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
+  BellOff,
   BookOpen,
   Download,
+  EyeOff,
+  FileSpreadsheet,
   FileText,
+  Globe2,
+  Image as ImageIcon,
+  Presentation,
   Link2,
   Loader2,
   Lock,
@@ -27,13 +33,14 @@ import type { PostView } from "@/lib/posts/types";
 import { COMMUNITY_CATEGORY_LABELS, COMMUNITY_PRIVACY_LABELS, type CommunityCategory } from "@/lib/domain/community";
 import { ApiError, apiDelete, apiGet, apiPatch, apiPost, csrfToken } from "@/lib/posts/client";
 import { Button, ButtonLink, IconButton } from "@/components/ui/button";
+import { Avatar, Skeleton } from "@/components/ui/display";
 import { Chip, SelectField, TextArea, TextField } from "@/components/ui/form-controls";
 import { BottomSheet } from "@/components/ui/overlays";
 import { EmptyState } from "@/components/ui/feedback";
 import { useToast } from "@/components/providers/toast-provider";
 import { cn, timeAgo } from "@/lib/utils";
 import { PostCard } from "@/components/pulse/post-card";
-import { CommunityBadge, CommunityIcon, CommunityJoinButton } from "./community-card";
+import { CommunityBadge, CommunityIcon, CommunityJoinButton, OfficialShield } from "./community-card";
 
 type Tab = "posts" | "resources" | "members" | "about";
 
@@ -109,9 +116,10 @@ export function CommunityPage({
 
   return (
     <div className="pb-8">
+      {/* Banner: a category-tinted wash when there is no cover image. */}
       <div className="relative">
         <div
-          className="h-32 w-full bg-gradient-to-br from-accent/40 via-accent-soft to-surface-2 sm:h-40"
+          className={cn("h-32 w-full sm:h-36", !community.bannerUrl && "accent-banner")}
           style={
             community.bannerUrl
               ? { backgroundImage: `url(${community.bannerUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
@@ -121,50 +129,56 @@ export function CommunityPage({
         <Link
           href="/communities"
           aria-label="Back to communities"
-          className="glass absolute left-3 top-3 flex size-10 items-center justify-center rounded-full border border-border/50 text-fg hover:bg-surface"
+          className="glass absolute left-4 top-3 flex size-10 items-center justify-center rounded-full border border-border/50 text-fg transition-colors duration-150 hover:bg-surface"
         >
           <ArrowLeft aria-hidden="true" className="size-5" />
         </Link>
-        {community.viewer.canManage ? (
-          <Link
-            href={`/c/${community.slug}/settings`}
-            aria-label="Community settings"
-            className="glass absolute right-3 top-3 flex size-10 items-center justify-center rounded-full border border-border/50 text-fg hover:bg-surface"
-          >
-            <Settings aria-hidden="true" className="size-5" />
-          </Link>
-        ) : null}
       </div>
 
       <header className="px-4">
-        <div className="-mt-8 flex items-end gap-3">
-          <div className="rounded-[24px] border-4 border-surface bg-surface">
+        <div className="-mt-9 flex items-end">
+          {/* 64px icon inside a 4px page-coloured ring reads as 72px and overlaps the banner. */}
+          <span className="overflow-hidden rounded-[20px] border-4 border-bg bg-surface">
             <CommunityIcon community={community} size="lg" />
-          </div>
-          <div className="min-w-0 flex-1 pb-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <CommunityBadge official={community.isOfficial} privacy={community.privacy} />
-              {community.status === "ARCHIVED" ? (
-                <span className="rounded-full bg-warning-soft px-2 py-0.5 text-[0.6875rem] font-semibold text-warning">Archived</span>
-              ) : null}
-            </div>
-          </div>
+          </span>
         </div>
-        <h1 className="mt-2 font-display text-h1 font-bold text-fg">{community.name}</h1>
-        <p className="mt-1 text-small leading-relaxed text-fg-muted">{community.description}</p>
-        <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-tiny text-fg-subtle">
-          <span className="inline-flex items-center gap-1">
+        <div className="mt-2 flex items-start gap-2">
+          <h1 className="min-w-0 flex-1 font-display text-h1 font-bold text-fg">{community.name}</h1>
+          {community.isOfficial ? <OfficialShield className="mt-1.5" /> : null}
+        </div>
+        <p className="mt-1 text-[0.9375rem] leading-[1.47] text-fg-muted">{community.description}</p>
+        <p className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[0.8125rem] leading-[1.375rem] text-fg-muted">
+          <span className="inline-flex items-center gap-1 nums">
             <Users aria-hidden="true" className="size-3.5" />
             {community.memberCount.toLocaleString()} members
           </span>
-          <span className="inline-flex items-center gap-1">
-            <MessageSquare aria-hidden="true" className="size-3.5" />
-            {community.postCount.toLocaleString()} posts
-          </span>
+          <span aria-hidden="true">·</span>
           <span>{COMMUNITY_CATEGORY_LABELS[community.category]}</span>
-          <span>Created {timeAgo(community.createdAt)}</span>
+          <span className="inline-flex items-center gap-1 rounded-chip bg-surface-2 px-2 py-0.5 text-tiny font-medium text-fg-muted">
+            {community.privacy === "PUBLIC" ? (
+              <Globe2 aria-hidden="true" className="size-3" />
+            ) : community.privacy === "REQUEST" ? (
+              <Lock aria-hidden="true" className="size-3" />
+            ) : (
+              <EyeOff aria-hidden="true" className="size-3" />
+            )}
+            {COMMUNITY_PRIVACY_LABELS[community.privacy]}
+          </span>
+          {community.status === "ARCHIVED" ? (
+            <span className="inline-flex items-center gap-1 rounded-chip border border-border bg-surface-2 px-2 py-0.5 text-tiny font-semibold text-fg-muted">
+              Archived · read-only
+            </span>
+          ) : null}
         </p>
-        <div className="mt-3.5 flex items-center gap-2">
+
+        {community.viewer.muted ? (
+          <p className="mt-3 flex items-start gap-2 rounded-card border border-border bg-surface-2 px-3 py-2.5 text-small text-fg-muted">
+            <BellOff aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-fg-subtle" />
+            <span>You are muted here for 24 hours. You can read posts but not reply, react or upload.</span>
+          </p>
+        ) : null}
+
+        <div className="mt-3.5 flex flex-wrap items-center gap-2">
           {!community.viewer.isMember ? (
             <CommunityJoinButton
               communityId={community.id}
@@ -176,23 +190,34 @@ export function CommunityPage({
               size="md"
             />
           ) : (
-            <ButtonLink href="/compose" size="md" leftIcon={<Plus className="size-4" />}>
+            <ButtonLink href="/compose" size="md" className="h-11 whitespace-nowrap" leftIcon={<Plus className="size-4" />}>
               Post in community
             </ButtonLink>
           )}
           {community.viewer.canModerate && (community.pendingRequestCount > 0 || community.reportedCount > 0) ? (
             <Link
               href={`/c/${community.slug}/settings`}
-              className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-warning-soft px-3 text-small font-semibold text-warning"
+              className="inline-flex h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-button border border-border bg-surface px-3 text-small font-semibold text-fg transition-colors duration-150 hover:bg-surface-2"
             >
-              <Shield aria-hidden="true" className="size-4" />
-              {community.pendingRequestCount + community.reportedCount} to review
+              <Shield aria-hidden="true" className="size-4 text-accent-ink" />
+              <span className="nums">{community.pendingRequestCount + community.reportedCount}</span>
+              to review
+            </Link>
+          ) : null}
+          {community.viewer.canManage ? (
+            <Link
+              href={`/c/${community.slug}/settings`}
+              aria-label="Community settings"
+              className="ml-auto flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-surface text-fg transition-colors duration-150 hover:bg-surface-2"
+            >
+              <Settings aria-hidden="true" className="size-[18px]" />
             </Link>
           ) : null}
         </div>
       </header>
 
-      <div className="no-scrollbar sticky top-14 z-20 mt-4 flex gap-1 overflow-x-auto border-b border-border bg-surface/95 px-3 backdrop-blur">
+      {/* Sticky tabs are solid — glass is reserved for the top bar, tab bar and sheets. */}
+      <div className="no-scrollbar sticky top-14 z-20 mt-4 flex gap-1 overflow-x-auto border-b border-border bg-surface px-4">
         {tabs.map((entry) => {
           const Icon = entry.icon;
           const selected = tab === entry.value;
@@ -203,13 +228,13 @@ export function CommunityPage({
               aria-current={selected ? "page" : undefined}
               onClick={() => setTab(entry.value)}
               className={cn(
-                "relative flex min-h-12 shrink-0 items-center gap-1.5 px-3 text-small font-semibold transition",
+                "relative flex min-h-12 shrink-0 items-center gap-1.5 whitespace-nowrap px-2.5 text-small font-semibold transition-colors duration-150",
                 selected ? "text-accent-ink" : "text-fg-muted hover:text-fg",
               )}
             >
-              <Icon aria-hidden="true" className="size-4" />
+              <Icon aria-hidden="true" className="size-[18px]" />
               {entry.label}
-              {selected ? <span className="absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-accent" /> : null}
+              {selected ? <span className="absolute inset-x-2 bottom-0 h-[2px] rounded-full bg-accent" /> : null}
             </button>
           );
         })}
@@ -250,12 +275,14 @@ export function CommunityPage({
               </div>
             ) : (
               <div className="space-y-3">
+                {pinned.length > 0 ? (
+                  <p className="flex items-center gap-1.5 rounded-button bg-surface-2 px-3 py-2 text-tiny font-semibold uppercase tracking-[0.08em] text-fg-muted">
+                    <Pin aria-hidden="true" className="size-3.5 text-accent-ink" />
+                    Pinned
+                  </p>
+                ) : null}
                 {pinned.map((post) => (
-                  <div key={post.id} className="relative">
-                    <span className="absolute -top-1 left-3 z-10 inline-flex items-center gap-1 rounded-full bg-accent px-2 py-0.5 text-[0.625rem] font-bold uppercase tracking-wide text-accent-fg">
-                      <Pin aria-hidden="true" className="size-2.5" />
-                      Pinned
-                    </span>
+                  <div key={post.id}>
                     <PostCard post={post} />
                   </div>
                 ))}
@@ -355,6 +382,7 @@ function ResourcesTab({
   const [loading, setLoading] = useState(initial === null);
   const [category, setCategory] = useState<CommunityCategory | null>(null);
   const [kind, setKind] = useState<"FILE" | "LINK" | null>(null);
+  const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [mode, setMode] = useState<"FILE" | "LINK">("FILE");
   const [title, setTitle] = useState("");
@@ -463,9 +491,29 @@ function ResourcesTab({
     );
   }
 
+  const term = search.trim().toLowerCase();
+  const visible = term
+    ? resources.filter(
+        (resource) =>
+          resource.title.toLowerCase().includes(term) ||
+          (resource.description ?? "").toLowerCase().includes(term) ||
+          resource.uploader.fullName.toLowerCase().includes(term),
+      )
+    : resources;
+
   return (
-    <div className="px-3 pt-3">
-      <div className="flex items-center gap-2">
+    <div className="px-4 pt-3">
+      <TextField
+        label="Search resources"
+        hideLabel
+        type="search"
+        value={search}
+        onChange={(event) => setSearch(event.target.value)}
+        placeholder="Search files and links"
+        className="h-12"
+        leading={<Search aria-hidden="true" className="size-4" />}
+      />
+      <div className="mt-2 flex items-center gap-2">
         <div className="no-scrollbar flex flex-1 gap-1.5 overflow-x-auto">
           <Chip selected={!category && !kind} onClick={() => { setCategory(null); setKind(null); void refresh(null, null); }}>
             All
@@ -485,58 +533,79 @@ function ResourcesTab({
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-10 text-fg-subtle">
-          <Loader2 aria-hidden="true" className="size-5 animate-spin" />
-        </div>
-      ) : resources.length === 0 ? (
+        <ul className="mt-3 space-y-2" aria-hidden="true">
+          {[0, 1, 2].map((row) => (
+            <li key={row} className="flex min-h-[72px] items-center gap-3 rounded-card border border-border bg-surface p-3">
+              <Skeleton className="size-11" rounded="rounded-[12px]" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <Skeleton className="h-4 w-2/5" />
+                <Skeleton className="h-3 w-3/5" />
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : visible.length === 0 ? (
         <div className="mt-3 rounded-card border border-border bg-surface">
           <EmptyState
             illustration="bookmarks"
             compact
-            title="No resources yet"
-            description={canUpload ? "Share a past paper, slide deck or useful link." : "Members haven't shared anything here yet."}
+            title={term ? "Nothing matches that search" : "No resources yet"}
+            description={term ? "Try a different title or uploader." : canUpload ? "Share a past paper, slide deck or useful link." : "Members haven't shared anything here yet."}
           />
         </div>
       ) : (
         <ul className="mt-3 space-y-2">
-          {resources.map((resource) => (
-            <li key={resource.id} className="flex items-start gap-3 rounded-card border border-border bg-surface p-3.5">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-[12px] bg-accent-soft text-accent-ink">
-                {resource.kind === "LINK" ? <Link2 className="size-4" /> : <FileText className="size-4" />}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-small font-bold text-fg">{resource.title}</p>
-                {resource.description ? (
-                  <p className="mt-0.5 line-clamp-2 text-tiny leading-relaxed text-fg-muted">{resource.description}</p>
-                ) : null}
-                <p className="mt-1 text-[0.6875rem] text-fg-subtle">
-                  {COMMUNITY_CATEGORY_LABELS[resource.category]} · {resource.uploader.fullName} · {timeAgo(resource.createdAt)}
-                  {resource.sizeBytes ? ` · ${(resource.sizeBytes / 1024 / 1024).toFixed(1)} MB` : ""}
-                </p>
-              </div>
-              <div className="flex shrink-0 items-center gap-1">
-                <a
-                  href={`/api/communities/${community.id}/resources/${resource.id}`}
-                  target={resource.kind === "LINK" ? "_blank" : undefined}
-                  rel="noreferrer"
-                  aria-label={`Download ${resource.title}`}
-                  className="flex size-9 items-center justify-center rounded-full text-accent-ink hover:bg-accent-soft"
-                >
-                  {resource.kind === "LINK" ? <Link2 aria-hidden="true" className="size-4" /> : <Download aria-hidden="true" className="size-4" />}
-                </a>
-                {resource.canRemove ? (
-                  <button
-                    type="button"
-                    aria-label={`Remove ${resource.title}`}
-                    onClick={() => void remove(resource)}
-                    className="flex size-9 items-center justify-center rounded-full text-fg-subtle hover:bg-danger-soft hover:text-danger"
+          {visible.map((resource) => {
+            const fileKind = resourceFileKind(resource);
+            const TileIcon = fileKind.icon;
+            return (
+              <li key={resource.id} className="flex min-h-[72px] items-center gap-3 rounded-card border border-border bg-surface p-3">
+                <span className={cn("flex size-11 shrink-0 items-center justify-center rounded-[12px]", fileKind.tint)}>
+                  <TileIcon aria-hidden="true" className="size-5" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[0.9375rem] font-semibold leading-5 text-fg">{resource.title}</p>
+                  {resource.description ? (
+                    <p className="mt-0.5 line-clamp-1 text-tiny leading-[1.375rem] text-fg-muted">{resource.description}</p>
+                  ) : null}
+                  <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[0.75rem] leading-[1.33] text-fg-subtle">
+                    <span>{COMMUNITY_CATEGORY_LABELS[resource.category]}</span>
+                    <span aria-hidden="true">·</span>
+                    <span className="truncate">{resource.uploader.fullName}</span>
+                    <span aria-hidden="true">·</span>
+                    <span>{timeAgo(resource.createdAt)}</span>
+                    {resource.sizeBytes ? (
+                      <>
+                        <span aria-hidden="true">·</span>
+                        <span className="nums">{formatBytes(resource.sizeBytes)}</span>
+                      </>
+                    ) : null}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-0.5">
+                  <a
+                    href={`/api/communities/${community.id}/resources/${resource.id}`}
+                    target={resource.kind === "LINK" ? "_blank" : undefined}
+                    rel="noreferrer"
+                    aria-label={`Download ${resource.title}`}
+                    className="flex size-11 items-center justify-center rounded-full text-accent-ink transition-colors duration-150 hover:bg-accent-soft"
                   >
-                    <Trash2 aria-hidden="true" className="size-4" />
-                  </button>
-                ) : null}
-              </div>
-            </li>
-          ))}
+                    {resource.kind === "LINK" ? <Link2 aria-hidden="true" className="size-[18px]" /> : <Download aria-hidden="true" className="size-[18px]" />}
+                  </a>
+                  {resource.canRemove ? (
+                    <button
+                      type="button"
+                      aria-label={`Remove ${resource.title}`}
+                      onClick={() => void remove(resource)}
+                      className="flex size-11 items-center justify-center rounded-full text-fg-subtle transition-colors duration-150 hover:bg-danger-soft hover:text-danger"
+                    >
+                      <Trash2 aria-hidden="true" className="size-[18px]" />
+                    </button>
+                  ) : null}
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
 
@@ -654,7 +723,7 @@ function MembersTab({ community, initial }: { community: CommunityPageView; init
   }
 
   return (
-    <div className="px-3 pt-3">
+    <div className="px-4 pt-3">
       <TextField
         label="Search members"
         hideLabel
@@ -679,15 +748,23 @@ function MembersTab({ community, initial }: { community: CommunityPageView; init
       ) : null}
 
       {loading ? (
-        <div className="flex justify-center py-10 text-fg-subtle">
-          <Loader2 aria-hidden="true" className="size-5 animate-spin" />
-        </div>
+        <ul className="mt-3 space-y-1.5" aria-hidden="true">
+          {[0, 1, 2, 3].map((row) => (
+            <li key={row} className="flex min-h-16 items-center gap-3 rounded-button px-1 py-2">
+              <Skeleton className="size-12" rounded="rounded-full" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <Skeleton className="h-4 w-1/3" />
+                <Skeleton className="h-3 w-1/2" />
+              </div>
+            </li>
+          ))}
+        </ul>
       ) : members.length === 0 ? (
         <p className="py-8 text-center text-small text-fg-muted">No members found.</p>
       ) : (
         <ul className="mt-3 space-y-1.5">
           {members.map((member) => (
-            <li key={member.userId} className="flex items-center gap-3 rounded-button px-1 py-2">
+            <li key={member.userId} className="flex min-h-16 items-center gap-3 rounded-button px-1 py-2">
               <CommunityMemberAvatar member={member} />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-small font-semibold text-fg">
@@ -702,17 +779,23 @@ function MembersTab({ community, initial }: { community: CommunityPageView; init
               </div>
               <span
                 className={cn(
-                  "rounded-full px-2 py-0.5 text-[0.625rem] font-bold uppercase tracking-wide",
-                  member.role === "OWNER"
-                    ? "bg-accent-soft text-accent-ink"
-                    : member.role === "MODERATOR"
-                      ? "bg-warning-soft text-warning"
-                      : member.status === "BANNED"
-                        ? "bg-danger-soft text-danger"
+                  "shrink-0 rounded-chip px-2 py-0.5 text-[0.6875rem] font-semibold",
+                  member.status === "BANNED"
+                    ? "bg-danger-soft text-danger"
+                    : member.role === "OWNER"
+                      ? "bg-accent text-accent-fg"
+                      : member.role === "MODERATOR"
+                        ? "bg-accent-soft text-accent-soft-fg"
                         : "bg-surface-2 text-fg-muted",
                 )}
               >
-                {member.status === "BANNED" ? "Banned" : member.role.toLowerCase()}
+                {member.status === "BANNED"
+                  ? "Banned"
+                  : member.role === "OWNER"
+                    ? "Owner"
+                    : member.role === "MODERATOR"
+                      ? "Moderator"
+                      : "Member"}
               </span>
               {community.viewer.canModerate && !member.isViewer && member.role !== "OWNER" && status === "ACTIVE" ? (
                 <IconButton label={`Manage ${member.fullName}`} onClick={() => setSelected(member)} className="size-9">
@@ -788,21 +871,36 @@ function MembersTab({ community, initial }: { community: CommunityPageView; init
   );
 }
 
-function CommunityMemberAvatar({ member }: { member: CommunityMemberView }) {
+function CommunityMemberAvatar({ member, size = "md" }: { member: CommunityMemberView; size?: "sm" | "md" }) {
   return (
-    <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent-soft text-small font-bold text-accent-ink">
-      {member.photoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={member.photoUrl} alt="" className="size-full object-cover" />
-      ) : (
-        member.fullName
-          .split(/\s+/)
-          .map((part) => part[0])
-          .join("")
-          .slice(0, 2)
-      )}
-    </span>
+    <Avatar
+      name={member.fullName}
+      seed={member.username}
+      src={member.photoUrl}
+      size={size}
+      className="shrink-0"
+    />
   );
+}
+
+/**
+ * File-type tiles each get their own token tint so a list of resources reads at
+ * a glance. Colours are always paired with an icon, never meaning alone.
+ */
+function resourceFileKind(resource: CommunityResourceView): { icon: typeof FileText; tint: string } {
+  if (resource.kind === "LINK") return { icon: Link2, tint: "neutral-tile" };
+  const mime = (resource.mimeType ?? "").toLowerCase();
+  const name = resource.title.toLowerCase();
+  if (mime.includes("pdf") || name.endsWith(".pdf")) return { icon: FileText, tint: "danger-tile" };
+  if (mime.includes("presentation") || /\.(ppt|key|slides)$/.test(name)) return { icon: Presentation, tint: "success-tile" };
+  if (mime.includes("spreadsheet") || /\.(xls|csv|ods)$/.test(name)) return { icon: FileSpreadsheet, tint: "info-tile" };
+  if (mime.startsWith("image/")) return { icon: ImageIcon, tint: "accent-tile" };
+  return { icon: FileText, tint: "accent-tile" };
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
 function AboutTab({ community }: { community: CommunityPageView }) {
