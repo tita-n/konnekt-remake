@@ -203,8 +203,8 @@ export function OfficialConsole({ initialAccounts }: { initialAccounts: Official
               <div className="min-w-0 flex-1">
                 <p className="flex items-center gap-1 text-small font-bold text-fg">
                   {account.name}
-                  <span className={cn("rounded-chip px-1.5 py-0.5 text-[0.625rem] font-bold uppercase", account.status === "ACTIVE" ? "bg-success-soft text-success" : "bg-danger-soft text-danger")}>
-                    {account.status}
+                  <span className={cn("rounded-chip px-2 py-0.5 text-[0.625rem] font-bold", account.status === "ACTIVE" ? "bg-success-soft text-success" : "bg-danger-soft text-danger")}>
+                    {account.status === "ACTIVE" ? "Active" : "Suspended"}
                   </span>
                 </p>
                 <p className="text-tiny text-fg-muted">
@@ -243,7 +243,7 @@ export function OfficialConsole({ initialAccounts }: { initialAccounts: Official
                     {member.canPublishCritical ? "Can post critical" : "Standard poster"}
                   </p>
                 </div>
-                <Button size="sm" variant="ghost" onClick={() => void removeStaff(member.user.id)}>
+                <Button size="sm" variant="ghost" className="min-h-11" onClick={() => void removeStaff(member.user.id)}>
                   Remove
                 </Button>
               </li>
@@ -274,7 +274,7 @@ export function OfficialConsole({ initialAccounts }: { initialAccounts: Official
                 <Button size="sm" variant="secondary" onClick={() => void addStaff(candidate, false)}>
                   Add
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => void addStaff(candidate, true)}>
+                <Button size="sm" variant="ghost" className="min-h-11" onClick={() => void addStaff(candidate, true)}>
                   + critical
                 </Button>
               </li>
