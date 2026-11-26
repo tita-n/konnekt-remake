@@ -144,7 +144,7 @@ jobs:
         run: |
           mkdir -p .vercel
           printf '{"projectId":"%s","orgId":"%s"}' "$VERCEL_PROJECT_ID" "$VERCEL_ORG_ID" > .vercel/project.json
-          timeout 30s npx vercel logs "${{ needs.deploy.outputs.url }}" --token=${{ secrets.VERCEL_TOKEN }} || true
+          timeout 30s npx vercel logs "${{ needs.deploy.outputs.url }}" --scope=restoration-s-projects --token=${{ secrets.VERCEL_TOKEN }} || true
       - name: Show database schema facts
         if: failure()
         env:
