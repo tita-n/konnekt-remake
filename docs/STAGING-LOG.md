@@ -45,6 +45,17 @@ Vercel builds remotely with the Production environment injected. **Guard:**
 `tests/unit/deploy-workflow.test.ts` rejects `vercel pull`, `vercel build` and
 `--prebuilt` and requires the remote `vercel deploy --prod`.
 
+## 2026-11-26 — smoke job could not install Playwright
+
+**Symptom:** the first fully successful staging deployment failed in smoke at
+`npx playwright install --with-deps chromium` with
+`Playwright does not support chromium on ubuntu26.04-x64`. `ubuntu-latest` had
+moved to 26.04 while the project pins Playwright 1.56.1.
+
+**Fix:** the deploy smoke job and all staging verification jobs pin
+`ubuntu-24.04`, matching the existing CI. **Guard:**
+`tests/unit/staging-workflows.test.ts` asserts the pinned runners.
+
 ## 2026-11-26 — startup validation stopped at the first bad variable
 
 **Symptom:** the reported production 500 named only `APP_URL`, so every other

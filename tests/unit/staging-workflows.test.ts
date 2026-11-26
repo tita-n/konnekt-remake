@@ -25,4 +25,9 @@ describe("staging-only workflows", () => {
     expect(workflow("staging-announcements.yml")).toContain('github.ref == \'refs/heads/main\'');
     expect(workflow("staging-verify.yml")).toContain("scripts/check-vercel-env.mjs --target=production");
   });
+
+  it("pins browser jobs to the Playwright-supported Ubuntu release", () => {
+    expect(workflow("deploy.yml")).toContain("runs-on: ubuntu-24.04");
+    expect(workflow("staging-verify.yml").match(/runs-on: ubuntu-24\.04/g)?.length).toBe(3);
+  });
 });

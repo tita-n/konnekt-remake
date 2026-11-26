@@ -111,7 +111,8 @@ jobs:
   smoke:
     name: Smoke test deployment
     needs: deploy
-    runs-on: ubuntu-latest
+    # Playwright 1.56 supports 24.04, not the current ubuntu-latest (26.04).
+    runs-on: ubuntu-24.04
     environment: staging
     env:
       SMOKE_BASE_URL: ${{ needs.deploy.outputs.url }}

@@ -27,7 +27,7 @@ jobs:
   env-names:
     name: Verify Vercel variable names
     if: github.event.inputs.environment == 'staging'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: staging
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
@@ -43,7 +43,7 @@ jobs:
   smoke:
     name: Smoke and cookie flags
     if: github.event.inputs.environment == 'staging'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: staging
     env:
       SMOKE_BASE_URL: ${{ github.event.inputs.base_url }}
@@ -65,7 +65,7 @@ jobs:
   real-services:
     name: Real services and database
     if: github.event.inputs.environment == 'staging'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: staging
     env:
       STAGING_BASE_URL: ${{ github.event.inputs.base_url }}
