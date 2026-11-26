@@ -82,8 +82,9 @@ Reports target one post or comment and are unique per reporter/target. The admin
 ## Offline and the outbox
 
 - `src/app/sw.ts` precaches build assets and `/offline`; navigations and `/api/*` are `NetworkOnly`. Signed-in HTML and API responses are never stored in Cache Storage.
-- `src/lib/offline/store.ts` uses one IndexedDB database with `feeds` and `outbox` stores. Feed keys are user ids, so a cached page cannot cross accounts. `clearKonnektClientData` deletes the database, Cache Storage and account-scoped storage on logout.
+- `src/lib/offline/store.ts` uses one IndexedDB database with `feeds`, `outbox` and `checkins` stores. Feed keys are user ids, so a cached page cannot cross accounts. `clearKonnektClientData` deletes the database, Cache Storage and account-scoped storage on logout, including queued check-ins.
 - The composer writes an outbox item when `navigator.onLine` is false, with the original idempotency key and payload. Pulse flushes on mount and on the `online` event; successful items are removed, server errors are marked failed and retried manually.
+- The event scanner queues every scan made offline (or after a lost response) with a client-generated `clientScanId`. Reconnect and the manual retry use that same id, so the server treats a replay as a duplicate rather than a second check-in. Failed rows stay visible with their error until they are retried or cleared.
 - The UI never shows a published post while offline. It shows a queued confirmation, then a pending count on Pulse until the server accepts the write.
 
 ## Identity and verification
@@ -141,7 +142,7 @@ Rate limits use Upstash sliding windows in production, with separate policies pe
 | Accessibility | axe via Playwright | public pages, student shell/settings, verification queue/detail, feed and composer; serious/critical must be zero |
 | Performance | Lighthouse CI + EXPLAIN | production build Performance ≥90, Accessibility ≥95; feed plan in `docs/PERFORMANCE.md` |
 
-CI runs quality + integration, e2e, Lighthouse, production security invariants, dependency audit, performance budget, UI scope, test-floor and secret-scan jobs. The integration database is migrated with `prisma migrate deploy`; the demo and e2e seeds are deterministic and separate. Current counts are 75 unit, 12 integration and 22 Playwright tests. Playwright gets a dedicated `konnekt_e2e` database on `:3101`; CI snapshots the demo users/posts before and after the run and fails on any diff.
+CI runs quality + integration, e2e, Lighthouse, production security invariants, dependency audit, performance budget, UI scope, test-floor and secret-scan jobs. The integration database is migrated with `prisma migrate deploy`; the demo and e2e seeds are deterministic and separate. Current counts are 184 unit, 46 integration and 42 Playwright tests. Playwright gets a dedicated `konnekt_e2e` database on `:3101`; CI snapshots the demo users/posts before and after the run and fails on any diff.
 
 ## Failure behaviour
 
@@ -174,8 +175,19 @@ communities:
 `src/lib/services/event-admin.ts` adds campus places and the event moderation
 queue. `/api/cron/announcements` is the only infrastructure entry point; it
 enumerates universities and enters tenant scope for each, because cron has no
-logged-in tenant. Scheduled announcements also publish lazily when a student
-reads the feed, so a missed cron run cannot hide a notice indefinitely.
+logged-in tenant. It is secret-gated with a constant-time comparison, fails
+closed when the secret is unset in production, is rate limited per caller and
+uses a conditional per-row claim. Scheduled announcements also publish lazily
+when a student reads the feed, so a missed cron run cannot hide a notice
+indefinitely.
+
+Camera check-in uses the native `BarcodeDetector` where it exists. Safari and
+other browsers without it load `qr/decode.js` dynamically only when the camera
+starts on `/events/[id]/scan`; the bundled decoder is about 17 KB gzipped
+(measured with esbuild, minified, browser ESM) and has no production
+dependency at runtime beyond the dynamically imported chunk. Typing the ticket
+code and name search remain available on every browser and when camera
+permission is denied. No camera stream is uploaded, recorded or cached.
 
 The public share routes (`/e/[id]` and its OG image) deliberately bypass the
 session and query `platformDb` for a narrow preview gated by PUBLIC + explicit

@@ -12,6 +12,7 @@ import {
   organizerAudienceIsValid,
   rsvpIsOpen,
   validateEventForCreation,
+  validateEventWindow,
   type EventPermissionActor,
   type EventPermissionEvent,
 } from "@/lib/domain/events";
@@ -298,5 +299,39 @@ describe("event creation validation", () => {
     expect(validateEventForCreation({ ...base, endsAt: startsAt })).not.toBeNull();
     expect(validateEventForCreation({ ...base, capacity: 0 })).not.toBeNull();
     expect(audienceIsOnViewerPath(path, "PUBLIC", ["PUBLIC"])).toBe(true);
+  });
+});
+
+describe("Phase 3 gap checks — time boundaries", () => {
+  it("formats events that cross midnight with both local dates", () => {
+    const startsAt = new Date("2026-12-01T22:30:00.000Z"); // 23:30 Lagos
+    const endsAt = new Date("2026-12-02T01:30:00.000Z"); // 02:30 next day Lagos
+    expect(eventDateKey(startsAt, "Africa/Lagos")).toBe("2026-12-01");
+    expect(eventDateKey(endsAt, "Africa/Lagos")).toBe("2026-12-02");
+    const when = formatEventWhen(startsAt, endsAt, "Africa/Lagos");
+    expect(when).toContain("1 Dec 2026");
+    expect(when).toContain("2 Dec 2026");
+    expect(when).toContain("11:30");
+    expect(when).toContain("02:30");
+  });
+
+  it("opens check-in exactly two hours before and closes exactly at the end", () => {
+    const event = { startsAt: "2026-12-01T14:00:00.000Z", endsAt: "2026-12-01T18:00:00.000Z" };
+    expect(checkInWindow(event, new Date("2026-12-01T11:59:59.999Z")).open).toBe(false);
+    expect(checkInWindow(event, new Date("2026-12-01T12:00:00.000Z")).open).toBe(true);
+    expect(checkInWindow(event, new Date("2026-12-01T17:59:59.999Z")).open).toBe(true);
+    expect(checkInWindow(event, new Date("2026-12-01T18:00:00.000Z")).open).toBe(true);
+    expect(checkInWindow(event, new Date("2026-12-01T18:00:00.001Z")).open).toBe(false);
+  });
+
+  it("allows exactly 14 days, rejects longer events and past starts", () => {
+    const now = new Date("2026-12-01T12:00:00.000Z");
+    const startsAt = new Date("2026-12-02T12:00:00.000Z");
+    const fourteenDays = new Date(startsAt.getTime() + 14 * 24 * 60 * 60 * 1000);
+    expect(validateEventWindow({ startsAt, endsAt: fourteenDays, now })).toBeNull();
+    expect(
+      validateEventWindow({ startsAt, endsAt: new Date(fourteenDays.getTime() + 1), now }),
+    ).toMatch(/14 days/);
+    expect(validateEventWindow({ startsAt: now, endsAt: fourteenDays, now })).toMatch(/future/);
   });
 });

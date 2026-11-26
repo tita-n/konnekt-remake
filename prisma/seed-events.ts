@@ -284,6 +284,133 @@ export async function seedEvents(
     checkedIn: [verified!.id],
   });
 
+  await createEvent({
+    id: "seed-event-scanner",
+    title: "Live Check-in Lab",
+    description: "A live event used to review the organiser dashboard, scanner and ticket states.",
+    category: "TECH",
+    startsAt: liveStart,
+    endsAt: liveEnd,
+    venue: "University Library",
+    placeId: places[1]!.id,
+    capacity: 80,
+    organiserKind: "USER",
+    creatorId: verified!.id,
+    audienceKind: "PUBLIC",
+    audiencePath: swePublicPath,
+    going: [
+      { userId: verified!.id },
+      { userId: levelmate!.id },
+      { userId: otherLevel!.id },
+    ],
+  });
+
+  await createEvent({
+    id: "seed-event-joinable",
+    title: "Open Campus Picnic",
+    description: "A public picnic the demo student has not RSVP'd to yet.",
+    category: "MEETUP",
+    startsAt: new Date(now + hours(192)),
+    endsAt: new Date(now + hours(195)),
+    venue: "Sports Complex",
+    placeId: places[2]!.id,
+    capacity: 100,
+    organiserKind: "USER",
+    creatorId: levelmate!.id,
+    audienceKind: "PUBLIC",
+    audiencePath: swePublicPath,
+    going: [{ userId: levelmate!.id }],
+  });
+
+  await createEvent({
+    id: "seed-event-waitlist",
+    title: "Sold-out Robotics Tour",
+    description: "A one-seat tour that is already full, used to review the waitlist state.",
+    category: "TECH",
+    startsAt: new Date(now + hours(200)),
+    endsAt: new Date(now + hours(202)),
+    venue: "University Library",
+    placeId: places[1]!.id,
+    capacity: 1,
+    organiserKind: "USER",
+    creatorId: levelmate!.id,
+    audienceKind: "PUBLIC",
+    audiencePath: swePublicPath,
+    going: [{ userId: levelmate!.id }],
+  });
+
+  const cancelled = await createEvent({
+    id: "seed-event-cancelled",
+    title: "Cancelled: Hallowe'en Costume Parade",
+    description: "This event was cancelled after the venue withdrew permission.",
+    category: "CULTURAL",
+    startsAt: new Date(now + hours(120)),
+    endsAt: new Date(now + hours(123)),
+    venue: "Main Auditorium",
+    placeId: places[0]!.id,
+    organiserKind: "USER",
+    creatorId: verified!.id,
+    audienceKind: "PUBLIC",
+    audiencePath: swePublicPath,
+    going: [],
+  });
+  await db.event.update({
+    where: { id: cancelled.id },
+    data: {
+      status: "CANCELLED",
+      cancelledAt: new Date(now - hours(2)),
+      cancelReason: "The venue withdrew permission, so the parade is cancelled.",
+    },
+  });
+
+  const updated = await createEvent({
+    id: "seed-event-updated",
+    title: "Updated: Design Systems Workshop",
+    description: "A hands-on workshop moved to a larger room and a later start time.",
+    category: "TECH",
+    startsAt: new Date(now + hours(144)),
+    endsAt: new Date(now + hours(147)),
+    venue: "University Library",
+    placeId: places[1]!.id,
+    capacity: 60,
+    organiserKind: "USER",
+    creatorId: verified!.id,
+    audienceKind: "PUBLIC",
+    audiencePath: swePublicPath,
+    going: [{ userId: verified!.id }, { userId: levelmate!.id }],
+  });
+  await db.event.update({
+    where: { id: updated.id },
+    data: {
+      lastMaterialChangeAt: new Date(now - hours(1)),
+      materialChanges: [
+        {
+          at: new Date(now - hours(1)).toISOString(),
+          fields: ["time", "venue"],
+          previous: { startsAt: new Date(now + hours(140)).toISOString(), venueName: "Main Auditorium" },
+        },
+      ],
+    },
+  });
+
+  await createEvent({
+    id: "seed-event-private",
+    title: "Private: Committee Planning",
+    description: "A private planning session that must not leak through a public share card.",
+    category: "MEETUP",
+    startsAt: new Date(now + hours(168)),
+    endsAt: new Date(now + hours(170)),
+    venue: "University Library",
+    placeId: places[1]!.id,
+    capacity: 20,
+    organiserKind: "USER",
+    creatorId: verified!.id,
+    audienceKind: "PUBLIC",
+    audiencePath: swePublicPath,
+    allowOutsideSharing: false,
+    going: [{ userId: verified!.id }],
+  });
+
   const announcements = [
     {
       id: "seed-announcement-registration",

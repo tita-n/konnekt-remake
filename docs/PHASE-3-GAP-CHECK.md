@@ -55,5 +55,59 @@ All baseline gates were green before the branch was created:
 
 ## AFTER — fixes and evidence
 
-To be completed after the fixes land. The final table will use the same eight
-requirements and will name the automated test proving each one.
+**AFTER counts: IMPLEMENTED 8 · PARTIAL 0 · MISSING 0.**
+
+| # | Requirement | Status after | Named evidence |
+| --- | --- | --- | --- |
+| 1 | Offline queue, pending/failed state, replay, idempotent scans, server window | **IMPLEMENTED** | `e2e/events.spec.ts` › “the scanner checks in once, reports duplicates and replays an offline scan”; `tests/integration/events.test.ts` › “issues a ticket once, revokes on regeneration and makes scans idempotent”; “rejects check-in before the two-hour window”. The queue lives in the existing `konnekt-offline` database (version 2, `checkins` store), and logout still deletes it. |
+| 2 | `BarcodeDetector` + lazy fallback <20 KB, route-only, manual/name, denied/no-camera/low-light, browser docs | **IMPLEMENTED** | `checkin-scanner.tsx` dynamically imports `qr/decode.js` only after the camera starts; esbuild minified/browser ESM bundle measured **16,932 bytes gzipped**. Camera denial, missing camera and low-light hints have explicit copy. Browser support is documented in `docs/ARCHITECTURE.md`; the offline and camera states were screenshotted. |
+| 3 | Parallel capacity, FIFO, cancel/switch, capacity increase, concurrent publish, regeneration races, counters | **IMPLEMENTED** | `tests/integration/events.test.ts` › “never oversells under concurrent RSVPs and promotes exactly one waiter”; “promotes every waiter freed by simultaneous cancellation and Going-to-Interested switch”; “promotes waiters when the organiser raises capacity”; “converges to exactly one active ticket under simultaneous regeneration”; “publishes and acknowledges exactly once under parallel cron and reads”. Capacity changes are transactional and promotion claims a real seat conditionally. |
+| 4 | Failing-closed tests for every Phase 3 limit, including 10 upcoming | **IMPLEMENTED** | `tests/integration/events.test.ts` › “enforces every Phase 3 rate limit policy” pins create 3/day, RSVP 60/h, scans 600/h, CSV 10/day, share 20/h, regeneration 5/day, announcement 10/day/account, critical 2/day/account and cron 30/10 min. › “refuses an eleventh upcoming event for the same organiser”. `tests/unit/security-fallbacks.test.ts` proves the production limiter fails closed, and `tests/unit/cron-announcements.test.ts` proves the cron route is rate limited before auth. Announcement keys are per account and ticket regeneration now has a policy. |
+| 5 | Timezone/midnight/boundaries/14-day/future/.ics escaping/visibility | **IMPLEMENTED** | `tests/unit/events.test.ts` › “formats events that cross midnight with both local dates”; “opens check-in exactly two hours before and closes exactly at the end”; “allows exactly 14 days, rejects longer events and past starts”; the escaped `.ics` unit test. `tests/integration/events.test.ts` › “exports only events the student can currently see to the calendar” and E2E “My Events lists RSVPs and exports a valid .ics with only visible events”. |
+| 6 | Attendance privacy and blocks in stacks/lists/counts, organiser full list, disclosure, CSV role + audit | **IMPLEMENTED** | `tests/integration/events.test.ts` › “removes blocked students from event counts, comments and updates but keeps the organiser list complete” and “does not leak attendee identity when a student hides attendance”. E2E “hiding attendance removes a student from another student's attendee preview”. Existing hidden-count, disclosure and CSV audit tests remain green. |
+| 7 | Playwright + axe for all fourteen required flows | **IMPLEMENTED** | `e2e/events.spec.ts` now has 14 tests covering: find/RSVP/QR; critical acknowledgement; admin list + axe; create + second-student RSVP; capacity/waitlist promotion; manual/duplicate/offline check-in; updated change log + cancellation; community visibility; departmental announcement; private share card; My Events/.ics; attendance privacy; staff add/remove; shared-phone logout. The existing axe checks on hub/admin remain. |
+| 8 | Cron constant-time secret, no information leak, rate limited, fail closed, lazy publish, staging docs | **IMPLEMENTED** | `tests/unit/cron-announcements.test.ts` covers missing secret in production, wrong bearer/query secret and rate limiting before the secret is read. `tests/integration/events.test.ts` covers six concurrent publishers and four concurrent acknowledgements. `docs/STAGING.md` §10 documents the scheduler, `ANNOUNCEMENT_CRON_SECRET`, call shape, limits and lazy fallback. |
+
+## Attack findings — resolved
+
+| Finding | Status after | Evidence |
+| --- | --- | --- |
+| Ticket regeneration had no rate limit | **Fixed** | 5/day policy + policy-matrix test. |
+| Cron endpoint had no rate limit | **Fixed** | 30/10 min per caller, enforced before the secret check; unit test proves the flood is rejected before the database. |
+| Waiters were not promoted on capacity increase | **Fixed** | Transactional capacity update + promotion; named integration test. |
+| Blocked attendees counted and blocked comments/updates visible | **Fixed** | Visibility filtering in `getEventDetail`; block integration test. |
+| Announcement/critical limiter keyed per staff member | **Fixed** | Keyed by official account; matrix pins limits. |
+| Ticket regeneration races raised P2002 | **Fixed** | Bounded retry/revoke loop; simultaneous-regeneration integration test. |
+| Admin announcement payload had bogus `goingCount: 0` | **Fixed** | Field removed from the admin payload and type. |
+| Attachment access/expiry/tamper untested | **Fixed** | Audience recheck integration test + existing signed-URL expiry/tamper unit tests. |
+| Staff search crashed the dashboard (`{candidates}` vs array) | **Fixed** | Correct response typing; staff add/remove E2E. |
+| Mobile form action bar sat under the bottom nav | **Fixed** | Inline action bar on mobile, fixed only on desktop; E2E create flow and screenshots. |
+| Small icon buttons clipped their labels | **Fixed** | Inner label span is an inline flex row; organiser/admin screenshots recaptured. |
+
+## Screenshots
+
+`npm run shots` now covers the Phase 3 product surface. `SHOTS_ONLY=...` produced
+**56 Phase 3 PNGs** in `design/review/` across light/dark and 390×844/1440×900:
+events hub, upcoming/live/full/past/cancelled/updated/departmental details,
+RSVP confirmation, waitlist confirmation, share sheet, create/edit forms,
+organiser dashboard, scanner, offline queue, ticket/generated QR, My Events,
+official channel, announcement detail, admin events and admin official accounts.
+The review fixed the mobile action bar/nav overlap, clipped icon-button labels
+and the staff-search crash; all Phase 3 screenshots were recaptured afterwards.
+
+## Final verification
+
+| Gate | Result |
+| --- | --- |
+| `npm run typecheck` | Pass |
+| `npm run lint` | Pass |
+| `npm test` | 184 passed |
+| `npm run test:integration` | 46 passed |
+| Playwright Events spec | 14 passed |
+| Playwright full suite | 42 passed |
+| `npm run perf:build` | Pass (shared JS 104 kB, middleware 34.1 kB) |
+| `npm run test:security` | Pass |
+| `npm run audit:prod` | Pass |
+| `npm run check:invariants` | Pass (30 invariants) |
+| `npm run check:no-mock-db` | Pass |
+| `npm run shots` | 56 Phase 3 screenshots captured and reviewed |

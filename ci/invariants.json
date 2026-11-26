@@ -179,6 +179,51 @@
       "tests": [
         "publishes a due announcement exactly once across repeated cron runs"
       ]
+    },
+    {
+      "name": "Capacity increases promote waitlisted students exactly once",
+      "file": "tests/integration/events.test.ts",
+      "tests": [
+        "promotes waiters when the organiser raises capacity",
+        "promotes every waiter freed by simultaneous cancellation and Going-to-Interested switch"
+      ]
+    },
+    {
+      "name": "Concurrent ticket regeneration leaves exactly one active ticket",
+      "file": "tests/integration/events.test.ts",
+      "tests": [
+        "converges to exactly one active ticket under simultaneous regeneration"
+      ]
+    },
+    {
+      "name": "Blocked students disappear from every student-facing event surface",
+      "file": "tests/integration/events.test.ts",
+      "tests": [
+        "removes blocked students from event counts, comments and updates but keeps the organiser list complete"
+      ]
+    },
+    {
+      "name": "The announcement cron fails closed and is rate limited",
+      "file": "tests/unit/cron-announcements.test.ts",
+      "tests": [
+        "fails closed when the secret is missing in production",
+        "rejects a wrong bearer secret and a wrong query secret",
+        "rate-limits before it reads the secret, so a flood cannot reach the database"
+      ]
+    },
+    {
+      "name": "Scheduled announcements and acknowledgements are exactly-once under concurrency",
+      "file": "tests/integration/events.test.ts",
+      "tests": [
+        "publishes and acknowledges exactly once under parallel cron and reads"
+      ]
+    },
+    {
+      "name": "The scanner proves duplicate and offline replay behaviour end-to-end",
+      "file": "e2e/events.spec.ts",
+      "tests": [
+        "the scanner checks in once, reports duplicates and replays an offline scan"
+      ]
     }
   ]
 }
