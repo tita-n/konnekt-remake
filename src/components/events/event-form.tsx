@@ -403,7 +403,7 @@ export function EventForm({
         <FormMessage error={error} message={null} />
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 p-3 backdrop-blur lg:left-auto lg:right-6 lg:bottom-6 lg:rounded-card lg:border">
+      <div className="border-t border-border bg-surface/95 p-3 backdrop-blur lg:fixed lg:inset-x-0 lg:bottom-6 lg:left-auto lg:right-6 lg:z-30 lg:rounded-card lg:border">
         <div className="mx-auto flex max-w-3xl items-center gap-2">
           <Button type="submit" loading={busy} className="flex-1">
             {mode === "create" ? "Create event" : "Save changes"}

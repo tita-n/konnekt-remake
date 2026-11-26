@@ -330,10 +330,10 @@ export async function createAnnouncement(
   if (attachments.length > 3) throw new SocialError("Attach at most 3 PDFs.");
   for (const attachment of attachments) validateAttachment(attachment);
 
-  const limit = await rateLimit("announcementCreate", `${official.account.id}:${viewer.userId}`);
+  const limit = await rateLimit("announcementCreate", official.account.id);
   if (!limit.success) throw new SocialError("This account has reached its daily announcement limit.", 429, "rate_limited");
   if (input.critical) {
-    const criticalLimit = await rateLimit("announcementCritical", `${official.account.id}:${viewer.userId}`);
+    const criticalLimit = await rateLimit("announcementCritical", official.account.id);
     if (!criticalLimit.success) throw new SocialError("This account can publish 2 critical announcements per day.", 429, "rate_limited");
     const recentCritical = await db.announcement.count({
       where: {
@@ -523,7 +523,7 @@ export async function getAnnouncementAttachment(
 }
 
 export async function listAdminAnnouncements(viewer: SocialViewer): Promise<{
-  announcements: Array<SerializedAnnouncement & { ackCount: number; goingCount: number }>;
+  announcements: Array<SerializedAnnouncement & { ackCount: number }>;
   accounts: Array<{ id: string; name: string; slug: string; category: string; status: string }>;
 }> {
   if (!viewer.isUniversityAdmin && !viewer.isUniversityModerator) {
@@ -546,7 +546,6 @@ export async function listAdminAnnouncements(viewer: SocialViewer): Promise<{
     announcements: rows.map((row) => ({
       ...serializeAnnouncement(row),
       ackCount: row._count.acks,
-      goingCount: 0,
     })),
     accounts,
   };

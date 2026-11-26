@@ -48,12 +48,12 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       {loading ? (
         <>
           <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-          <span>{loadingLabel ?? "Working…"}</span>
+          <span className="inline-flex items-center gap-2">{loadingLabel ?? "Working…"}</span>
         </>
       ) : (
         <>
           {leftIcon}
-          <span>{children}</span>
+          <span className="inline-flex items-center gap-2">{children}</span>
           {rightIcon}
         </>
       )}
@@ -84,7 +84,7 @@ export function ButtonLink({
   return (
     <Link href={href} className={buttonStyles({ variant, size, fullWidth, className })} {...props}>
       {leftIcon}
-      <span>{children}</span>
+      <span className="inline-flex items-center gap-2">{children}</span>
       {rightIcon}
     </Link>
   );

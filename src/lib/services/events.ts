@@ -560,7 +560,7 @@ export async function getEventDetail(
         id: true,
         body: true,
         createdAt: true,
-        author: { select: { username: true, fullName: true, photoUrl: true } },
+        author: { select: { id: true, username: true, fullName: true, photoUrl: true } },
       },
     }),
     db.eventComment.findMany({
@@ -597,6 +597,20 @@ export async function getEventDetail(
     .slice(0, 5)
     .map((entry) => entry.user);
   const hiddenCount = visibleAttendees.length - visibleAttendees.filter((entry) => entry.showPublicly).length;
+  // Blocked students disappear from comments, updates and the count, exactly
+  // as they do from feeds. Organisers still get the complete list through the
+  // dedicated organiser endpoint.
+  const visibleUpdates = updates.filter(
+    (update) => !isHiddenAuthor(hiddenAttendees, update.author.id, viewer.userId),
+  );
+  const visibleComments = commentRows
+    .filter((comment) => !isHiddenAuthor(hiddenAttendees, comment.author.id, viewer.userId))
+    .map((comment) => ({
+      ...comment,
+      replies: comment.replies.filter(
+        (reply) => !isHiddenAuthor(hiddenAttendees, reply.author.id, viewer.userId),
+      ),
+    }));
   const window = checkInWindow(row);
 
   if (options.recordView !== false) {
@@ -620,17 +634,17 @@ export async function getEventDetail(
       communityAllowMemberEvents: actor.communityAllowMemberEvents,
     },
     attendees: {
-      count: row.goingCount,
+      count: visibleAttendees.length,
       preview,
       hiddenCount,
     },
-    updates: updates.map((update) => ({
+    updates: visibleUpdates.map((update) => ({
       id: update.id,
       body: update.body,
       createdAt: update.createdAt.toISOString(),
       author: update.author,
     })),
-    comments: commentRows.map((comment) => ({
+    comments: visibleComments.map((comment) => ({
       id: comment.id,
       body: comment.body,
       createdAt: comment.createdAt.toISOString(),
@@ -642,7 +656,7 @@ export async function getEventDetail(
         author: reply.author,
       })),
     })),
-    commentCount: commentRows.reduce((sum, comment) => sum + 1 + comment.replies.length, 0),
+    commentCount: visibleComments.reduce((sum, comment) => sum + 1 + comment.replies.length, 0),
     changeLog,
     rsvpOpen: rsvpIsOpen(row),
     checkInOpen: window.open,
@@ -1023,30 +1037,41 @@ export async function updateEvent(
     });
   }
 
-  const updated = await db.event.update({
-    where: { id: eventId },
-    data: {
-      title: nextTitle.trim(),
-      description: nextDescription.trim(),
-      category: input.category ?? row.category,
-      startsAt: nextStarts,
-      endsAt: nextEnds,
-      venueName: nextVenue.trim(),
-      placeId,
-      venueNote: input.venueNote === undefined ? row.venueNote : input.venueNote?.trim().slice(0, 300) || null,
-      coverPublicId,
-      capacity: nextCapacity,
-      waitlistEnabled: input.waitlistEnabled ?? row.waitlistEnabled,
-      checkInEnabled: input.checkInEnabled ?? row.checkInEnabled,
-      allowOutsideSharing: input.allowOutsideSharing ?? row.allowOutsideSharing,
-      ...(change.changed && hasRsvps
-        ? {
-            lastMaterialChangeAt: new Date(),
-            materialChanges: changes as unknown as Prisma.InputJsonValue,
-          }
-        : {}),
-    },
-    select: { id: true },
+  let promoted = 0;
+  const updated = await withTenantTransaction(viewer.universityId, async (tx) => {
+    const saved = await tx.event.update({
+      where: { id: eventId },
+      data: {
+        title: nextTitle.trim(),
+        description: nextDescription.trim(),
+        category: input.category ?? row.category,
+        startsAt: nextStarts,
+        endsAt: nextEnds,
+        venueName: nextVenue.trim(),
+        placeId,
+        venueNote: input.venueNote === undefined ? row.venueNote : input.venueNote?.trim().slice(0, 300) || null,
+        coverPublicId,
+        capacity: nextCapacity,
+        waitlistEnabled: input.waitlistEnabled ?? row.waitlistEnabled,
+        checkInEnabled: input.checkInEnabled ?? row.checkInEnabled,
+        allowOutsideSharing: input.allowOutsideSharing ?? row.allowOutsideSharing,
+        ...(change.changed && hasRsvps
+          ? {
+              lastMaterialChangeAt: new Date(),
+              materialChanges: changes as unknown as Prisma.InputJsonValue,
+            }
+          : {}),
+      },
+      select: { id: true },
+    });
+    const capacityIncreased =
+      nextCapacity === null ? row.capacity !== null : row.capacity !== null && nextCapacity > row.capacity;
+    if (capacityIncreased) {
+      while (await promoteFirstWaiter(tx, viewer.universityId, eventId, row.checkInEnabled, nextCapacity)) {
+        promoted += 1;
+      }
+    }
+    return saved;
   });
   await writeAudit({
     actorId: viewer.userId,
@@ -1057,6 +1082,7 @@ export async function updateEvent(
     metadata: {
       material: change.changed && hasRsvps,
       fields: Object.keys(input),
+      promoted,
     },
   });
   return updated;
@@ -1192,24 +1218,45 @@ async function promoteFirstWaiter(
   universityId: string,
   eventId: string,
   checkInEnabled: boolean,
+  capacity: number | null,
 ): Promise<boolean> {
-  const waiter = await tx.eventRsvp.findFirst({
-    where: { eventId, status: "WAITLISTED" },
-    orderBy: [{ waitlistPosition: "asc" }, { createdAt: "asc" }],
-    select: { id: true, userId: true },
-  });
-  if (!waiter) return false;
-  const claimed = await tx.eventRsvp.updateMany({
-    where: { id: waiter.id, status: "WAITLISTED" },
-    data: { status: "GOING", promotedAt: new Date(), waitlistPosition: null },
-  });
-  if (claimed.count !== 1) return false;
-  await tx.event.updateMany({ where: { id: eventId, waitlistCount: { gt: 0 } }, data: { waitlistCount: { decrement: 1 } } });
-  await tx.event.updateMany({ where: { id: eventId }, data: { goingCount: { increment: 1 } } });
-  if (checkInEnabled) {
-    await issueTicketFor(tx, universityId, waiter.userId, eventId);
+  // A concurrent cancellation may have claimed the first waiter between our
+  // read and update. Retry the next waiter rather than leaving the freed seat
+  // empty; the seat claim below is still the final guard against overselling.
+  for (;;) {
+    const waiter = await tx.eventRsvp.findFirst({
+      where: { eventId, status: "WAITLISTED" },
+      orderBy: [{ waitlistPosition: "asc" }, { createdAt: "asc" }],
+      select: { id: true, userId: true, waitlistPosition: true },
+    });
+    if (!waiter) return false;
+    const claimed = await tx.eventRsvp.updateMany({
+      where: { id: waiter.id, status: "WAITLISTED" },
+      data: { status: "GOING", promotedAt: new Date(), waitlistPosition: null },
+    });
+    if (claimed.count !== 1) continue;
+
+    const seat = await tx.event.updateMany({
+      where: {
+        id: eventId,
+        status: "SCHEDULED",
+        ...(capacity !== null ? { goingCount: { lt: capacity } } : {}),
+      },
+      data: { goingCount: { increment: 1 } },
+    });
+    if (seat.count !== 1) {
+      await tx.eventRsvp.updateMany({
+        where: { id: waiter.id, status: "GOING" },
+        data: { status: "WAITLISTED", promotedAt: null, waitlistPosition: waiter.waitlistPosition },
+      });
+      return false;
+    }
+    await tx.event.updateMany({ where: { id: eventId, waitlistCount: { gt: 0 } }, data: { waitlistCount: { decrement: 1 } } });
+    if (checkInEnabled) {
+      await issueTicketFor(tx, universityId, waiter.userId, eventId);
+    }
+    return true;
   }
-  return true;
 }
 
 export async function rsvpEvent(
@@ -1241,7 +1288,7 @@ export async function rsvpEvent(
         await tx.event.updateMany({ where: { id: eventId, goingCount: { gt: 0 } }, data: { goingCount: { decrement: 1 } } });
         await tx.eventTicket.updateMany({ where: { eventId, userId: viewer.userId, revokedAt: null }, data: { revokedAt: new Date() } });
         // Changing your mind frees a seat exactly like cancelling does.
-        await promoteFirstWaiter(tx, viewer.universityId, eventId, row.checkInEnabled);
+        await promoteFirstWaiter(tx, viewer.universityId, eventId, row.checkInEnabled, row.capacity);
       } else if (current === "WAITLISTED") {
         await tx.event.updateMany({ where: { id: eventId, waitlistCount: { gt: 0 } }, data: { waitlistCount: { decrement: 1 } } });
       }
@@ -1381,7 +1428,7 @@ export async function cancelRsvp(viewer: SocialViewer, eventId: string): Promise
     if (previous !== "GOING") return;
     // Exactly one waiter is promoted per freed slot. The conditional update is
     // the claim; a concurrent cancellation promotes a different waiter.
-    await promoteFirstWaiter(tx, viewer.universityId, eventId, row.checkInEnabled);
+    await promoteFirstWaiter(tx, viewer.universityId, eventId, row.checkInEnabled, row.capacity);
   });
   await writeAudit({
     actorId: viewer.userId,
@@ -1428,13 +1475,31 @@ export async function regenerateTicket(viewer: SocialViewer, eventId: string): P
   });
   if (rsvp?.status !== "GOING") throw new SocialError("RSVP as Going first.", 409, "not_going");
   if (row.status !== "SCHEDULED" || eventHasEnded(row)) throw new SocialError("This event is closed.", 409, "event_closed");
-  const code = generateTicketCode();
-  await withTenantTransaction(viewer.universityId, async (tx) => {
-    await tx.eventTicket.updateMany({ where: { eventId, userId: viewer.userId, revokedAt: null }, data: { revokedAt: new Date() } });
-    await tx.eventTicket.create({
-      data: { universityId: viewer.universityId, eventId, userId: viewer.userId, codeHash: hashTicketCode(code) },
-    });
-  });
+  const limit = await rateLimit("eventTicketRegenerate", viewer.userId);
+  if (!limit.success) throw new SocialError("You've regenerated this ticket too many times today.", 429, "rate_limited");
+  let code = generateTicketCode();
+  let stored = false;
+  // Two devices regenerating at once both revoke the active ticket. The
+  // partial unique index lets only one insert win; the loser retries, revoking
+  // the winner's row, so exactly one active ticket remains.
+  for (let attempt = 0; attempt < 3 && !stored; attempt += 1) {
+    if (attempt > 0) code = generateTicketCode();
+    try {
+      await withTenantTransaction(viewer.universityId, async (tx) => {
+        await tx.eventTicket.updateMany({
+          where: { eventId, userId: viewer.userId, revokedAt: null },
+          data: { revokedAt: new Date() },
+        });
+        await tx.eventTicket.create({
+          data: { universityId: viewer.universityId, eventId, userId: viewer.userId, codeHash: hashTicketCode(code) },
+        });
+      });
+      stored = true;
+    } catch (error) {
+      if ((error as { code?: string }).code !== "P2002") throw error;
+    }
+  }
+  if (!stored) throw new SocialError("Couldn't generate a ticket. Try again.", 409, "ticket_race");
   await writeAudit({
     actorId: viewer.userId,
     universityId: viewer.universityId,

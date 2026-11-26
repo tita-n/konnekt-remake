@@ -73,8 +73,8 @@ export function OrganiserDashboard({
         return;
       }
       try {
-        const { data } = await apiGet<Candidate[]>(`/api/events/${event.id}/staff/search?q=${encodeURIComponent(staffQuery)}`);
-        setCandidates(data);
+        const { data } = await apiGet<{ candidates: Candidate[] }>(`/api/events/${event.id}/staff/search?q=${encodeURIComponent(staffQuery)}`);
+        setCandidates(data.candidates);
       } catch {
         setCandidates([]);
       }
