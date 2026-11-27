@@ -160,6 +160,21 @@ imports any of it. `npm run typecheck` reports the 391 pre-existing Prisma-stub 
 in `directions` or `design/auth-*`; `eslint` is clean; `npm run check:ui-guard` passes (17 changed
 files, none in a protected path).
 
+### Closed by CI (run `45962911464`, all 10 checks green)
+
+* **Performance budgets** — `npm run perf:build` (which runs the real `next build`) passed, so route
+  weights stay inside the 10% tolerance in `perf/baseline.json`: the preview CSS and 18 files add
+  nothing to a production route.
+* **Lighthouse (installable, performance, accessibility)** — passed against live routes, the
+  measurement this sandbox could not make.
+* **End-to-end and accessibility** — Playwright plus axe, 10m07s, green: no protected auth string or
+  selector (`getByLabel("Matric number")`, `getByLabel("Password")`) moved, which is the concrete
+  proof that this branch left the live flow alone.
+* **Test floor and skipped-test guard** — green: no test was deleted or skipped to get here.
+
+CI does **not** cover the decisions this PR asks for: which direction to pick, keyboard-only feel, and
+whether the trust copy reads correctly to a screen-reader user. Those stay with the reviewer.
+
 ## Residual issues — PR 1's to fix, not hidden here
 
 `directions.css` reaches into the reused primitives *only inside the preview* so the frames can be
