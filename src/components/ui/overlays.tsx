@@ -39,10 +39,14 @@ function useOverlayDismiss(open: boolean, onClose: () => void) {
     window.addEventListener("popstate", onPopState);
     return () => {
       window.removeEventListener("popstate", onPopState);
-      // Programmatic dismissal removes the marker it added. A dismissal caused
-      // by popstate already removed it.
+      // Remove the marker without popping history. Calling back() here raced a
+      // second overlay opened in the same tick (menu → report) and could pop
+      // the new dialog's marker. A dismissal caused by popstate already
+      // removed it.
       if (!popped && window.history.state?.__konnektOverlay === id) {
-        window.history.back();
+        const next = { ...(window.history.state ?? {}) };
+        delete next.__konnektOverlay;
+        window.history.replaceState(next, "");
       }
     };
   }, [open, onClose]);
