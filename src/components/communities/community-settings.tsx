@@ -10,9 +10,11 @@ import {
   Download,
   Flag,
   Link2,
+  PencilLine,
   Plus,
   Send,
   ShieldAlert,
+  ShieldQuestion,
   Trash2,
   UserPlus,
   Users,
@@ -39,6 +41,31 @@ import { Chip, SelectField, TextArea, TextField } from "@/components/ui/form-con
 import { Dialog } from "@/components/ui/overlays";
 import { useToast } from "@/components/providers/toast-provider";
 import { cn } from "@/lib/utils";
+
+/**
+ * Raw enums never reach the screen: every status is mapped to a chip with text,
+ * never colour alone.
+ */
+const INVITE_STATUS_LABELS: Record<CommunityInviteView["status"], { label: string; tone: string }> = {
+  ACTIVE: { label: "Active", tone: "bg-success-soft text-success" },
+  USED: { label: "Used up", tone: "bg-surface-2 text-fg-muted" },
+  EXPIRED: { label: "Expired", tone: "bg-surface-2 text-fg-muted" },
+  REVOKED: { label: "Revoked", tone: "bg-danger-soft text-danger" },
+};
+
+const REPORT_REASON_LABELS: Record<string, string> = {
+  SPAM: "Spam or a scam",
+  HARASSMENT: "Harassment or bullying",
+  CHEATING: "Cheating or exam leaks",
+  PERSONAL_INFO: "Someone's personal details",
+  NSFW: "Inappropriate content",
+  MISINFORMATION: "False information",
+  OTHER: "Something else",
+};
+
+function reportReasonLabel(reason: string): string {
+  return REPORT_REASON_LABELS[reason] ?? reason.toLowerCase().replace(/_/g, " ");
+}
 
 export function CommunitySettings({
   community,
@@ -219,12 +246,9 @@ export function CommunitySettings({
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-2xl space-y-6 px-4 pb-16 pt-5">
-        <section aria-labelledby="basics-title" className="space-y-3">
-          <div>
-            <h2 id="basics-title" className="font-display text-h2 font-bold">Basics</h2>
-            <p className="text-small text-fg-muted">Name, description and how people find you.</p>
-          </div>
+      <main className="mx-auto w-full max-w-2xl space-y-4 px-4 pb-28 pt-5">
+        <section aria-labelledby="basics-title" className="rounded-card border border-border bg-surface p-4">
+          <div className="flex items-start gap-2.5"><span className="accent-tile flex size-8 shrink-0 items-center justify-center rounded-[10px]"><PencilLine aria-hidden="true" className="size-4" /></span><div className="min-w-0 flex-1"><h2 id="basics-title" className="font-display text-h2 font-bold text-fg">Basics</h2><p className="mt-0.5 text-small text-fg-muted">Name, description and how people find you.</p></div></div>
           <TextField label="Name" value={name} onChange={(event) => setName(event.target.value.slice(0, 40))} />
           <TextArea
             label="Description"
@@ -241,11 +265,8 @@ export function CommunitySettings({
           />
         </section>
 
-        <section aria-labelledby="privacy-title" className="space-y-3">
-          <div>
-            <h2 id="privacy-title" className="font-display text-h2 font-bold">Membership</h2>
-            <p className="text-small text-fg-muted">Changing to invite-only hides the community from discovery.</p>
-          </div>
+        <section aria-labelledby="privacy-title" className="rounded-card border border-border bg-surface p-4">
+          <div className="flex items-start gap-2.5"><span className="accent-tile flex size-8 shrink-0 items-center justify-center rounded-[10px]"><Users aria-hidden="true" className="size-4" /></span><div className="min-w-0 flex-1"><h2 id="privacy-title" className="font-display text-h2 font-bold text-fg">Membership</h2><p className="mt-0.5 text-small text-fg-muted">Changing to invite-only hides the community from discovery.</p></div></div>
           <div className="space-y-2">
             {(["PUBLIC", "REQUEST", "INVITE_ONLY"] as CommunityPrivacy[]).map((option) => (
               <label
@@ -287,12 +308,9 @@ export function CommunitySettings({
           </label>
         </section>
 
-        <section aria-labelledby="rules-title" className="space-y-2">
+        <section aria-labelledby="rules-title" className="rounded-card border border-border bg-surface p-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h2 id="rules-title" className="font-display text-h2 font-bold">Rules</h2>
-              <p className="text-small text-fg-muted">Shown on the About tab.</p>
-            </div>
+            <div className="flex items-start gap-2.5"><span className="accent-tile flex size-8 shrink-0 items-center justify-center rounded-[10px]"><ShieldQuestion aria-hidden="true" className="size-4" /></span><div className="min-w-0 flex-1"><h2 id="rules-title" className="font-display text-h2 font-bold text-fg">Rules</h2><p className="mt-0.5 text-small text-fg-muted">Shown on the About tab.</p></div></div>
             <span className="text-tiny text-fg-subtle">{rules.length}/{MAX_COMMUNITY_RULES}</span>
           </div>
           {rules.map((rule, index) => (
@@ -333,30 +351,45 @@ export function CommunitySettings({
           ) : null}
         </section>
 
-        <div className="sticky bottom-3 z-10">
+        <div className="action-bar action-bar-fixed">
+          <div className="mx-auto max-w-2xl">
           <Button fullWidth size="lg" loading={saving} onClick={() => void save()}>
             Save changes
           </Button>
+          </div>
         </div>
 
-        <section aria-labelledby="requests-title">
-          <h2 id="requests-title" className="font-display text-h2 font-bold">Join requests</h2>
-          <p className="text-small text-fg-muted">{requests.length === 0 ? "Nothing waiting." : `${requests.length} waiting for a decision.`}</p>
+        <section aria-labelledby="requests-title" className="rounded-card border border-border bg-surface p-4">
+          <div className="flex items-start gap-2.5">
+            <span className="accent-tile flex size-8 shrink-0 items-center justify-center rounded-[10px]">
+              <UserPlus aria-hidden="true" className="size-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h2 id="requests-title" className="font-display text-h2 font-bold text-fg">Join requests</h2>
+              <p className="mt-0.5 text-small text-fg-muted">
+                {requests.length === 0 ? "Nothing waiting." : `${requests.length} waiting for a decision.`}
+              </p>
+            </div>
+          </div>
           <div className="mt-2 space-y-2">
             {requests.map((request) => (
-              <div key={request.id} className="rounded-card border border-border bg-surface p-3.5">
-                <p className="text-small font-bold text-fg">{request.user.fullName}</p>
+              <div key={request.id} className="rounded-[12px] border border-border bg-surface p-3">
+                <p className="text-small font-semibold text-fg">{request.user.fullName}</p>
                 <p className="text-tiny text-fg-muted">
                   @{request.user.username}
                   {request.user.departmentName ? ` · ${request.user.departmentName}` : ""}
                   {request.user.level ? ` · ${request.user.level}L` : ""}
                 </p>
-                {request.message ? <p className="mt-1.5 rounded-button bg-surface-2 p-2 text-small text-fg-muted">{request.message}</p> : null}
+                {request.message ? (
+                  <p className="mt-1.5 rounded-button border-l-2 border-border bg-surface-2 p-2 text-small italic leading-relaxed text-fg-muted">
+                    &ldquo;{request.message}&rdquo;
+                  </p>
+                ) : null}
                 <div className="mt-2.5 flex gap-2">
-                  <Button size="sm" onClick={() => void decideRequest(request, "APPROVE")} leftIcon={<Check className="size-4" />}>
+                  <Button size="sm" className="h-9 flex-1" onClick={() => void decideRequest(request, "APPROVE")} leftIcon={<Check className="size-4" />}>
                     Approve
                   </Button>
-                  <Button size="sm" variant="secondary" onClick={() => void decideRequest(request, "DECLINE")}>
+                  <Button size="sm" variant="secondary" className="h-9 flex-1" onClick={() => void decideRequest(request, "DECLINE")}>
                     Decline
                   </Button>
                 </div>
@@ -365,9 +398,16 @@ export function CommunitySettings({
           </div>
         </section>
 
-        <section aria-labelledby="invites-title">
-          <h2 id="invites-title" className="font-display text-h2 font-bold">Invites</h2>
-          <p className="text-small text-fg-muted">Links can be forwarded. Users are invited by username.</p>
+        <section aria-labelledby="invites-title" className="rounded-card border border-border bg-surface p-4">
+          <div className="flex items-start gap-2.5">
+            <span className="accent-tile flex size-8 shrink-0 items-center justify-center rounded-[10px]">
+              <Link2 aria-hidden="true" className="size-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h2 id="invites-title" className="font-display text-h2 font-bold text-fg">Invites</h2>
+              <p className="mt-0.5 text-small text-fg-muted">Links can be forwarded. Users are invited by username.</p>
+            </div>
+          </div>
           <div className="mt-2 rounded-card border border-border bg-surface p-3.5">
             <div className="flex gap-2">
               <Chip selected={inviteKind === "LINK"} onClick={() => setInviteKind("LINK")} icon={<Link2 className="size-4" />}>
@@ -426,9 +466,15 @@ export function CommunitySettings({
                   <p className="truncate text-small font-semibold text-fg">
                     {invite.kind === "USER" ? invite.invitedUser?.fullName ?? "Student invite" : "Invite link"}
                   </p>
-                  <p className="text-tiny text-fg-muted">
-                    {invite.status.toLowerCase()} · {invite.uses}/{invite.maxUses ?? "∞"} uses · ends{" "}
-                    {new Date(invite.expiresAt).toLocaleDateString()}
+                  <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-tiny text-fg-muted">
+                    <span className={cn("rounded-chip px-2 py-0.5 text-[0.6875rem] font-semibold", INVITE_STATUS_LABELS[invite.status].tone)}>
+                      {INVITE_STATUS_LABELS[invite.status].label}
+                    </span>
+                    <span className="nums">
+                      {invite.uses}/{invite.maxUses ?? "∞"} uses
+                    </span>
+                    <span aria-hidden="true">·</span>
+                    <span>ends {new Date(invite.expiresAt).toLocaleDateString()}</span>
                   </p>
                 </div>
                 {invite.status === "ACTIVE" ? (
@@ -436,7 +482,7 @@ export function CommunitySettings({
                     type="button"
                     aria-label="Revoke invite"
                     onClick={() => void revokeInvite(invite)}
-                    className="flex size-9 items-center justify-center rounded-full text-fg-subtle hover:bg-danger-soft hover:text-danger"
+                    className="flex size-11 shrink-0 items-center justify-center rounded-full text-fg-subtle transition-colors duration-150 hover:bg-danger-soft hover:text-danger"
                   >
                     <X aria-hidden="true" className="size-4" />
                   </button>
@@ -446,25 +492,30 @@ export function CommunitySettings({
           </ul>
         </section>
 
-        <section aria-labelledby="reports-title">
-          <h2 id="reports-title" className="flex items-center gap-1.5 font-display text-h2 font-bold">
-            <Flag aria-hidden="true" className="size-5 text-warning" />
-            Reports
+        <section aria-labelledby="reports-title" className="rounded-card border border-border bg-surface p-4">
+          <h2 id="reports-title" className="flex items-center gap-2 font-display text-h2 font-bold">
+            <span className="danger-tile flex size-8 shrink-0 items-center justify-center rounded-[10px]">
+              <Flag aria-hidden="true" className="size-4" />
+            </span>
+            <span>Reports</span>
           </h2>
           <p className="text-small text-fg-muted">{reports.length === 0 ? "No pending reports." : `${reports.length} pending in this community.`}</p>
           <div className="mt-2 space-y-2">
             {reports.map((report) => (
-              <div key={report.id} className="rounded-card border border-border bg-surface p-3.5">
-                <p className="text-tiny font-semibold text-warning">{report.reason.replaceAll("_", " ").toLowerCase()}</p>
+              <div key={report.id} className="rounded-[12px] border border-border bg-surface p-3">
+                <p className="flex items-center gap-1.5 text-tiny font-semibold text-danger">
+                  <Flag aria-hidden="true" className="size-3.5" />
+                  {reportReasonLabel(report.reason)}
+                </p>
                 <p className="mt-1 line-clamp-3 text-small text-fg-muted">{report.targetExcerpt}</p>
                 <p className="mt-1 text-tiny text-fg-subtle">
                   by {report.author ? `@${report.author.username}` : "unknown"} · reported by @{report.reporter.username}
                 </p>
                 <div className="mt-2 flex gap-2">
-                  <Button size="sm" variant="secondary" onClick={() => void resolveReport(report, "DISMISS")}>
+                  <Button size="sm" variant="secondary" className="h-9 flex-1" onClick={() => void resolveReport(report, "DISMISS")}>
                     Dismiss
                   </Button>
-                  <Button size="sm" variant="destructive" onClick={() => void resolveReport(report, "REMOVE_CONTENT")}>
+                  <Button size="sm" variant="destructive" className="h-9 flex-1" onClick={() => void resolveReport(report, "REMOVE_CONTENT")}>
                     Remove content
                   </Button>
                 </div>
@@ -474,7 +525,10 @@ export function CommunitySettings({
         </section>
 
         <section aria-labelledby="official-title" className="rounded-card border border-border bg-surface p-4">
-          <h2 id="official-title" className="flex items-center gap-1.5 font-display text-h2 font-bold">
+          <h2 id="official-title" className="flex items-center gap-2 font-display text-h2 font-bold">
+            <span className="accent-tile flex size-8 shrink-0 items-center justify-center rounded-[10px]">
+              <ShieldAlert aria-hidden="true" className="size-4" />
+            </span>
             <ShieldAlert aria-hidden="true" className="size-5 text-accent-ink" />
             Official status
           </h2>
@@ -497,16 +551,26 @@ export function CommunitySettings({
         </section>
 
         <section aria-labelledby="ownership-title" className="rounded-card border border-border bg-surface p-4">
-          <h2 id="ownership-title" className="font-display text-h2 font-bold">Ownership</h2>
+          <h2 id="ownership-title" className="flex items-center gap-2 font-display text-h2 font-bold">
+            <span className="accent-tile flex size-8 shrink-0 items-center justify-center rounded-[10px]">
+              <Users aria-hidden="true" className="size-4" />
+            </span>
+          </h2>
           <p className="mt-1 text-small text-fg-muted">Transfer to an active member. You become a moderator.</p>
           <Button className="mt-2" variant="secondary" onClick={() => setTransferOpen(true)} disabled={candidates.length === 0}>
             Transfer ownership
           </Button>
         </section>
 
-        <section aria-labelledby="danger-title" className="rounded-card border border-danger/30 bg-danger-soft p-4">
-          <h2 id="danger-title" className="font-display text-h2 font-bold text-fg">Danger zone</h2>
-          <p className="mt-1 text-small text-fg-muted">Archiving makes the community read-only. Deletion is permanent after 30 days.</p>
+        <section aria-labelledby="danger-title" className="rounded-card border-[1.5px] border-danger/40 bg-danger-soft p-4">
+          <h2 id="danger-title" className="flex items-center gap-2 font-display text-h2 font-bold text-fg">
+            <span className="danger-tile flex size-8 shrink-0 items-center justify-center rounded-[10px] border border-danger/30">
+              <Trash2 aria-hidden="true" className="size-4" />
+            </span>
+          </h2>
+          <p className="mt-1.5 text-small leading-relaxed text-fg-muted">
+            Archiving makes the community read-only for everyone. Deleting removes posts, resources and member history — it cannot be undone after 30 days.
+          </p>
           <div className="mt-2 flex flex-wrap gap-2">
             <Button variant="secondary" onClick={() => void archive()} loading={working}>
               Archive community

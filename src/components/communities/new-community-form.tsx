@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Check, ImagePlus, Loader2, Plus, ShieldCheck, Trash2, Users } from "lucide-react";
+import { ArrowLeft, Check, Clock3, Globe2, ImagePlus, Loader2, Lock, Plus, ShieldCheck, Trash2, Users } from "lucide-react";
 import {
   COMMUNITY_CATEGORIES,
   COMMUNITY_PRIVACY_DESCRIPTIONS,
@@ -17,6 +17,49 @@ import { uploadPostImage } from "@/lib/client/post-image";
 import { Button } from "@/components/ui/button";
 import { TextArea, TextField, SelectField } from "@/components/ui/form-controls";
 import { cn } from "@/lib/utils";
+import type { CommunityCardView } from "@/lib/communities/types";
+import { CommunityCard } from "./community-card";
+
+const PRIVACY_OPTIONS: Array<{ value: CommunityPrivacy; label: string; icon: typeof Globe2 }> = [
+  { value: "PUBLIC", label: "Public", icon: Globe2 },
+  { value: "REQUEST", label: "Request to join", icon: Clock3 },
+  { value: "INVITE_ONLY", label: "Invite only", icon: Lock },
+];
+
+/** One 4px accent bar that fills as the required parts of the form are ready. */
+function FormProgress({ ready, total }: { ready: number; total: number }) {
+  const percent = Math.round((ready / total) * 100);
+  return (
+    <div className="h-1 w-full bg-surface-2" aria-hidden="true">
+      <span
+        className="block h-full bg-accent transition-[width] duration-200 ease-out"
+        style={{ width: `${percent}%` }}
+      />
+    </div>
+  );
+}
+
+function FormSection({
+  id,
+  title,
+  description,
+  children,
+}: {
+  id: string;
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section aria-labelledby={id} className="rounded-card border border-border bg-surface p-4">
+      <h2 id={id} className="font-display text-h1 font-bold text-fg">
+        {title}
+      </h2>
+      {description ? <p className="mt-0.5 text-small text-fg-muted">{description}</p> : null}
+      <div className={description ? "mt-3.5" : "mt-3"}>{children}</div>
+    </section>
+  );
+}
 
 interface NameState {
   checking: boolean;
@@ -38,6 +81,12 @@ export function NewCommunityForm() {
   const [nameState, setNameState] = useState<NameState>({ checking: false, available: null, message: null });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const formReady = [
+    name.trim().length >= 3,
+    description.trim().length >= 5,
+    rules.some((rule) => rule.title.trim() && rule.body.trim()),
+    Boolean(icon),
+  ].filter(Boolean).length;
 
   useEffect(() => {
     if (name.trim().length < 3) {
@@ -105,6 +154,32 @@ export function NewCommunityForm() {
     }
   }
 
+  const previewCommunity: CommunityCardView = {
+    id: "preview",
+    name: name.trim() || "Your community name",
+    slug: "preview",
+    description: description.trim() || "Tell students what this space is for and who should join.",
+    category,
+    privacy,
+    status: "ACTIVE",
+    isOfficial: false,
+    iconUrl: icon?.url ?? null,
+    bannerUrl: null,
+    memberCount: 1,
+    postCount: 0,
+    recentActivity: null,
+    viewer: {
+      joinState: privacy === "REQUEST" ? "CAN_REQUEST" : privacy === "INVITE_ONLY" ? "INVITE_REQUIRED" : "CAN_JOIN",
+      isMember: false,
+      role: null,
+      pendingRequest: false,
+      hasInvite: false,
+      muted: false,
+      canModerate: false,
+      canManage: false,
+    },
+  };
+
   return (
     <div className="min-h-dvh bg-surface text-fg">
       <header className="sticky top-0 z-40 border-b border-border bg-surface">
@@ -115,10 +190,11 @@ export function NewCommunityForm() {
           <h1 className="flex-1 text-center font-display text-[1.0625rem] font-bold">New community</h1>
           <span className="size-11" aria-hidden="true" />
         </div>
+        <FormProgress ready={formReady} total={4} />
       </header>
 
-      <main className="mx-auto w-full max-w-2xl space-y-5 px-4 pb-24 pt-5">
-        <section className="rounded-card border border-border bg-surface-2 p-4">
+      <main className="mx-auto w-full max-w-2xl space-y-4 px-4 pb-28 pt-4">
+        <FormSection id="icon-title" title="Icon and cover" description="Optional — a clay default is generated from the name.">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -153,73 +229,80 @@ export function NewCommunityForm() {
               ) : null}
             </div>
           </div>
-        </section>
+        </FormSection>
 
-        <TextField
-          label="Community name"
+        <FormSection id="basics-title" title="Basics" description="What people see in Discover and on your community page.">
+          <div className="space-y-4">
+            <TextField
+              label="Community name"
           required
           value={name}
           onChange={(event) => setName(event.target.value.slice(0, 40))}
           placeholder="e.g. Software Engineering Class of 2028"
           hint="Official, SUG and university names are reserved for verified official communities."
-          error={nameState.available === false ? nameState.message : null}
-          trailing={
-            nameState.checking ? (
-              <Loader2 aria-hidden="true" className="mr-2 size-4 animate-spin text-fg-subtle" />
-            ) : nameState.available ? (
-              <Check aria-hidden="true" className="mr-2 size-4 text-success" />
-            ) : null
-          }
-        />
+              error={nameState.available === false ? nameState.message : null}
+              trailing={
+                nameState.checking ? (
+                  <Loader2 aria-hidden="true" className="mr-2 size-4 animate-spin text-fg-subtle" />
+                ) : nameState.available ? (
+                  <Check aria-hidden="true" className="mr-2 size-4 text-success" />
+                ) : null
+              }
+            />
 
-        <TextArea
-          label="Description"
-          required
-          value={description}
-          onChange={(event) => setDescription(event.target.value.slice(0, 500))}
-          placeholder="What is this community for, and who should join?"
-          hint={`${description.length}/500`}
-          rows={4}
-        />
+            <TextArea
+              label="Description"
+              required
+              value={description}
+              onChange={(event) => setDescription(event.target.value.slice(0, 500))}
+              placeholder="What is this community for, and who should join?"
+              hint={`${description.length}/500`}
+              rows={4}
+            />
 
-        <SelectField
-          label="Category"
-          value={category}
-          onChange={(event) => setCategory(event.target.value as CommunityCategory)}
-          options={COMMUNITY_CATEGORIES.map((entry) => ({ value: entry.value, label: entry.label }))}
-        />
-
-        <fieldset>
-          <legend className="text-small font-semibold text-fg">Who can join?</legend>
-          <div className="mt-2 space-y-2">
-            {(["PUBLIC", "REQUEST", "INVITE_ONLY"] as CommunityPrivacy[]).map((option) => (
-              <label
-                key={option}
-                className={cn(
-                  "flex cursor-pointer items-start gap-3 rounded-[14px] border p-3.5 transition",
-                  privacy === option ? "border-accent bg-accent-soft" : "border-border bg-surface hover:bg-surface-2",
-                )}
-              >
-                <input
-                  type="radio"
-                  name="privacy"
-                  value={option}
-                  checked={privacy === option}
-                  onChange={() => setPrivacy(option)}
-                  className="mt-1 size-4 accent-[var(--accent)]"
-                />
-                <span className="min-w-0">
-                  <span className="block text-small font-bold text-fg">
-                    {option === "PUBLIC" ? "Public" : option === "REQUEST" ? "Request to join" : "Invite only"}
-                  </span>
-                  <span className="mt-0.5 block text-tiny leading-relaxed text-fg-muted">
-                    {COMMUNITY_PRIVACY_DESCRIPTIONS[option]}
-                  </span>
-                </span>
-              </label>
-            ))}
+            <SelectField
+              label="Category"
+              value={category}
+              onChange={(event) => setCategory(event.target.value as CommunityCategory)}
+              options={COMMUNITY_CATEGORIES.map((entry) => ({ value: entry.value, label: entry.label }))}
+            />
           </div>
-        </fieldset>
+        </FormSection>
+
+        <FormSection id="privacy-title" title="Who can join?" description="You can change this later in community settings.">
+          <fieldset>
+            <legend className="sr-only">Who can join this community?</legend>
+            <div className="space-y-2">
+              {PRIVACY_OPTIONS.map((option) => (
+                <label
+                  key={option.value}
+                  className={cn(
+                    "flex min-h-[72px] cursor-pointer items-center gap-3 rounded-[14px] border p-3.5 transition-colors duration-150",
+                    privacy === option.value ? "border-accent bg-accent-soft" : "border-border bg-surface hover:bg-surface-2",
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="privacy"
+                    value={option.value}
+                    checked={privacy === option.value}
+                    onChange={() => setPrivacy(option.value)}
+                    className="size-4 shrink-0 accent-[var(--accent)]"
+                  />
+                  <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-[10px]", privacy === option.value ? "accent-tile" : "neutral-tile")}>
+                    <option.icon aria-hidden="true" className="size-4" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-small font-bold text-fg">{option.label}</span>
+                    <span className="mt-0.5 block text-tiny leading-relaxed text-fg-muted">
+                      {COMMUNITY_PRIVACY_DESCRIPTIONS[option.value]}
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        </FormSection>
 
         <label className="flex items-start gap-3 rounded-card border border-border bg-surface p-4">
           <input
@@ -239,8 +322,8 @@ export function NewCommunityForm() {
         <section>
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-small font-semibold text-fg">Community rules</h2>
-              <p className="text-tiny text-fg-muted">Shown on the About tab. You can edit these later.</p>
+              <h2 className="font-display text-[0.9375rem] font-semibold text-fg">Community rules</h2>
+              <p className="mt-0.5 text-tiny text-fg-muted">Shown on the About tab. You can edit these later.</p>
             </div>
             <span className="text-tiny text-fg-subtle">{rules.length}/{MAX_COMMUNITY_RULES}</span>
           </div>
@@ -295,7 +378,13 @@ export function NewCommunityForm() {
           ) : null}
         </section>
 
-        <div className="rounded-card bg-accent-soft p-3.5 text-small text-accent-soft-fg">
+        <FormSection id="preview-title" title="Preview" description="This is how your community appears in Discover.">
+          <div className="pointer-events-none select-none" aria-hidden="true">
+            <CommunityCard community={previewCommunity} />
+          </div>
+        </FormSection>
+
+        <div className="rounded-card accent-tile p-3.5 text-small text-accent-soft-fg">
           <p className="flex items-center gap-1.5 font-semibold">
             <ShieldCheck aria-hidden="true" className="size-4" />
             Built for one university
@@ -312,8 +401,8 @@ export function NewCommunityForm() {
         ) : null}
       </main>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)]">
-        <div className="mx-auto flex max-w-2xl gap-3 px-4 py-3">
+      <div className="action-bar action-bar-fixed">
+        <div className="mx-auto flex max-w-2xl items-center gap-3">
           <Button fullWidth size="lg" loading={submitting} onClick={() => void submit()} leftIcon={<Users className="size-4" />}>
             Create community
           </Button>

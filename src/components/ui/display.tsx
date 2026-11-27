@@ -9,6 +9,8 @@ const avatarSizes = {
   xs: "size-8 text-[0.625rem]",
   sm: "size-10 text-small",
   md: "size-12 text-[0.9375rem]",
+  /** 56px — community and event feature rows. */
+  feature: "size-14 text-[1.0625rem]",
   lg: "size-16 text-h3",
   xl: "size-24 text-[1.75rem]",
 } as const;

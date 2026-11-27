@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Compass, Loader2, Plus, Search, Sparkles, TrendingUp, Users, X } from "lucide-react";
+import { Check, Compass, Plus, Search, Sparkles, TrendingUp, Users, X } from "lucide-react";
 import type {
   CommunityCardView,
   CommunityDiscoverPayload,
@@ -14,9 +14,32 @@ import { ApiError, apiDelete, apiGet, apiPost } from "@/lib/posts/client";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Chip, TextField } from "@/components/ui/form-controls";
 import { EmptyState } from "@/components/ui/feedback";
+import { Avatar, Skeleton } from "@/components/ui/display";
+import { SegmentedControl } from "@/components/ui/navigation";
 import { useToast } from "@/components/providers/toast-provider";
-import { cn } from "@/lib/utils";
-import { CommunityCard, CommunityIcon, CommunityTile } from "./community-card";
+import { CommunityCard, CommunityIcon, CommunityListRow, CommunityTile } from "./community-card";
+
+type HubView = "mine" | "discover";
+
+const SKELETON_KEYS = ["a", "b", "c", "d"] as const;
+
+function DiscoverSkeleton() {
+  return (
+    <div className="space-y-3" aria-hidden="true">
+      {SKELETON_KEYS.map((key) => (
+        <div key={key} className="flex min-h-[88px] items-start gap-3 rounded-card border border-border bg-surface p-4">
+          <Skeleton className="size-14" rounded="rounded-full" />
+          <div className="min-w-0 flex-1 space-y-2 pt-1">
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-3 w-full" />
+            <Skeleton className="h-3 w-3/5" />
+          </div>
+          <Skeleton className="h-9 w-20" rounded="rounded-button" />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export function CommunityHub({
   mine,
@@ -25,6 +48,7 @@ export function CommunityHub({
   mine: CommunityMinePayload;
   discover: CommunityDiscoverPayload;
 }) {
+  const [view, setView] = useState<HubView>(mine.active.length + mine.rest.length > 0 ? "mine" : "discover");
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<CommunityCategory | null>(null);
   const [payload, setPayload] = useState<CommunityDiscoverPayload>(discover);
@@ -106,57 +130,69 @@ export function CommunityHub({
   }
 
   const filtered = Boolean(query.trim() || category);
+  const myCommunities = [...mine.active, ...mine.rest];
 
   return (
-    <div className="px-1 pt-2">
-      <header className="px-3 pb-3 pt-4">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-tiny font-semibold uppercase tracking-[0.14em] text-accent-ink">Your campus circles</p>
-            <h1 className="mt-1 text-h1 text-fg">Communities</h1>
-            <p className="mt-1 max-w-md text-small text-fg-muted">
-              Course groups, halls, teams and societies — only for verified students at your university.
-            </p>
-          </div>
+    <div className="pb-10 pt-1">
+      <header className="px-4 pb-3 pt-3">
+        <p className="text-tiny font-semibold uppercase tracking-[0.14em] text-accent-ink">Your campus circles</p>
+        <div className="mt-1 flex items-center justify-between gap-3">
+          <h1 className="font-display text-h1 font-bold text-fg">Communities</h1>
           <ButtonLink
             href="/communities/new"
             size="sm"
-            className="mt-1 shrink-0"
+            variant="secondary"
+            className="h-9 shrink-0"
             aria-label="Create a community"
             leftIcon={<Plus className="size-4" />}
           >
-            <span className="hidden sm:inline">New</span>
+            New
           </ButtonLink>
         </div>
+        <p className="mt-1 max-w-md text-small text-fg-muted">
+          Course groups, halls, teams and societies — only for verified students at your university.
+        </p>
       </header>
 
       {invitations.length > 0 ? (
-        <section className="mx-3 mb-4 rounded-card border border-accent/25 bg-accent-soft p-3.5" aria-labelledby="invitations-title">
-          <h2 id="invitations-title" className="font-display text-h3 font-bold text-accent-soft-fg">
+        <section
+          className="mx-4 mb-3 rounded-card border border-accent/30 bg-accent-soft p-4"
+          aria-labelledby="invitations-title"
+        >
+          <h2 id="invitations-title" className="flex items-center gap-1.5 text-[0.9375rem] font-semibold text-accent-soft-fg">
+            <MailOpen />
             Invitations
+            <span className="nums text-tiny font-semibold">({invitations.length})</span>
           </h2>
-          <ul className="mt-2.5 space-y-2">
+          <ul className="mt-2 space-y-2">
             {invitations.map((invite) => (
-              <li key={invite.id} className="flex items-center gap-3 rounded-button bg-surface p-3">
-                <CommunityIcon community={{ ...invite.community, slug: invite.community.slug }} size="sm" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-small font-bold text-fg">{invite.community.name}</p>
-                  <p className="truncate text-tiny text-fg-muted">
-                    Invited by {invite.invitedBy?.fullName ?? "a moderator"}
-                  </p>
+              <li key={invite.id} className="rounded-[12px] border border-border bg-surface p-3">
+                <div className="flex items-center gap-3">
+                  <span className="flex shrink-0 -space-x-2">
+                    <CommunityIcon community={invite.community} size="sm" className="ring-2 ring-surface" />
+                    {invite.invitedBy ? (
+                      <Avatar
+                        name={invite.invitedBy.fullName}
+                        seed={invite.invitedBy.username}
+                        size="xs"
+                        className="ring-2 ring-surface"
+                      />
+                    ) : null}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-small font-semibold text-fg">{invite.community.name}</p>
+                    <p className="truncate text-tiny text-fg-muted">
+                      Invited by {invite.invitedBy?.fullName ?? "a moderator"}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex shrink-0 items-center gap-1.5">
-                  <Button size="sm" onClick={() => void accept(invite)}>
-                    Join
+                <div className="mt-2.5 flex items-center gap-2">
+                  <Button size="sm" className="h-9 flex-1" onClick={() => void accept(invite)} leftIcon={<Check className="size-4" />}>
+                    Accept
                   </Button>
-                  <button
-                    type="button"
-                    aria-label={`Decline invite to ${invite.community.name}`}
-                    onClick={() => void decline(invite)}
-                    className="flex size-9 items-center justify-center rounded-full text-fg-subtle hover:bg-surface-2 hover:text-fg"
-                  >
-                    <X aria-hidden="true" className="size-4" />
-                  </button>
+                  <Button size="sm" variant="ghost" className="h-9 flex-1 border border-border text-fg-muted" onClick={() => void decline(invite)}>
+                    Decline
+                  </Button>
                 </div>
               </li>
             ))}
@@ -164,180 +200,213 @@ export function CommunityHub({
         </section>
       ) : null}
 
-      <section className="mb-5 px-3" aria-labelledby="mine-title">
-        <div className="mb-2.5 flex items-center justify-between">
-          <h2 id="mine-title" className="font-display text-h2 font-bold text-fg">
-            Your communities
-          </h2>
-          <span className="text-tiny text-fg-subtle">{mine.active.length + mine.rest.length} joined</span>
-        </div>
-        {mine.active.length + mine.rest.length === 0 ? (
-          <div className="rounded-card border border-dashed border-border bg-surface">
-            <EmptyState
-              illustration="communities"
-              compact
-              title="No communities yet"
-              description="Join a circle below, or start one for your course, hall or society."
-              action={
-                <ButtonLink href="/communities/new" size="sm" variant="secondary">
-                  Start a community
-                </ButtonLink>
-              }
-            />
+      <div className="px-4 pb-2 pt-1">
+        <SegmentedControl
+          label="Communities views"
+          value={view}
+          onChange={setView}
+          options={[
+            { value: "mine", label: `Mine${myCommunities.length > 0 ? ` · ${myCommunities.length}` : ""}` },
+            { value: "discover", label: "Discover" },
+          ]}
+        />
+      </div>
+
+      {view === "mine" ? (
+        <section className="mt-2 space-y-4 px-4" aria-labelledby="mine-title">
+          <div className="flex items-center justify-between gap-3">
+            <h2 id="mine-title" className="section-title">
+              Your communities
+            </h2>
+            <span className="text-tiny nums text-fg-subtle">{myCommunities.length} joined</span>
           </div>
-        ) : (
-          <>
-            {mine.active.length > 0 ? (
-              <div className="no-scrollbar -mx-3 flex gap-2.5 overflow-x-auto px-3 pb-1">
-                {mine.active.map((community) => (
-                  <CommunityTile key={community.id} community={community} />
-                ))}
-              </div>
-            ) : null}
-            {mine.rest.length > 0 ? (
-              <div className="mt-3 space-y-2">
-                {mine.rest.map((community) => (
-                  <Link
-                    key={community.id}
-                    href={`/c/${community.slug}`}
-                    className="flex items-center gap-3 rounded-card border border-border bg-surface p-3"
-                  >
-                    <CommunityIcon community={community} size="sm" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-small font-bold text-fg">{community.name}</p>
-                      <p className="truncate text-tiny text-fg-muted">{community.recentActivity ?? `${community.memberCount} members`}</p>
-                    </div>
-                    {community.status === "ARCHIVED" ? (
-                      <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[0.6875rem] font-medium text-fg-muted">Archived</span>
-                    ) : null}
-                  </Link>
-                ))}
-              </div>
-            ) : null}
-          </>
-        )}
-      </section>
-
-      {!filtered && (payload.trending.length > 0 || payload.suggested.length > 0) ? (
-        <div className="mb-5 grid gap-4 px-3 sm:grid-cols-2">
-          {payload.trending.length > 0 ? (
-            <section aria-labelledby="trending-communities">
-              <h2 id="trending-communities" className="flex items-center gap-1.5 font-display text-h3 font-bold text-fg">
-                <TrendingUp aria-hidden="true" className="size-4 text-accent-ink" />
-                Trending this week
-              </h2>
-              <div className="mt-2 space-y-2">
-                {payload.trending.slice(0, 3).map((community) => (
-                  <Link key={community.id} href={`/c/${community.slug}`} className="flex items-center gap-2.5 rounded-button bg-surface px-3 py-2">
-                    <CommunityIcon community={community} size="sm" />
-                    <span className="min-w-0 flex-1 truncate text-small font-semibold text-fg">{community.name}</span>
-                    <span className="text-tiny text-fg-subtle">{community.memberCount}</span>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          ) : null}
-          {payload.suggested.length > 0 ? (
-            <section aria-labelledby="suggested-communities">
-              <h2 id="suggested-communities" className="flex items-center gap-1.5 font-display text-h3 font-bold text-fg">
-                <Sparkles aria-hidden="true" className="size-4 text-accent-ink" />
-                Because of your interests
-              </h2>
-              <div className="mt-2 space-y-2">
-                {payload.suggested.slice(0, 3).map((community) => (
-                  <Link key={community.id} href={`/c/${community.slug}`} className="flex items-center gap-2.5 rounded-button bg-surface px-3 py-2">
-                    <CommunityIcon community={community} size="sm" />
-                    <span className="min-w-0 flex-1 truncate text-small font-semibold text-fg">{community.name}</span>
-                    <span className="text-tiny text-fg-subtle">{community.memberCount}</span>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          ) : null}
-        </div>
-      ) : null}
-
-      <section className="px-3" aria-labelledby="discover-title">
-        <div className="flex items-center justify-between">
-          <h2 id="discover-title" className="flex items-center gap-1.5 font-display text-h2 font-bold text-fg">
-            <Compass aria-hidden="true" className="size-5 text-accent-ink" />
-            Discover
-          </h2>
-        </div>
-        <div className="mt-3">
-          <TextField
-            label="Search communities"
-            hideLabel
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search by name or topic"
-            leading={<Search aria-hidden="true" className="size-4" />}
-          />
-        </div>
-        <div className="no-scrollbar -mx-3 mt-2.5 flex gap-2 overflow-x-auto px-3 pb-1">
-          <Chip selected={!category} onClick={() => setCategory(null)}>
-            All
-          </Chip>
-          {COMMUNITY_CATEGORIES.map((entry) => (
-            <Chip
-              key={entry.value}
-              selected={category === entry.value}
-              onClick={() => setCategory(category === entry.value ? null : entry.value)}
-            >
-              {entry.label}
-            </Chip>
-          ))}
-        </div>
-
-        <div className="mt-3" aria-busy={loading}>
-          {loading ? (
-            <div className="flex items-center justify-center gap-2 py-10 text-small text-fg-muted">
-              <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-              Finding communities…
-            </div>
-          ) : error ? (
-            <div className="rounded-card border border-danger/30 bg-danger-soft px-4 py-3 text-small text-danger">
-              {error}
-            </div>
-          ) : payload.communities.length === 0 ? (
-            <div className={cn("rounded-card border border-border bg-surface")}>
+          {myCommunities.length === 0 ? (
+            <div className="rounded-card border border-border bg-surface">
               <EmptyState
-                illustration="search"
+                illustration="communities"
                 compact
-                title={filtered ? "No communities match" : "No communities to show"}
-                description={
-                  filtered
-                    ? "Try a different name or category."
-                    : "Be the first to start a community for your course, hall or society."
-                }
+                title="No communities yet"
+                description="Join a circle below, or start one for your course, hall or society."
                 action={
-                  filtered ? undefined : (
-                    <ButtonLink href="/communities/new" size="sm" variant="secondary" leftIcon={<Users className="size-4" />}>
-                      Start a community
-                    </ButtonLink>
-                  )
+                  <ButtonLink href="/communities/new" size="sm" variant="secondary" className="h-9">
+                    Start a community
+                  </ButtonLink>
                 }
               />
             </div>
           ) : (
             <>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {payload.communities.map((community) => (
-                  <CommunityCard key={community.id} community={community} />
-                ))}
-              </div>
-              {payload.hasMore ? (
-                <div className="mt-4 flex justify-center">
-                  <Button variant="secondary" loading={loadingMore} onClick={() => void loadMore()}>
-                    Load more
-                  </Button>
+              {mine.active.length > 0 ? (
+                <div className="no-scrollbar -mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1">
+                  {mine.active.map((community) => (
+                    <CommunityTile key={community.id} community={community} />
+                  ))}
+                </div>
+              ) : null}
+              {mine.rest.length > 0 ? (
+                <div className="space-y-3">
+                  {mine.rest.map((community) => (
+                    <CommunityListRow key={community.id} community={community} />
+                  ))}
                 </div>
               ) : null}
             </>
           )}
+        </section>
+      ) : null}
+
+      {view === "discover" ? (
+        <section className="px-4" aria-labelledby="discover-title">
+          <h2 id="discover-title" className="sr-only">
+            Discover
+          </h2>
+          <div className="sticky top-14 z-20 -mx-4 border-b border-border bg-bg px-4 pb-2 pt-2">
+            <TextField
+              label="Search communities"
+              hideLabel
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search by name or topic"
+              className="h-12"
+              leading={<Search aria-hidden="true" className="size-4" />}
+            />
+            <div className="no-scrollbar -mx-4 mt-2 flex gap-2 overflow-x-auto px-4 pb-1">
+              <Chip selected={!category} onClick={() => setCategory(null)}>
+                All
+              </Chip>
+              {COMMUNITY_CATEGORIES.map((entry) => (
+                <Chip key={entry.value} selected={category === entry.value} onClick={() => setCategory(category === entry.value ? null : entry.value)}>
+                  {entry.label}
+                </Chip>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-2 space-y-3" aria-busy={loading}>
+            <Link
+              href="/communities/new"
+              className="flex min-h-[88px] items-center gap-3 rounded-card border-[1.5px] border-dashed border-accent/60 bg-surface p-4 transition-colors duration-150 hover:bg-accent-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            >
+              <span className="accent-tile flex size-12 shrink-0 items-center justify-center rounded-full">
+                <Plus aria-hidden="true" className="size-5" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[0.9375rem] font-semibold text-accent-ink">Create community</span>
+                <span className="mt-0.5 block text-tiny leading-relaxed text-fg-muted">
+                  Start a course group, hall or society in a few taps.
+                </span>
+              </span>
+            </Link>
+
+            {loading ? (
+              <DiscoverSkeleton />
+            ) : error ? (
+              <div className="rounded-card border border-danger/30 bg-danger-soft px-4 py-3 text-small font-medium text-danger" role="alert">
+                {error}
+              </div>
+            ) : payload.communities.length === 0 ? (
+              <div className="rounded-card border border-border bg-surface">
+                <EmptyState
+                  illustration="search"
+                  compact
+                  title={filtered ? "No communities match" : "No communities to show"}
+                  description={
+                    filtered
+                      ? "Try a different name or category."
+                      : "Be the first to start a community for your course, hall or society."
+                  }
+                  action={
+                    filtered ? undefined : (
+                      <ButtonLink href="/communities/new" size="sm" variant="secondary" className="h-9" leftIcon={<Users className="size-4" />}>
+                        Start a community
+                      </ButtonLink>
+                    )
+                  }
+                />
+              </div>
+            ) : (
+              <>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {payload.communities.map((community) => (
+                    <CommunityCard key={community.id} community={community} showActivity />
+                  ))}
+                </div>
+                {payload.hasMore ? (
+                  <div className="flex justify-center pt-1">
+                    <Button variant="secondary" size="sm" className="h-9" loading={loadingMore} onClick={() => void loadMore()}>
+                      Load more
+                    </Button>
+                  </div>
+                ) : null}
+              </>
+            )}
+          </div>
+        </section>
+      ) : null}
+
+      {view === "mine" && !filtered ? (
+        <div className="mt-5 space-y-5">
+          {payload.trending.length > 0 ? (
+            <HubRail
+              id="trending-communities"
+              title="Trending communities"
+              icon={<TrendingUp aria-hidden="true" className="size-4 text-accent-ink" />}
+              communities={payload.trending.slice(0, 3)}
+            />
+          ) : null}
+          {payload.suggested.length > 0 ? (
+            <HubRail
+              id="suggested-communities"
+              title="Suggested for you"
+              icon={<Sparkles aria-hidden="true" className="size-4 text-accent-ink" />}
+              communities={payload.suggested.slice(0, 3)}
+            />
+          ) : null}
         </div>
-      </section>
+      ) : null}
     </div>
+  );
+}
+
+/** A short discovery rail with a header and member-count rows. */
+function HubRail({
+  id,
+  title,
+  icon,
+  communities,
+  action,
+}: {
+  id: string;
+  title: string;
+  icon: React.ReactNode;
+  communities: CommunityCardView[];
+  action?: React.ReactNode;
+}) {
+  return (
+    <section className="px-4" aria-labelledby={id}>
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <h2 id={id} className="section-title flex items-center gap-1.5">
+          {icon}
+          {title}
+        </h2>
+        {action}
+      </div>
+      <div className="space-y-3">
+        {communities.map((community) => (
+          <CommunityListRow key={community.id} community={community} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/** Small inline mark for the invitations header (Lucide has no matching glyph). */
+function MailOpen() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="size-4">
+      <path d="M3 10.5 12 4l9 6.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <path d="m3 10.5 9 6 9-6" />
+    </svg>
   );
 }

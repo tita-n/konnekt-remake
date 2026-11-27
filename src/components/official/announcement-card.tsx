@@ -17,7 +17,7 @@ export function AnnouncementCard({
   return (
     <article
       className={`rounded-card border p-4 ${
-        announcement.critical ? "border-highlight/70 bg-highlight-soft/40" : "border-border bg-surface"
+        announcement.critical ? "border-danger/45 bg-danger-soft" : "border-border bg-surface"
       }`}
       aria-labelledby={`announcement-${announcement.id}`}
     >
@@ -25,30 +25,30 @@ export function AnnouncementCard({
         <Avatar
           name={announcement.officialAccount.name}
           src={null}
-          size="2xs"
+          size="sm"
           official
         />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-tiny font-semibold text-fg">{announcement.officialAccount.name}</p>
-          <p className="text-[0.6875rem] text-fg-subtle">
+          <p className="truncate text-small font-semibold text-fg">{announcement.officialAccount.name}</p>
+          <p className="text-tiny text-fg-subtle">
             {ANNOUNCEMENT_CATEGORY_LABELS[announcement.category as AnnouncementCategory] ?? "Notice"} ·{" "}
             {formatEventDate(announcement.publishedAt ?? announcement.createdAt, timezone)}
           </p>
         </div>
         {announcement.critical ? (
-          <span className="inline-flex items-center gap-1 rounded-chip bg-highlight px-1.5 py-0.5 text-[0.625rem] font-extrabold uppercase tracking-wide text-[#3a2500]">
+          <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-chip bg-danger-btn px-1.5 py-0.5 text-[0.625rem] font-extrabold uppercase tracking-[0.04em] text-danger-fg">
             <AlertTriangle aria-hidden="true" className="size-3" />
             Critical
           </span>
         ) : null}
       </div>
       <Link href={`/official/a/${announcement.id}`} className="mt-3 block">
-        <h2 id={`announcement-${announcement.id}`} className="text-h3 font-bold leading-snug text-fg">
+        <h2 id={`announcement-${announcement.id}`} className="font-display text-[1.125rem] font-bold leading-[1.34] text-fg">
           {announcement.title}
         </h2>
-        <p className="mt-1 line-clamp-3 text-small text-fg-muted">{announcement.excerpt}</p>
+        <p className="mt-1 line-clamp-3 text-small leading-[1.43] text-fg-muted">{announcement.excerpt}</p>
       </Link>
-      <div className="mt-3 flex flex-wrap items-center gap-3 text-tiny text-fg-subtle">
+      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-tiny text-fg-subtle">
         {announcement.editedAt ? (
           <span className="inline-flex items-center gap-1 font-semibold text-fg-muted">
             <Pencil aria-hidden="true" className="size-3" />
@@ -67,7 +67,9 @@ export function AnnouncementCard({
             Acknowledged
           </span>
         ) : announcement.critical ? (
-          <span className="font-semibold text-highlight-fg">Needs acknowledgement</span>
+          <span className="inline-flex items-center gap-1 rounded-chip border border-danger/40 px-2 py-0.5 font-semibold text-danger">
+            Needs acknowledgement
+          </span>
         ) : null}
       </div>
     </article>
