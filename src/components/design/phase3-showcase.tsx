@@ -27,6 +27,7 @@ import { EventModerationConsole } from "@/components/admin/event-moderation-cons
 import { AdminShell } from "@/components/admin/admin-shell";
 import type { EventDetailResult, SerializedEvent } from "@/lib/services/events";
 import type { AnnouncementBanner, SerializedAnnouncement } from "@/lib/services/announcements";
+import { GALLERY_UNIVERSITY } from "../../../fixtures/design-gallery";
 
 type FeedItem = SerializedAnnouncement & { acknowledged: boolean };
 
@@ -358,7 +359,7 @@ export function Phase3Showcase({ screen }: { screen: string }) {
 
   if (screen === "phase3-admin-places") {
     return (
-      <AdminShell university={{ name: "Nova University", shortName: "Nova", logoUrl: null, accentColor: "#4f46e5", status: "ACTIVE" }} user={{ fullName: "Funke Adebayo", photoUrl: null }} pendingCount={5} reportCount={12} isAdmin canModerate>
+      <AdminShell university={GALLERY_UNIVERSITY} user={{ fullName: "Funke Adebayo", photoUrl: null }} pendingCount={5} reportCount={12} isAdmin canModerate>
         <PlacesConsole
           initialPlaces={[
             { id: "pl-1", name: "Central Auditorium", category: "AUDITORIUM", latitude: 6.5076, longitude: 3.3437, note: "Gate 3, opposite the library", active: true } as never,
@@ -372,7 +373,7 @@ export function Phase3Showcase({ screen }: { screen: string }) {
 
   if (screen === "phase3-admin-official") {
     return (
-      <AdminShell university={{ name: "Nova University", shortName: "Nova", logoUrl: null, accentColor: "#4f46e5", status: "ACTIVE" }} user={{ fullName: "Funke Adebayo", photoUrl: null }} pendingCount={5} reportCount={12} isAdmin canModerate>
+      <AdminShell university={GALLERY_UNIVERSITY} user={{ fullName: "Funke Adebayo", photoUrl: null }} pendingCount={5} reportCount={12} isAdmin canModerate>
         <OfficialConsole
           initialAccounts={[
             { id: "oa-1", name: "Registrar", slug: "registrar", description: "Academic notices from the Registrar's office.", category: "ACADEMIC", status: "ACTIVE", staff: [{ userId: "u9", fullName: "Bola Adeyemi", username: "bola_adeyemi", role: "STAFF", canPublishCritical: true }] } as never,
@@ -385,7 +386,7 @@ export function Phase3Showcase({ screen }: { screen: string }) {
 
   if (screen === "phase3-admin-announcements") {
     return (
-      <AdminShell university={{ name: "Nova University", shortName: "Nova", logoUrl: null, accentColor: "#4f46e5", status: "ACTIVE" }} user={{ fullName: "Funke Adebayo", photoUrl: null }} pendingCount={5} reportCount={12} isAdmin canModerate>
+      <AdminShell university={GALLERY_UNIVERSITY} user={{ fullName: "Funke Adebayo", photoUrl: null }} pendingCount={5} reportCount={12} isAdmin canModerate>
         <AnnouncementConsole
           initialAnnouncements={[
             { ...ANNOUNCEMENT, acknowledgementCount: 812, audienceLabel: "Everyone" } as never,
@@ -400,7 +401,7 @@ export function Phase3Showcase({ screen }: { screen: string }) {
 
   if (screen === "phase3-admin-events") {
     return (
-      <AdminShell university={{ name: "Nova University", shortName: "Nova", logoUrl: null, accentColor: "#4f46e5", status: "ACTIVE" }} user={{ fullName: "Funke Adebayo", photoUrl: null }} pendingCount={5} reportCount={12} isAdmin canModerate>
+      <AdminShell university={GALLERY_UNIVERSITY} user={{ fullName: "Funke Adebayo", photoUrl: null }} pendingCount={5} reportCount={12} isAdmin canModerate>
         <EventModerationConsole
           initialEvents={[
             { id: "evt-1", title: "Nova Tech Summit: Build Night", status: "SCHEDULED", startsAt: EVENTS.open.startsAt, endsAt: EVENTS.open.endsAt, timezone: "Africa/Lagos", venueName: "Central Auditorium", capacity: 50, goingCount: 34, audienceKind: "UNIVERSITY", organiser: "Aisha Bello", organiserKind: "USER", categoryName: "Tech", createdAt: EVENTS.open.createdAt, communityName: null, reported: 0 } as never,
