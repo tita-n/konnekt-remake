@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { apiError, noStore, readJson, socialApi } from "@/lib/api/social";
+import { withIdempotency } from "@/lib/api/idempotency";
 import { cancelRsvp, rsvpEvent } from "@/lib/services/events";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -11,8 +12,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (body.status !== "GOING" && body.status !== "INTERESTED") {
       return noStore({ error: "Choose Going or Interested." }, { status: 400 });
     }
-    const result = await rsvpEvent(context.viewer, id, body.status);
-    return noStore(result);
+    const status = body.status;
+    return await withIdempotency(request, context.viewer.userId, async () => {
+      const result = await rsvpEvent(context.viewer, id, status);
+      return noStore(result);
+    });
   } catch (error) {
     return apiError(error);
   }

@@ -255,6 +255,7 @@ const DEMO_COMMENTS: CommentView[] = [
   {
     id: "c-accepted",
     postId: "demo-question-1",
+    depth: 0,
     parentId: null,
     body: "I uploaded the 2021–2024 CSC 204 past questions pack in our department Drive folder. Start with Section B on recurrence relations — Dr. Salami repeats those structures.",
     status: "ACTIVE",
@@ -276,6 +277,7 @@ const DEMO_COMMENTS: CommentView[] = [
         id: "c-reply-1",
         postId: "demo-question-1",
         parentId: "c-accepted",
+        depth: 1,
         body: "Saved my night! Question 4(b) from 2023 literally matches today's tutorial sheet.",
         status: "ACTIVE",
         helpfulCount: 3,
@@ -298,6 +300,7 @@ const DEMO_COMMENTS: CommentView[] = [
   {
     id: "c-second",
     postId: "demo-question-1",
+    depth: 0,
     parentId: null,
     body: "Also check the Engineering Library reserve desk — they keep the printed booklet until 8 PM.",
     status: "ACTIVE",

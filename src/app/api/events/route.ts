@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { apiError, noStore, readJson, socialApi } from "@/lib/api/social";
+import { withIdempotency } from "@/lib/api/idempotency";
 import { isEventCategory, type EventAudienceKind, type EventCategory } from "@/lib/domain/events";
 import { createEvent, listEvents, type EventListTab } from "@/lib/services/events";
 
@@ -35,6 +36,7 @@ export async function POST(request: NextRequest) {
       : null;
     if (!audienceKind) return noStore({ error: "Choose an audience." }, { status: 400 });
     if (!isEventCategory(body.category)) return noStore({ error: "Choose a category." }, { status: 400 });
+    const categoryValue = body.category;
     const audiencePath = Array.isArray(body.audiencePath)
       ? body.audiencePath.filter((value): value is string => typeof value === "string")
       : [];
@@ -44,10 +46,11 @@ export async function POST(request: NextRequest) {
       body.capacity === null || body.capacity === undefined || body.capacity === ""
         ? null
         : Number(body.capacity);
+    return await withIdempotency(request, context.viewer.userId, async () => {
     const created = await createEvent(context.viewer, {
       title: typeof body.title === "string" ? body.title : "",
       description: typeof body.description === "string" ? body.description : "",
-      category: body.category,
+      category: categoryValue,
       audienceKind,
       audiencePath,
       startsAt,
@@ -64,6 +67,7 @@ export async function POST(request: NextRequest) {
       officialAccountId: typeof body.officialAccountId === "string" ? body.officialAccountId : null,
     });
     return noStore(created, { status: 201 });
+    });
   } catch (error) {
     return apiError(error);
   }

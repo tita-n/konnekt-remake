@@ -45,7 +45,7 @@ beforeAll(async () => {
       audiencePath: ["PUBLIC"],
       audienceKind: "PUBLIC" as const,
       status: "ACTIVE" as const,
-      rankAt: new Date(now - index * 60_000),
+      createdAt: new Date(now - index * 60_000),
     })),
   });
   postIds = (await platformDb.post.findMany({ where: { universityId }, select: { id: true } })).map((row) => row.id);
@@ -60,11 +60,11 @@ afterAll(async () => {
 });
 
 describe("feed query plan at 1,000 posts", () => {
-  it("uses the ranking index rather than a sequential scan", async () => {
+  it("uses the chronological index rather than a sequential scan", async () => {
     expect(postIds.length).toBe(1000);
     const planRows = await platformDb.$queryRawUnsafe<Array<{ "QUERY PLAN": string }>>(
       `EXPLAIN (ANALYZE, BUFFERS)
-       SELECT id, "rankAt"
+       SELECT id, "createdAt"
        FROM "Post"
        WHERE "universityId" = $1
          AND status = 'ACTIVE'::"PostStatus"
@@ -73,14 +73,14 @@ describe("feed query plan at 1,000 posts", () => {
            OR "audiencePath" = ARRAY[$1]::text[]
            OR "audiencePath" = ARRAY[$1, $1]::text[]
          )
-       ORDER BY "rankAt" DESC, id DESC
+       ORDER BY "createdAt" DESC, id DESC
        LIMIT 21`,
       universityId,
     );
     const plan = planRows.map((row) => row["QUERY PLAN"]).join("\n");
     console.log(plan);
     expect(plan).toMatch(/Index Scan|Index Only Scan/);
-    expect(plan).toContain("Post_universityId_status_rankAt_id_idx");
+    expect(plan).toContain("Post_universityId_status_createdAt_id_idx");
     expect(plan).not.toMatch(/Seq Scan on "Post"/);
   });
 });

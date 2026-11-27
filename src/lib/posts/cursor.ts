@@ -1,20 +1,32 @@
-/** Opaque, tamper-evident-enough cursor helpers for keyset pagination. */
-export interface RankCursor {
-  rankAt: string;
+/**
+ * Opaque keyset-pagination cursors.
+ *
+ * Every chronological feed orders by `(createdAt DESC, id DESC)` and continues
+ * from that exact pair. The payload uses short keys to keep the URL small; the
+ * decoder still accepts the retired `r` (rankAt) field so a cursor issued
+ * before the ordering change is read as the same timestamp instead of breaking.
+ */
+export interface TimeCursor {
+  createdAt: string;
   id: string;
 }
 
-export function encodeRankCursor(rankAt: Date, id: string): string {
-  return Buffer.from(JSON.stringify({ r: rankAt.toISOString(), i: id }), "utf8").toString("base64url");
+export function encodeTimeCursor(createdAt: Date, id: string): string {
+  return Buffer.from(JSON.stringify({ c: createdAt.toISOString(), i: id }), "utf8").toString("base64url");
 }
 
-export function decodeRankCursor(value: string | null | undefined): RankCursor | null {
+export function decodeTimeCursor(value: string | null | undefined): TimeCursor | null {
   if (!value) return null;
   try {
-    const parsed = JSON.parse(Buffer.from(value, "base64url").toString("utf8")) as { r?: unknown; i?: unknown };
-    if (typeof parsed.r !== "string" || typeof parsed.i !== "string") return null;
-    if (Number.isNaN(new Date(parsed.r).getTime()) || parsed.i.length > 64) return null;
-    return { rankAt: parsed.r, id: parsed.i };
+    const parsed = JSON.parse(Buffer.from(value, "base64url").toString("utf8")) as {
+      c?: unknown;
+      r?: unknown;
+      i?: unknown;
+    };
+    const timestamp = typeof parsed.c === "string" ? parsed.c : parsed.r;
+    if (typeof timestamp !== "string" || typeof parsed.i !== "string") return null;
+    if (Number.isNaN(new Date(timestamp).getTime()) || parsed.i.length > 64) return null;
+    return { createdAt: timestamp, id: parsed.i };
   } catch {
     return null;
   }

@@ -220,3 +220,45 @@ Both remaining highs are in Prisma's v6 CLI config loader (`deepmerge-ts`, `effe
 ### Staging is prepared, not deployed
 
 The deploy workflow validates environment variables before migrations or Vercel, then runs a read-only smoke test after deployment. `docs/STAGING.md` lists the accounts, values, GitHub secrets, SPF/DKIM, Cloudinary and Turnstile setup. No credentials are invented or committed.
+
+## Stabilization pass (November 2026)
+
+### Feeds are strictly reverse-chronological
+
+The reported “grouping” was the narrower-audience boost: `rankAt` added ten
+minutes per audience layer, so level posts clustered above newer campus posts.
+Every feed view now orders by `(createdAt DESC, id DESC)` with a paired keyset
+cursor, a repost appears at repost time, and an edit never changes order. The
+legacy `rankAt` column stays for compatibility but is no longer read. Cursors
+issued before the change still decode.
+
+### Replies store depth, display three levels
+
+Replies may nest up to a safety maximum of 20 stored levels; the earlier
+one-level limit was functional, not visual. The thread loads once (bounded to
+1,000 comments) and display flattens at level 3, where a deeper reply shows
+“Replying to @name” with a jump link. This keeps query count flat while allowing
+long chains, and the client reveals replies beyond the first two on demand.
+
+### One overlay dismissal contract
+
+Native `<dialog>` gives Escape, focus trapping and focus return. On top of it,
+`useOverlayDismiss` pushes a history marker so Android back closes the top
+overlay, closes on a route change, and compares outside taps against the panel
+rather than the full-height sheet wrapper (the old bug: taps above the sheet hit
+a wrapper element and never reached the dialog). Sheets add a downward swipe.
+
+### Idempotency is a per-user claim with a 24-hour result
+
+A mutating request may carry `Idempotency-Key`. The first request claims it with
+one atomic insert, a concurrent duplicate waits then replays the stored status
+and body, and a 5xx releases the claim so a retry can run. Claims are scoped to
+one user. Posts already had a unique key; comments, community create/join,
+event create/RSVP and reports now use the shared claim. Client composers keep
+one key per intent and disable the control while pending.
+
+### The Create sheet reflects what is built
+
+Post, Question, Poll, Community and Event open their real screens. Campus Voice
+remains the only “Coming soon” option. “Post an announcement” appears only for
+official-account staff and administrators and opens the official composer.

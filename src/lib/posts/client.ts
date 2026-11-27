@@ -23,12 +23,13 @@ async function parse<T>(response: Response): Promise<T> {
   return data;
 }
 
-export async function apiPost<T>(url: string, body?: unknown): Promise<T> {
+export async function apiPost<T>(url: string, body?: unknown, options?: { idempotencyKey?: string }): Promise<T> {
   const response = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "x-konnekt-csrf": csrfToken(),
+      ...(options?.idempotencyKey ? { "idempotency-key": options.idempotencyKey } : {}),
     },
     body: JSON.stringify(body ?? {}),
   });

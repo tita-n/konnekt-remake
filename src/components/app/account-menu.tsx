@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import { usePopoverDismiss } from "@/components/ui/overlays";
 import { ChevronDown, LayoutDashboard, Settings, ShieldCheck, UserRound } from "lucide-react";
 import { Avatar } from "@/components/ui/display";
 import { LogoutButton } from "./logout-button";
@@ -23,24 +24,7 @@ export function AccountMenu({
   const container = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (event: PointerEvent) => {
-      if (!container.current?.contains(event.target as Node)) setOpen(false);
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpen(false);
-        trigger.current?.focus();
-      }
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
+  usePopoverDismiss(container, open, () => setOpen(false), () => trigger.current?.focus());
 
   return (
     <div className="relative" ref={container}>

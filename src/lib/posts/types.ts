@@ -105,6 +105,9 @@ export interface CommentView {
   id: string;
   postId: string;
   parentId: string | null;
+  /** Stored nesting level (0–20). Display indentation caps lower. */
+  depth: number;
+  replyTo?: { id: string; username: string } | null;
   body: string;
   status: "ACTIVE" | "REMOVED";
   helpfulCount: number;

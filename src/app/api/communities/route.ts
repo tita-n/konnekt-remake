@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { apiError, noStore, readJson, socialApi } from "@/lib/api/social";
+import { withIdempotency } from "@/lib/api/idempotency";
 import { COMMUNITY_CATEGORIES, type CommunityCategory } from "@/lib/domain/community";
 import { createCommunity, listDiscoverCommunities } from "@/lib/services/communities";
 
@@ -39,6 +40,7 @@ export async function POST(request: NextRequest) {
             : [];
         })
       : [];
+    return await withIdempotency(request, context.viewer.userId, async () => {
     const created = await createCommunity({
       viewer: context.viewer,
       name: typeof body.name === "string" ? body.name : "",
@@ -54,6 +56,7 @@ export async function POST(request: NextRequest) {
       rules,
     });
     return noStore(created, { status: 201 });
+    });
   } catch (error) {
     return apiError(error);
   }

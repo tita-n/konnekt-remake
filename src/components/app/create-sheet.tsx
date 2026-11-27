@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { BarChart3, CalendarDays, HelpCircle, MessageSquareLock, PenSquare, Users } from "lucide-react";
+import { BarChart3, CalendarDays, HelpCircle, Megaphone, MessageSquareLock, PenSquare, Users } from "lucide-react";
 import { BottomSheet } from "@/components/ui/overlays";
 
 const options = [
@@ -27,13 +27,13 @@ const options = [
     title: "Start a community",
     description: "Create a space for your course, hall, team or society.",
     icon: Users,
-    comingSoon: true,
+    href: "/communities/new",
   },
   {
     title: "Create an event",
     description: "Plan a meetup, lecture, party or exam revision session.",
     icon: CalendarDays,
-    comingSoon: true,
+    href: "/events/new",
   },
   {
     title: "Campus Voice",
@@ -43,13 +43,34 @@ const options = [
   },
 ] as const;
 
-export function CreateSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function CreateSheet({
+  open,
+  onClose,
+  canAnnounce = false,
+}: {
+  open: boolean;
+  onClose: () => void;
+  /** Official-account staff and university/platform admins may announce. */
+  canAnnounce?: boolean;
+}) {
   const router = useRouter();
+  const entries = canAnnounce
+    ? [
+        ...options.slice(0, 5),
+        {
+          title: "Post an announcement",
+          description: "Send an official notice to your university or community.",
+          icon: Megaphone,
+          href: "/official/compose",
+        } as const,
+        ...options.slice(5),
+      ]
+    : options;
 
   return (
     <BottomSheet open={open} onClose={onClose} title="Create" description="Your campus, your audience.">
       <ul className="space-y-2 pb-2">
-        {options.map((option) => {
+        {entries.map((option) => {
           const Icon = option.icon;
           const comingSoon = "comingSoon" in option && option.comingSoon;
           return (
