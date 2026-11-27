@@ -94,3 +94,24 @@ shell paints. Measure the >5-minute idle case on staging after PR4.
 After PR4 run the same two scripts and record the second table in this file.
 Budgets: feed/detail server p95 < 200 ms, ≤3 database round trips per list or
 detail request, first useful paint from cache < 1 s, feedback within 100 ms.
+
+### Second measurement — 27 November 2026, after PR2/PR3/PR4
+
+Same script, same local production build, warm, on `konnekt_dev`:
+
+| Journey | Wall | Server | DB queries | Redis | Bytes |
+| --- | --- | --- | --- | --- | --- |
+| Welcome | 16.0 ms | 0 ms | 0 | 0 | 41,063 |
+| Login | 13.5 ms | 0 ms | 0 | 0 | 24,421 |
+| Pulse feed (first) | 27.0 ms | 21.9 ms | 12 | 0 | 9,627 |
+| Pulse feed (next page) | 33.0 ms | 27.4 ms | 13 | 0 | 10,133 |
+| Communities hub | 35.6 ms | 29.9 ms | 25 | 0 | 17,020 |
+| Events hub | 34.9 ms | 29.2 ms | 15 | 0 | 13,647 |
+| Pulse page (HTML) | 65.9 ms | — | — | — | 360,528 |
+
+These are within run-to-run noise of the first table. **No query-count reduction
+is claimed**: the academic-tree cache removes one full-tree query on repeat
+requests inside 60 s, but the three measured journeys still load a viewer-scoped
+department per request, and they do not repeat that tree load within one run.
+The 3-round-trip target is still not met (12 / 25 / 15 queries) and needs the
+shared read model described in DECISIONS.md, which was not built in this pass.
