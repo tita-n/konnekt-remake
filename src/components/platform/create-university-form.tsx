@@ -39,7 +39,7 @@ export function CreateUniversityForm() {
               setName(event.target.value);
               if (!slugTouched) setSlug(slugify(event.target.value));
             }}
-            placeholder="University of Lagos"
+            placeholder="e.g. Your University"
             className="h-10 w-full rounded-input border border-border bg-surface px-3 text-small"
           />
         </div>

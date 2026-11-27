@@ -226,6 +226,23 @@ export async function seedCommunities(
     }
   }
 
+  const icons = ["/seed/tech-summit.svg", "/seed/engineering-lab.svg", "/seed/design-workshop.svg", "/seed/study-group.svg"];
+  const banners = ["/seed/campus-facade.svg", "/seed/lecture-hall.svg", "/seed/hostel-courtyard.svg", "/seed/football-pitch.svg"];
+  const seededCommunities = await db.community.findMany({
+    where: { universityId: context.universityId },
+    select: { id: true },
+    orderBy: { createdAt: "asc" },
+  });
+  for (const [index, community] of seededCommunities.entries()) {
+    await db.community.update({
+      where: { id: community.id },
+      data: {
+        iconPublicId: icons[index % icons.length]!,
+        bannerPublicId: banners[index % banners.length]!,
+      },
+    });
+  }
+
   await db.auditLog.create({
     data: {
       actorId: context.moderatorId,

@@ -262,3 +262,27 @@ one key per intent and disable the control while pending.
 Post, Question, Poll, Community and Event open their real screens. Campus Voice
 remains the only “Coming soon” option. “Post an announcement” appears only for
 official-account staff and administrators and opens the official composer.
+
+### Platform pages carry no university brand
+
+The welcome page and design gallery no longer name a seeded university. All
+university branding is read from `University` (name, logo, accent) and appears
+only after a university is chosen or a student is signed in. New tenant-level
+checks: a CI guard rejects a seeded or real university name literal anywhere in
+`src`, and the e2e seed contains a second tenant (Lakeside University, different
+accent and domain) so a branding leak fails a test.
+
+### Vouching is shown whenever the university enables it
+
+The signup card used to appear only when a voucher existed, which made an
+admin's “vouching on” setting look broken. The card now follows
+`vouchingEnabled`; when no reviewer or official is listed, the vouch screen
+explains that and offers the working alternatives instead of redirecting.
+
+### The demo seed shows real media and a live event
+
+Events and communities get varied cover, icon and banner art served from
+`/seed` (the URL helpers pass app-relative paths through instead of building a
+Cloudinary URL), the critical registration notice has a PDF attachment, the
+live event is relative to seed time, and attendee lists are populated. This art
+is demo-only and never uploaded to Cloudinary.

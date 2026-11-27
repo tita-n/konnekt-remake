@@ -78,7 +78,7 @@ const DEMO_POSTS: PostView[] = [
         url: "/seed/campus-quad.svg",
         width: 1200,
         height: 675,
-        alt: "Students celebrating outside Nova University building",
+        alt: "Students celebrating outside Your University building",
       },
     ],
     poll: null,
@@ -128,7 +128,7 @@ const DEMO_POSTS: PostView[] = [
     type: "POLL",
     body: "Best place to study at night?",
     audienceKind: "PUBLIC",
-    audienceLabel: "Public · Nova University",
+    audienceLabel: "Public · Your University",
     community: null,
     status: "ACTIVE",
     createdAt: FOUR_HOURS_AGO,
@@ -539,7 +539,7 @@ export function Phase1Showcase() {
           {/* Mobile Frame */}
           <div className="relative overflow-hidden rounded-[28px] border border-border bg-bg shadow-modal [transform:translateZ(0)]">
             <TopBar
-              university={{ name: "Nova University", shortName: "NU", logoUrl: null }}
+              university={{ name: "Your University", shortName: "NU", logoUrl: null }}
               unreadNotifications={7}
               user={{ fullName: "Chinedu Okafor", username: "chinedu_okafor", photoUrl: null, status: "VERIFIED", roles: [] }}
             />
@@ -635,7 +635,7 @@ export function Phase1Showcase() {
                 { id: "level", label: "My Level · 300L", description: "Students in Software Engineering 300L", scope: "level" },
                 { id: "department", label: "My Department · Software Engineering", description: "All levels in Software Engineering", scope: "department" },
                 { id: "college", label: "My College · Computing", description: "Everyone in College of Computing", scope: "college" },
-                { id: "public", label: "Public · Nova University", description: "Verified students across campus", scope: "public" },
+                { id: "public", label: "Public · Your University", description: "Verified students across campus", scope: "public" },
               ]}
               initialType={composerMode}
             />
@@ -743,7 +743,7 @@ export function Phase1Showcase() {
           <div className="overflow-hidden rounded-[24px] border border-border bg-surface shadow-card">
             <ProfileView
               profile={DEMO_PROFILE_SELF}
-              university={{ name: "Nova University", shortName: "NU", accentColor: "#4f46e5" }}
+              university={{ name: "Your University", shortName: "NU", accentColor: "#4f46e5" }}
               labels={{}}
               isSelf
               canViewDepartment
@@ -755,7 +755,7 @@ export function Phase1Showcase() {
             <div className="overflow-hidden rounded-[24px] border border-border bg-surface shadow-card">
               <ProfileView
                 profile={DEMO_PROFILE_OTHER}
-                university={{ name: "Nova University", shortName: "NU", accentColor: "#4f46e5" }}
+                university={{ name: "Your University", shortName: "NU", accentColor: "#4f46e5" }}
                 labels={{}}
                 isSelf={false}
                 canViewDepartment
@@ -775,7 +775,7 @@ export function Phase1Showcase() {
                 <img src="/seed/tech-summit.svg" alt="" className="h-36 w-full object-cover" />
                 <div className="flex flex-col justify-center bg-accent-soft p-4">
                   <p className="font-display text-h2 text-fg">#TechSummit</p>
-                  <p className="mt-0.5 text-small text-fg-muted">42 posts at Nova University</p>
+                  <p className="mt-0.5 text-small text-fg-muted">42 posts at Your University</p>
                 </div>
               </div>
             </div>
@@ -822,7 +822,7 @@ export function Phase1Showcase() {
               </div>
               <div className="flex items-center gap-2 border-t border-border pt-3 text-tiny font-semibold text-fg">
                 <UniversityShieldMark shortName="NU" className="size-7" />
-                Nova University
+                Your University
               </div>
             </aside>
 

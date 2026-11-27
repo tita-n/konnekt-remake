@@ -52,6 +52,7 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: node scripts/check-no-mock-db.mjs
+      - run: npm run check:branding
       - run: npm run check:invariants
       - run: mkdir -p test-results && npm test -- --reporter=json --outputFile=test-results/unit.json
       - run: npm run test:integration -- --reporter=json --outputFile=test-results/integration.json

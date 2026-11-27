@@ -468,4 +468,42 @@ export async function seedEvents(
       },
     });
   }
+
+  // A critical notice must be downloadable, not just text.
+  const attachment = await db.announcementAttachment.findFirst({
+    where: { announcementId: "seed-announcement-registration" },
+  });
+  if (!attachment) {
+    await db.announcementAttachment.create({
+      data: {
+        universityId: input.universityId,
+        announcementId: "seed-announcement-registration",
+        fileKey: "seed/registration-checklist.pdf",
+        name: "Second-semester registration checklist.pdf",
+        mimeType: "application/pdf",
+        sizeBytes: 184_320,
+      },
+    });
+  }
+
+  // Varied covers: one shared category colour made every event look the same.
+  const covers = [
+    "/seed/tech-summit.svg",
+    "/seed/lecture-hall.svg",
+    "/seed/engineering-lab.svg",
+    "/seed/football-pitch.svg",
+    "/seed/study-group.svg",
+    "/seed/campus-quad.svg",
+  ];
+  const seededEvents = await db.event.findMany({
+    where: { universityId: input.universityId },
+    select: { id: true },
+    orderBy: { startsAt: "asc" },
+  });
+  for (const [index, event] of seededEvents.entries()) {
+    await db.event.update({
+      where: { id: event.id },
+      data: { coverPublicId: covers[index % covers.length]! },
+    });
+  }
 }

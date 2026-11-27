@@ -84,8 +84,8 @@ export default async function WelcomePage() {
               <div className="w-full max-w-sm rounded-card border border-border bg-surface p-6 text-center">
                 <ClayIllustration kind="welcomeHero" className="mx-auto h-52 w-64" />
                 <div className="mt-4 rounded-button bg-surface-2 p-3.5 text-left">
-                  <p className="font-display text-h3 font-semibold text-fg">Nova University</p>
-                  <p className="mt-0.5 text-small text-fg-muted">4 colleges · 7 departments · verified campus space</p>
+                  <p className="font-display text-h3 font-semibold text-fg">Konnekt campus</p>
+                  <p className="mt-0.5 text-small text-fg-muted">Verified students only · private by design</p>
                 </div>
               </div>
             </div>

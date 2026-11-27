@@ -81,12 +81,16 @@ export default async function ChooseVerificationPage({ params }: { params: Promi
               />
             ) : null}
 
-            {voucherCount > 0 ? (
+            {university.vouchingEnabled ? (
               <MethodCard
                 href={`/signup/${university.slug}/vouch`}
                 icon={<Users aria-hidden="true" className="size-5" />}
                 title="Get vouched for"
-                description="Ask a course rep or reviewer who already knows you to confirm you're a student."
+                description={
+                  voucherCount > 0
+                    ? "Ask a course rep or reviewer who already knows you to confirm you're a student."
+                    : "Vouching is on, but this university has not listed a course rep or reviewer yet. You can still use another method."
+                }
               />
             ) : null}
           </ul>

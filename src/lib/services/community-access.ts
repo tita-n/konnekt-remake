@@ -17,6 +17,8 @@ import type { SocialViewer } from "./social";
 /** Resolve a stored public id from either the Cloudinary or local adapter. */
 export function communityImageUrl(publicId: string | null | undefined): string | null {
   if (!publicId) return null;
+  // Demo seed art is served by the app itself, never uploaded to Cloudinary.
+  if (publicId.startsWith("/")) return publicId;
   if (publicId.startsWith("local:posts/")) {
     return `/uploads/posts/${publicId.slice("local:posts/".length)}.webp`;
   }

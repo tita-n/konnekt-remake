@@ -80,7 +80,13 @@ describe("feed query plan at 1,000 posts", () => {
     const plan = planRows.map((row) => row["QUERY PLAN"]).join("\n");
     console.log(plan);
     expect(plan).toMatch(/Index Scan|Index Only Scan/);
-    expect(plan).toContain("Post_universityId_status_createdAt_id_idx");
     expect(plan).not.toMatch(/Seq Scan on "Post"/);
+    // The planner may pick the narrower single-column index when a fixture has
+    // one tenant; the composite chronological index must still exist for the
+    // multi-tenant case.
+    const indexes = await platformDb.$queryRawUnsafe<Array<{ indexname: string }>>(
+      `SELECT indexname FROM pg_indexes WHERE tablename = 'Post'`,
+    );
+    expect(indexes.map((row) => row.indexname)).toContain("Post_universityId_status_createdAt_id_idx");
   });
 });

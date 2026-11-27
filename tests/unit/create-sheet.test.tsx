@@ -37,13 +37,14 @@ describe("Create sheet", () => {
   it("opens the built composer, community, event and poll destinations", () => {
     const onClose = vi.fn();
     render(<CreateSheet open onClose={onClose} />);
-    for (const [label, href] of [
+    const destinations: Array<[string, string]> = [
       ["Post", "/compose?type=post"],
       ["Ask a question", "/compose?type=question"],
       ["Create a poll", "/compose?type=poll"],
       ["Start a community", "/communities/new"],
       ["Create an event", "/events/new"],
-    ]) {
+    ];
+    for (const [label, href] of destinations) {
       push.mockReset();
       fireEvent.click(button(label));
       expect(push).toHaveBeenCalledWith(href);
