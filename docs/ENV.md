@@ -29,6 +29,8 @@ Copy `.env.example` to `.env` (or `.env.local`). Never commit real secrets. Only
 | `SENTRY_ENVIRONMENT` | — | Sentry environment label. |
 | `SEED_PLATFORM_ADMIN_EMAIL` | `admin@konnekt.ng` | Platform admin created by the seed. |
 | `ANNOUNCEMENT_CRON_SECRET` | — | Bearer/query secret for `/api/cron/announcements`. Leave unset to keep the cron endpoint closed; feed reads still publish due announcements lazily. |
+| `PERF_TRACE_SECRET` | — | Opt-in performance tracing. A request with `X-Perf-Trace` equal to this value gets a `Server-Timing` header and one structured JSON line; without it the trace is completely inert. Also protects `GET /api/diagnostics/region` (404 otherwise). Set it on staging only. |
+| `UPSTASH_REGION` | — | Optional label reported by the region diagnostics route when the Upstash hostname carries no region segment. |
 
 ## Dedicated e2e database
 
