@@ -175,7 +175,7 @@ export function EventForm({
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 onChange={(change) => void pickCover(change.target.files?.[0])}
-                className="block w-full text-small text-fg-muted file:mr-3 file:min-h-9 file:rounded-button file:border file:border-border file:bg-surface-2 file:px-3 file:text-small file:font-semibold file:text-fg"
+                className="block w-full text-small text-fg-muted file:mr-3 file:min-h-11 file:rounded-button file:border file:border-border file:bg-surface-2 file:px-3 file:text-small file:font-semibold file:text-fg"
               />
               <p className="mt-1 text-tiny text-fg-subtle">A 16:9 photo. Without one we use a bold category cover.</p>
               {coverBusy ? <p className="mt-1 text-tiny text-fg-muted">Uploading…</p> : null}

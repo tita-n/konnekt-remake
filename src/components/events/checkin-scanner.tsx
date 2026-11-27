@@ -372,6 +372,7 @@ export function CheckinScanner({ event, initialCheckedIn }: { event: SerializedE
                   <Button
                     size="sm"
                     variant="secondary"
+                    className="min-h-11"
                     onClick={() => void replayOne(item, true).then(refreshQueue)}
                   >
                     Retry
@@ -383,7 +384,7 @@ export function CheckinScanner({ event, initialCheckedIn }: { event: SerializedE
           <Button
             size="sm"
             variant="secondary"
-            className="mt-3"
+            className="mt-3 min-h-11"
             loading={replaying}
             disabled={!online || pending.length === 0}
             onClick={() => void replayQueue()}
@@ -418,7 +419,7 @@ export function CheckinScanner({ event, initialCheckedIn }: { event: SerializedE
               </p>
             </div>
           </div>
-          <Button size="sm" variant="secondary" className="mt-3" onClick={() => setResult(null)}>
+          <Button size="sm" variant="secondary" className="mt-3 min-h-11" onClick={() => setResult(null)}>
             Scan next
           </Button>
         </div>
@@ -445,7 +446,7 @@ export function CheckinScanner({ event, initialCheckedIn }: { event: SerializedE
 
       {mode === "QR" ? (
         <div className="rounded-card border border-border bg-surface p-4">
-          <div className="relative overflow-hidden rounded-button bg-black">
+          <div className="scan-frame relative overflow-hidden rounded-button bg-black">
             <video
               ref={videoRef}
               muted
@@ -453,6 +454,13 @@ export function CheckinScanner({ event, initialCheckedIn }: { event: SerializedE
               className="aspect-[4/3] w-full object-cover"
               aria-label="Camera preview"
             />
+            {/* Viewfinder brackets: where to aim the ticket. */}
+            <span className="scan-corners" aria-hidden="true">
+              <i className="scan-corner scan-corner-tl" />
+              <i className="scan-corner scan-corner-tr" />
+              <i className="scan-corner scan-corner-br" />
+              <i className="scan-corner scan-corner-bl" />
+            </span>
             {!cameraOn ? (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70 p-4 text-center text-white">
                 <Camera aria-hidden="true" className="size-8" />
@@ -468,21 +476,21 @@ export function CheckinScanner({ event, initialCheckedIn }: { event: SerializedE
               </div>
             ) : null}
           </div>
-          <div className="mt-3 flex gap-2">
+          <div className="mt-3 flex flex-wrap gap-2">
             {cameraOn ? (
-              <Button variant="secondary" onClick={stopCamera}>
+              <Button size="lg" variant="secondary" onClick={stopCamera}>
                 <CameraOff aria-hidden="true" className="size-4" />
                 Stop camera
               </Button>
             ) : (
-              <Button onClick={() => void startCamera()} disabled={busy}>
+              <Button size="lg" onClick={() => void startCamera()} disabled={busy}>
                 <Camera aria-hidden="true" className="size-4" />
                 Start camera
               </Button>
             )}
           </div>
           <form
-            className="mt-3 flex gap-2"
+            className="mt-3 flex items-stretch gap-2"
             onSubmit={(submitEvent) => {
               submitEvent.preventDefault();
               if (code.trim()) void checkIn({ method: "QR", code: code.trim() });
@@ -497,9 +505,9 @@ export function CheckinScanner({ event, initialCheckedIn }: { event: SerializedE
               onChange={(change) => setCode(change.target.value)}
               placeholder="Or type the ticket code"
               autoComplete="off"
-              className="min-h-11 flex-1 rounded-button border border-border bg-bg px-3 font-mono text-small text-fg"
+              className="min-h-12 min-w-0 flex-1 rounded-button border border-border bg-bg px-3 font-mono text-small text-fg transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
             />
-            <Button type="submit" loading={busy} disabled={!code.trim()}>
+            <Button size="lg" type="submit" className="shrink-0" loading={busy} disabled={!code.trim()}>
               Check in
             </Button>
           </form>
@@ -516,7 +524,7 @@ export function CheckinScanner({ event, initialCheckedIn }: { event: SerializedE
               value={query}
               onChange={(change) => setQuery(change.target.value)}
               placeholder="Name or username"
-              className="min-h-11 flex-1 bg-transparent text-small text-fg focus:outline-none"
+              className="min-h-12 flex-1 bg-transparent text-small text-fg focus:outline-none"
             />
           </div>
           {searching ? <p className="mt-2 text-tiny text-fg-muted">Searching…</p> : null}
@@ -543,6 +551,7 @@ export function CheckinScanner({ event, initialCheckedIn }: { event: SerializedE
                   <Button
                     size="sm"
                     variant="secondary"
+                    className="min-h-11"
                     onClick={() => void checkIn({ method: "MANUAL", userId: candidate.id })}
                     loading={busy}
                   >

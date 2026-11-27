@@ -41,18 +41,18 @@ export function AnnouncementDetail({
 
   return (
     <article className="space-y-4 pb-12">
-      <Link href="/official" className="inline-flex min-h-9 items-center gap-1 text-small font-semibold text-fg-muted">
+      <Link href="/official" className="inline-flex min-h-11 w-fit items-center gap-1 rounded-button text-small font-semibold text-fg-muted transition-colors hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus">
         <ArrowLeft aria-hidden="true" className="size-4" />
         Official channel
       </Link>
 
       <header
         className={`rounded-card border p-4 ${
-          announcement.critical ? "border-highlight bg-highlight-soft/50" : "border-border bg-surface"
+          announcement.critical ? "border-danger bg-danger-soft" : "border-border bg-surface"
         }`}
       >
         {announcement.critical ? (
-          <p className="mb-2 inline-flex items-center gap-1 rounded-chip bg-highlight px-2 py-0.5 text-[0.625rem] font-extrabold uppercase tracking-widest text-[#3a2500]">
+          <p className="mb-2 inline-flex items-center gap-1 rounded-chip bg-danger-btn px-2 py-0.5 text-[0.625rem] font-extrabold uppercase tracking-[0.04em] text-danger-fg">
             <AlertTriangle aria-hidden="true" className="size-3" />
             Critical notice
           </p>
@@ -90,7 +90,9 @@ export function AnnouncementDetail({
                   href={`/api/announcements/${announcement.id}/attachments/${attachment.id}`}
                   className="flex min-h-12 items-center gap-3 rounded-card border border-border bg-surface p-3 hover:bg-surface-2"
                 >
-                  <FileText aria-hidden="true" className="size-5 shrink-0 text-accent-ink" />
+                  <span className="accent-tile size-9 shrink-0" aria-hidden="true">
+                    <FileText className="size-[18px]" />
+                  </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-small font-semibold text-fg">{attachment.name}</span>
                     <span className="block text-tiny text-fg-subtle">

@@ -1,19 +1,17 @@
 import Link from "next/link";
-import { CalendarDays, MapPin, ShieldCheck, Users } from "lucide-react";
+import { CalendarDays, Check, Clock3, MapPin, ShieldCheck, Ticket } from "lucide-react";
 import { Avatar } from "@/components/ui/display";
 import { cn } from "@/lib/utils";
-import { eventDateParts, formatEventDayShort, formatEventTime } from "@/lib/domain/event-display";
+import { eventDateParts, formatEventTime } from "@/lib/domain/event-display";
 import { eventAudienceLabel, EVENT_CATEGORY_LABELS, type EventCategory } from "@/lib/domain/events";
 import type { SerializedEvent } from "@/lib/services/events";
 import type { EventRsvpStatus } from "@/lib/domain/events";
 
-const RSVP_LABEL: Record<EventRsvpStatus, string> = {
-  GOING: "Going",
-  INTERESTED: "Interested",
-  WAITLISTED: "Waitlisted",
-  CANCELLED: "RSVP",
-};
-
+/**
+ * The ticket-shaped event card (docs/UI-CONVENTIONS.md, "Phase 3 event surfaces").
+ * Cover, body, then a dashed perforation above the RSVP stub with the notches cut
+ * out of the card edge by `.event-ticket` in globals.css.
+ */
 export function EventCard({
   event,
   rsvpStatus,
@@ -25,29 +23,39 @@ export function EventCard({
   compact?: boolean;
   className?: string;
 }) {
-  const month = eventDateParts(event.startsAt, event.timezone).month;
-  const day = eventDateParts(event.startsAt, event.timezone).day;
+  const { month, day } = eventDateParts(event.startsAt, event.timezone);
+  const organiserName =
+    event.organiserKind === "COMMUNITY"
+      ? event.community?.name ?? "Community"
+      : event.organiserKind === "OFFICIAL"
+        ? event.officialAccount?.name ?? "Official account"
+        : (event.organisers?.fullName ?? "Student organiser");
+  const badgeLabel =
+    event.organiserKind === "OFFICIAL" ? "Official account" : event.organiserKind === "COMMUNITY" ? "Community" : "Student organiser";
+  const cancelled = event.status === "CANCELLED";
+  const ended = Boolean(event.ended);
+  const isFull = event.capacity != null && event.goingCount >= event.capacity;
   const monthLabel = new Intl.DateTimeFormat("en-NG", { timeZone: event.timezone, month: "short" })
     .format(new Date(event.startsAt))
     .toUpperCase();
-  const organiserName =
-    event.organiserKind === "COMMUNITY"
-      ? event.community?.name
-      : event.organiserKind === "OFFICIAL"
-        ? event.officialAccount?.name
-        : event.organisers.fullName;
-  const badgeLabel =
-    event.organiserKind === "OFFICIAL" ? "Official account" : event.organiserKind === "COMMUNITY" ? "Community" : "Student organiser";
+  const going = (event.attendeePreview ?? []).slice(0, 3);
 
   return (
     <article
       className={cn(
-        "event-ticket flex flex-col overflow-hidden rounded-card border border-border bg-surface shadow-card",
-        event.status === "CANCELLED" && "opacity-90",
+        "event-ticket flex flex-col overflow-hidden rounded-card border border-border bg-surface",
+        (cancelled || ended) && "bg-surface-2",
         className,
       )}
       aria-labelledby={`event-${event.id}-title`}
     >
+      {cancelled ? (
+        <p className="flex items-center justify-center gap-1.5 bg-danger-soft py-1.5 text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-danger">
+          <span className="size-1.5 rounded-full bg-danger" aria-hidden="true" />
+          Cancelled
+        </p>
+      ) : null}
+
       <Link href={`/events/${event.id}`} className="group block focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus">
         <div className="relative aspect-[16/9] w-full overflow-hidden bg-surface-3">
           {event.coverUrl ? (
@@ -57,50 +65,58 @@ export function EventCard({
           ) : (
             <div
               className="flex size-full items-end p-4"
-              style={{ background: `linear-gradient(135deg, ${event.categoryColor} 0%, color-mix(in srgb, ${event.categoryColor} 65%, #000) 100%)` }}
+              style={{ backgroundColor: event.categoryColor }}
             >
-              <span className="rounded-chip bg-black/35 px-2 py-1 text-tiny font-semibold text-white">
+              <span className="rounded-chip bg-black/30 px-2 py-1 text-tiny font-semibold text-white">
                 {EVENT_CATEGORY_LABELS[event.category as EventCategory] ?? "Event"}
               </span>
             </div>
           )}
-          {event.live ? (
-            <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-chip bg-highlight px-2 py-1 text-[0.6875rem] font-extrabold uppercase tracking-wide text-[#3a2500]">
-              <span className="size-1.5 rounded-full bg-[#3a2500]" aria-hidden="true" />
-              Live
+          <div className="absolute right-3 top-3 flex items-center gap-1.5">
+            {event.live ? (
+              <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-chip bg-highlight px-2 py-1 text-[0.6875rem] font-extrabold uppercase tracking-[0.04em] text-highlight-fg">
+                <span className="size-1.5 rounded-full bg-highlight-fg" aria-hidden="true" />
+                Live
+              </span>
+            ) : null}
+          </div>
+          {!cancelled && event.lastMaterialChangeAt ? (
+            <span className="absolute left-3 top-3 rounded-chip border border-border bg-surface px-2 py-1 text-[0.6875rem] font-semibold text-fg-muted">
+              Updated
             </span>
           ) : null}
-          {event.status === "CANCELLED" ? (
-            <span className="absolute inset-x-3 top-3 rounded-button bg-danger-btn px-2 py-1 text-center text-tiny font-bold text-white">
-              Cancelled
+          {ended && !cancelled ? (
+            <span className="absolute left-3 top-3 rounded-chip border border-border bg-surface px-2 py-1 text-[0.6875rem] font-semibold text-fg-muted">
+              Ended
             </span>
           ) : null}
         </div>
       </Link>
 
-      <div className="flex flex-1 gap-3 p-4">
+      <div className={cn("flex flex-1 gap-3 p-4", (cancelled || ended) && "opacity-80")}>
         <div
-          className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-button border border-border bg-surface-2"
-          aria-label={formatEventDayShort(event.startsAt, event.timezone)}
+          className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-button bg-surface-2 border border-border"
+          aria-hidden="true"
         >
-          <span className="text-[0.625rem] font-bold uppercase tracking-wide text-fg-muted">{monthLabel}</span>
-          <span className="text-h3 font-bold tabular-nums text-fg">{day}</span>
+          <span className="nums text-[0.6875rem] font-semibold uppercase leading-[1.14] tracking-[0.03em] text-accent-ink">{monthLabel}</span>
+          <span className="nums font-display text-[1.375rem] font-bold leading-[1.19] text-fg">{day}</span>
         </div>
         <div className="min-w-0 flex-1">
           <Link href={`/events/${event.id}`} className="block focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus">
-            <h2 id={`event-${event.id}-title`} className="line-clamp-2 font-display text-[1.0625rem] font-bold leading-snug text-fg">
+            <h2 id={`event-${event.id}-title`} className="line-clamp-2 font-display text-[1.0625rem] font-semibold leading-6 text-fg">
               {event.title}
             </h2>
           </Link>
-          <p className="mt-1 flex items-center gap-1 text-tiny text-fg-muted">
-            <CalendarDays aria-hidden="true" className="size-3.5 shrink-0" />
-            <span>{formatEventTime(event.startsAt, event.timezone)}</span>
-            <span aria-hidden="true">·</span>
-            <span className="truncate">{formatEventDayShort(event.startsAt, event.timezone)}</span>
-          </p>
-          <p className="mt-0.5 flex items-center gap-1 text-tiny text-fg-muted">
-            <MapPin aria-hidden="true" className="size-3.5 shrink-0" />
+          <p className="mt-1 flex items-center gap-1.5 text-small leading-5 text-fg-muted">
+            <MapPin aria-hidden="true" className="size-4 shrink-0" />
             <span className="truncate">{event.venueName}</span>
+          </p>
+          <p className="mt-0.5 flex items-center gap-1.5 text-small leading-5 text-fg-muted">
+            <CalendarDays aria-hidden="true" className="size-4 shrink-0" />
+            <span className="nums truncate">
+              {formatEventTime(event.startsAt, event.timezone)}
+              {event.endsAt ? ` – ${formatEventTime(event.endsAt, event.timezone)}` : ""}
+            </span>
           </p>
           {!compact ? (
             <p className="mt-1.5 flex items-center gap-1 truncate text-tiny text-fg-subtle">
@@ -114,33 +130,23 @@ export function EventCard({
         </div>
       </div>
 
-      <div className="event-ticket-perforation flex items-center justify-between gap-2 px-4 py-3">
+      <div className="event-ticket-perforation flex h-14 items-center justify-between gap-2 px-4">
         <div className="flex min-w-0 items-center gap-2">
-          {event.attendeePreview.length > 0 ? (
-            <span className="flex -space-x-2" aria-hidden="true">
-              {event.attendeePreview.slice(0, 4).map((attendee) => (
-                <Avatar key={attendee.id} name={attendee.fullName} src={attendee.photoUrl} size="2xs" className="ring-2 ring-surface" />
+          {going.length > 0 ? (
+            <span className="flex shrink-0 -space-x-2" aria-hidden="true">
+              {going.map((attendee) => (
+                <Avatar key={attendee.id} name={attendee.fullName} seed={attendee.username} src={attendee.photoUrl} size="2xs" className="ring-2 ring-surface" />
               ))}
             </span>
           ) : (
-            <Users aria-hidden="true" className="size-4 text-fg-subtle" />
+            <Ticket aria-hidden="true" className="size-4 shrink-0 text-fg-subtle" />
           )}
-          <span className="truncate text-tiny text-fg-muted">
-            {event.goingCount > 0 ? `${event.goingCount} going` : "Be the first to RSVP"}
+          <span className="truncate text-[0.8125rem] leading-[1.375rem] nums text-fg-muted">
+            {event.goingCount > 0 ? `${event.goingCount} going` : "Be the first to go"}
             {event.waitlistCount > 0 ? ` · ${event.waitlistCount} waitlisted` : ""}
           </span>
         </div>
-        <Link
-          href={`/events/${event.id}`}
-          className={cn(
-            "inline-flex min-h-9 shrink-0 items-center justify-center rounded-button border px-3 text-tiny font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
-            rsvpStatus === "GOING" || rsvpStatus === "WAITLISTED" || rsvpStatus === "INTERESTED"
-              ? "border-accent bg-accent-soft text-accent-soft-fg"
-              : "border-border-strong bg-surface text-fg hover:bg-surface-2",
-          )}
-        >
-          {rsvpStatus ? RSVP_LABEL[rsvpStatus] : "RSVP"}
-        </Link>
+        <EventCardState event={event} rsvpStatus={rsvpStatus} isFull={isFull} />
       </div>
       {!compact ? (
         <p className="sr-only">
@@ -148,5 +154,72 @@ export function EventCard({
         </p>
       ) : null}
     </article>
+  );
+}
+
+/** One compact control that carries every RSVP state, with text and an icon. */
+function EventCardState({
+  event,
+  rsvpStatus,
+  isFull,
+}: {
+  event: SerializedEvent;
+  rsvpStatus?: EventRsvpStatus | null;
+  isFull: boolean;
+}) {
+  const base =
+    "inline-flex h-9 shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-button px-3 text-tiny font-semibold transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
+  const cancelled = event.status === "CANCELLED";
+  const ended = Boolean(event.ended);
+
+  if (cancelled) {
+    return (
+      <span className={cn(base, "border border-border bg-surface text-fg-muted")}>
+        <Clock3 aria-hidden="true" className="size-3.5" />
+        Cancelled
+      </span>
+    );
+  }
+  if (ended) {
+    return (
+      <span className={cn(base, "border border-border bg-surface text-fg-muted")}>
+        Ended
+      </span>
+    );
+  }
+  if (rsvpStatus === "GOING") {
+    return (
+      <Link href={`/events/${event.id}`} className={cn(base, "border border-transparent bg-success-soft text-success")}>
+        <Check aria-hidden="true" className="size-3.5" strokeWidth={3} />
+        Going
+      </Link>
+    );
+  }
+  if (rsvpStatus === "WAITLISTED") {
+    return (
+      <Link href={`/events/${event.id}`} className={cn(base, "border border-border bg-surface text-fg-muted")}>
+        <Clock3 aria-hidden="true" className="size-3.5" />
+        Waitlisted
+      </Link>
+    );
+  }
+  if (rsvpStatus === "INTERESTED") {
+    return (
+      <Link href={`/events/${event.id}`} className={cn(base, "accent-tile border border-transparent")}>
+        Interested
+      </Link>
+    );
+  }
+  if (isFull) {
+    return (
+      <Link href={`/events/${event.id}`} className={cn(base, "border border-border-strong bg-surface text-fg hover:bg-surface-2")}>
+        Join waitlist
+      </Link>
+    );
+  }
+  return (
+    <Link href={`/events/${event.id}`} className={cn(base, "bg-accent text-accent-fg hover:bg-accent-hover")}>
+      RSVP
+    </Link>
   );
 }

@@ -197,7 +197,7 @@ export function CommunityConsole({ initial, isAdmin }: { initial: CommunityAdmin
       ) : null}
 
       <div className="overflow-hidden rounded-card border border-border bg-surface">
-        <div className="hidden grid-cols-[minmax(0,2fr)_repeat(4,minmax(0,0.7fr))_auto] gap-3 border-b border-border px-4 py-2.5 text-[0.6875rem] font-bold uppercase tracking-wide text-fg-subtle md:grid">
+        <div className="sticky top-0 z-10 hidden grid-cols-[minmax(0,2fr)_repeat(4,minmax(0,0.7fr))_auto] gap-3 border-b border-border bg-surface px-4 py-2.5 text-[0.6875rem] font-bold uppercase tracking-wide text-fg-subtle md:grid">
           <span>Community</span>
           <span>Status</span>
           <span>Members</span>

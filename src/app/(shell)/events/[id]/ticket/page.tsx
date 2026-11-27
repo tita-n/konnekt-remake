@@ -18,7 +18,10 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
 
   return (
     <div className="mx-auto w-full max-w-sm px-2 pt-4">
-      <TicketCard meta={meta} />
+      <TicketCard
+        meta={meta}
+        attendee={{ fullName: viewer.fullName, username: viewer.username, photoUrl: viewer.photoUrl }}
+      />
     </div>
   );
 }

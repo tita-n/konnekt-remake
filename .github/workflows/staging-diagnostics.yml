@@ -1,0 +1,34 @@
+name: Staging diagnostics
+
+# Read-only. Reports the function region, database and Redis region segments
+# and round-trip times. It never reads, prints or uploads a secret value.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  region:
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Measure function-to-database and function-to-Redis round trips
+        env:
+          PERF_TRACE_SECRET: ${{ secrets.PERF_TRACE_SECRET }}
+          STAGING_URL: ${{ vars.STAGING_URL || 'https://konnekt-remake.vercel.app' }}
+        run: |
+          set -euo pipefail
+          if [ -z "${PERF_TRACE_SECRET:-}" ]; then
+            echo "::error::PERF_TRACE_SECRET is not set in the staging environment."
+            exit 1
+          fi
+          curl -fsS --max-time 30 \
+            -H "x-perf-trace: ${PERF_TRACE_SECRET}" \
+            "${STAGING_URL}/api/diagnostics/region" | tee region.json
+          {
+            echo "## Region diagnostics"
+            echo '```json'
+            cat region.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

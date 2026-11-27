@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Flag, RotateCcw, Search, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "./status-badge";
 import { FormMessage } from "@/components/auth/auth-shell";
 import { apiGet, apiPost } from "@/lib/posts/client";
 import { formatEventDate, formatEventTime } from "@/lib/domain/event-display";
@@ -22,6 +23,12 @@ type ModerationEvent = {
   audienceKind: EventAudienceKind;
   rsvpCount: number;
   reportCount: number;
+};
+
+const EVENT_STATUS_LABELS: Record<string, string> = {
+  SCHEDULED: "Scheduled",
+  CANCELLED: "Cancelled",
+  REMOVED: "Removed",
 };
 
 const STATUSES = [
@@ -105,7 +112,7 @@ export function EventModerationConsole({
             type="button"
             onClick={() => setStatus(entry.value)}
             aria-pressed={status === entry.value}
-            className={`min-h-9 rounded-chip border px-3 text-small font-semibold ${
+            className={`min-h-9 rounded-chip border px-3 text-small font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ${
               status === entry.value ? "border-accent bg-accent-soft text-accent-soft-fg" : "border-border text-fg-muted"
             }`}
           >
@@ -123,9 +130,9 @@ export function EventModerationConsole({
           events.map((event) => (
             <li key={event.id} className="rounded-card border border-border bg-surface p-4">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-chip border border-border px-2 py-0.5 text-[0.625rem] font-bold uppercase text-fg-muted">
-                  {event.status}
-                </span>
+                <Badge tone={event.status === "REMOVED" ? "danger" : event.status === "CANCELLED" ? "warning" : "success"}>
+                  {EVENT_STATUS_LABELS[event.status] ?? event.status}
+                </Badge>
                 <span className="rounded-chip bg-surface-2 px-2 py-0.5 text-[0.625rem] font-semibold text-fg-muted">
                   {EVENT_CATEGORY_LABELS[event.category] ?? event.category}
                 </span>
@@ -144,7 +151,7 @@ export function EventModerationConsole({
               <div className="mt-3 flex flex-wrap gap-2">
                 <Link
                   href={`/events/${event.id}`}
-                  className="inline-flex min-h-8 items-center rounded-button border border-border px-3 text-tiny font-semibold text-fg hover:bg-surface-2"
+                  className="inline-flex min-h-11 items-center rounded-button border border-border px-3 text-tiny font-semibold text-fg transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                 >
                   Open
                 </Link>

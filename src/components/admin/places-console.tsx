@@ -139,7 +139,7 @@ export function PlacesConsole({ initialPlaces }: { initialPlaces: CampusPlaceVie
               <Button size="sm" variant="secondary" onClick={() => void toggle(place)}>
                 {place.active ? "Hide" : "Show"}
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => void remove(place)}>
+              <Button size="sm" variant="ghost" className="min-h-11" onClick={() => void remove(place)}>
                 Delete
               </Button>
             </li>

@@ -2,10 +2,15 @@ import type { NextRequest } from "next/server";
 import { getFeed } from "@/lib/services/posts";
 import { apiError, noStore, socialApi } from "@/lib/api/social";
 import type { FeedFilter } from "@/lib/posts/types";
+import { withPerfTrace } from "@/lib/perf/trace";
 
 const FILTERS = new Set<FeedFilter>(["all", "level", "department", "college", "faculty", "public"]);
 
-export async function GET(request: NextRequest) {
+export function GET(request: NextRequest) {
+  return withPerfTrace(request, () => feedRoute(request));
+}
+
+async function feedRoute(request: NextRequest) {
   const context = await socialApi(request);
   if ("response" in context) return context.response;
   try {

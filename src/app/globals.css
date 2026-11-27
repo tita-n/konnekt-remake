@@ -218,53 +218,232 @@ dialog.modal::backdrop {
 }
 
 /* --------------------------------------------------------------------------
+ * Tint helpers.
+ * Tailwind cannot apply an alpha modifier to a `var()` colour, so accent and
+ * status tints that need a *gradient* or a stronger mix are composed here with
+ * color-mix(). They follow the active theme and the tenant accent, which keeps
+ * dark mode out of "muddy tint" territory without a second class per surface.
+ * ------------------------------------------------------------------------ */
+@layer components {
+  /* Community banners and default event covers: a deliberate accent wash. */
+  .accent-banner {
+    background-image: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--accent) 34%, var(--surface)) 0%,
+      color-mix(in srgb, var(--accent) 15%, var(--surface)) 55%,
+      var(--surface-2) 100%
+    );
+  }
+
+  [data-theme="dark"] .accent-banner {
+    background-image: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--accent) 40%, #12151a) 0%,
+      color-mix(in srgb, var(--accent) 18%, var(--surface)) 55%,
+      var(--surface-2) 100%
+    );
+  }
+
+  /* Category and file-type tiles: one step stronger than accent-soft. */
+  /* Every tint tile is a centred icon square, so rounding is baked in. */
+  .accent-tile,
+  .success-tile,
+  .danger-tile,
+  .info-tile,
+  .neutral-tile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.625rem;
+  }
+
+  .accent-tile {
+    background-color: color-mix(in srgb, var(--accent) 16%, var(--surface));
+    color: var(--accent-ink);
+  }
+
+  [data-theme="dark"] .accent-tile {
+    background-color: color-mix(in srgb, var(--accent) 22%, var(--surface));
+  }
+
+  .success-tile {
+    background-color: var(--success-soft);
+    color: var(--success);
+  }
+
+  .danger-tile {
+    background-color: var(--danger-soft);
+    color: var(--danger);
+  }
+
+  .info-tile {
+    background-color: color-mix(in srgb, var(--verified) 14%, var(--surface));
+    color: var(--verified);
+  }
+
+  [data-theme="dark"] .info-tile {
+    color: #8fb6ff;
+  }
+
+  .neutral-tile {
+    background-color: var(--surface-2);
+    color: var(--fg-muted);
+  }
+}
+
+/* --------------------------------------------------------------------------
  * Phase 3 event surfaces.
  * Ticket shapes and the QR ticket card are the only skeuomorphic surfaces;
  * neo-brutalism is limited to the RSVP confirmation and generated share card.
  * ------------------------------------------------------------------------ */
+
+/*
+ * The notches are cut out of the card with a mask instead of painted over with
+ * a page-coloured circle. Painted circles disappear on tinted or dark parents
+ * (the hub rail, the admin table, a sheet); a mask is correct on any background.
+ */
 .event-ticket {
-  position: relative;
+  --ticket-notch: 10px;
+  --ticket-notch-y: calc(100% - 56px);
+  -webkit-mask-image: radial-gradient(
+      var(--ticket-notch) var(--ticket-notch) at 0 var(--ticket-notch-y),
+      transparent 97%,
+      #000 100%
+    ),
+    radial-gradient(var(--ticket-notch) var(--ticket-notch) at 100% var(--ticket-notch-y), transparent 97%, #000 100%);
+  mask-image: radial-gradient(var(--ticket-notch) var(--ticket-notch) at 0 var(--ticket-notch-y), transparent 97%, #000 100%),
+    radial-gradient(var(--ticket-notch) var(--ticket-notch) at 100% var(--ticket-notch-y), transparent 97%, #000 100%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
 }
 
-.event-ticket::before,
-.event-ticket::after {
-  content: "";
-  position: absolute;
-  top: 58%;
-  z-index: 1;
-  width: 18px;
-  height: 18px;
-  border-radius: 9999px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  pointer-events: none;
-}
-
-.event-ticket::before {
-  left: -10px;
-}
-
-.event-ticket::after {
-  right: -10px;
+/* No mask on a ticket inside a fixed overlay: the shadow would be clipped too. */
+.event-ticket-flat {
+  -webkit-mask-image: none;
+  mask-image: none;
 }
 
 .event-ticket-perforation {
-  border-top: 2px dashed var(--border-strong);
+  border-top: 1.5px dashed var(--border-strong);
 }
 
+/*
+ * Check-in viewfinder: 3px accent brackets inset over the camera preview.
+ * Pure CSS so there is no image asset and no repaint while the camera runs.
+ */
+.scan-corners {
+  position: absolute;
+  inset: 12% 18%;
+  pointer-events: none;
+}
+
+.scan-corner {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  /* Brightened so the accent brackets stay visible on the black preview. */
+  border: 3px solid color-mix(in srgb, var(--accent) 55%, #ffffff);
+}
+
+.scan-corner-tl {
+  top: 0;
+  left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  border-top-left-radius: 12px;
+}
+
+.scan-corner-tr {
+  top: 0;
+  right: 0;
+  border-left: 0;
+  border-bottom: 0;
+  border-top-right-radius: 12px;
+}
+
+.scan-corner-br {
+  bottom: 0;
+  right: 0;
+  border-left: 0;
+  border-top: 0;
+  border-bottom-right-radius: 12px;
+}
+
+.scan-corner-bl {
+  bottom: 0;
+  left: 0;
+  border-right: 0;
+  border-top: 0;
+  border-bottom-left-radius: 12px;
+}
+
+/* The style map asks for a 2px ink border with a 4px offset shadow. */
 .neo-brutal {
-  border: 3px solid var(--fg);
-  box-shadow: 6px 6px 0 0 var(--fg);
+  border: 2px solid var(--fg);
+  box-shadow: 4px 4px 0 0 var(--fg);
 }
 
 [data-theme="dark"] .neo-brutal {
-  box-shadow: 6px 6px 0 0 var(--border-strong);
+  box-shadow: 4px 4px 0 0 var(--border-strong);
   border-color: var(--border-strong);
 }
 
+/*
+ * A QR code needs a light quiet zone to scan, so the tile stays white in both
+ * themes. It is a scanning surface, not a card, so the token rule allows it.
+ */
+.qr-tile {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+/*
+ * Sticky action bars that are not the top bar or the tab bar are solid.
+ * They reserve their own height so content never hides underneath, and they
+ * respect the bottom safe area on notched phones.
+ */
+.action-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 30;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+}
+
+.action-bar-fixed {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+}
+
+/* Section header used by the hubs and tabs: 16/24 600 with an optional action. */
+.section-title {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  line-height: 1.5;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--fg);
+}
+
+/* Scanner: the camera surface stays dark in both themes. */
+.scan-frame {
+  position: relative;
+  border-radius: 12px;
+}
+
+/* Numbers that must not reflow: member counts, dates, capacities. */
+.nums {
+  font-variant-numeric: tabular-nums;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .event-ticket::before,
-  .event-ticket::after {
-    transition: none;
+  .animate-shimmer {
+    animation: none;
   }
 }

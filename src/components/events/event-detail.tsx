@@ -226,7 +226,7 @@ export function EventDetail({
           ) : (
             <div
               className="flex size-full items-end p-4"
-              style={{ background: `linear-gradient(135deg, ${event.categoryColor} 0%, color-mix(in srgb, ${event.categoryColor} 65%, #000) 100%)` }}
+              style={{ backgroundColor: event.categoryColor }}
             >
               <span className="rounded-chip bg-black/35 px-2 py-1 text-tiny font-semibold text-white">
                 {EVENT_CATEGORY_LABELS[event.category as keyof typeof EVENT_CATEGORY_LABELS] ?? "Event"}
@@ -254,8 +254,8 @@ export function EventDetail({
           </button>
         </div>
         {event.live ? (
-          <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-chip bg-highlight px-2.5 py-1 text-[0.6875rem] font-extrabold uppercase tracking-wide text-[#3a2500]">
-            <span className="size-1.5 rounded-full bg-[#3a2500]" aria-hidden="true" />
+          <span className="absolute left-3 top-3 inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-chip bg-highlight px-2.5 py-1 text-[0.6875rem] font-extrabold uppercase tracking-[0.04em] text-highlight-fg">
+            <span className="size-1.5 rounded-full bg-highlight-fg" aria-hidden="true" />
             Live now
           </span>
         ) : null}
@@ -279,8 +279,8 @@ export function EventDetail({
         ) : null}
 
         {event.lastMaterialChangeAt ? (
-          <details className="mt-4 rounded-card border border-highlight/40 bg-highlight-soft p-3">
-            <summary className="cursor-pointer text-small font-bold text-highlight-fg">Updated by the organiser</summary>
+          <details className="mt-4 rounded-card border border-border bg-surface-2 p-3">
+            <summary className="min-h-8 cursor-pointer list-none text-small font-bold text-fg marker:hidden">Updated by the organiser</summary>
             <ul className="mt-2 space-y-1 text-small text-fg-muted">
               {event.materialChanges.map((change, index) => (
                 <li key={`${change.at}-${index}`}>
@@ -315,16 +315,20 @@ export function EventDetail({
           ) : null}
         </div>
 
-        <dl className="mt-4 space-y-2 rounded-card border border-border bg-surface p-4 text-small">
-          <div className="flex items-start gap-2">
-            <CalendarDays aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-fg-muted" />
+        <dl className="mt-4 space-y-3 rounded-card border border-border bg-surface p-4 text-small">
+          <div className="flex items-start gap-3">
+            <span className="accent-tile size-9 shrink-0" aria-hidden="true">
+              <CalendarDays className="size-[18px]" />
+            </span>
             <div>
               <dt className="sr-only">Date</dt>
               <dd className="text-fg">{formatEventDate(event.startsAt, event.timezone)}</dd>
             </div>
           </div>
-          <div className="flex items-start gap-2">
-            <Clock aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-fg-muted" />
+          <div className="flex items-start gap-3">
+            <span className="accent-tile size-9 shrink-0" aria-hidden="true">
+              <Clock className="size-[18px]" />
+            </span>
             <div>
               <dt className="sr-only">Time</dt>
               <dd className="text-fg">
@@ -332,8 +336,10 @@ export function EventDetail({
               </dd>
             </div>
           </div>
-          <div className="flex items-start gap-2">
-            <MapPin aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-fg-muted" />
+          <div className="flex items-start gap-3">
+            <span className="accent-tile size-9 shrink-0" aria-hidden="true">
+              <MapPin className="size-[18px]" />
+            </span>
             <div>
               <dt className="sr-only">Venue</dt>
               <dd className="text-fg">
@@ -352,8 +358,10 @@ export function EventDetail({
               </dd>
             </div>
           </div>
-          <div className="flex items-start gap-2">
-            <Users aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-fg-muted" />
+          <div className="flex items-start gap-3">
+            <span className="accent-tile size-9 shrink-0" aria-hidden="true">
+              <Users className="size-[18px]" />
+            </span>
             <div>
               <dt className="sr-only">Audience</dt>
               <dd className="text-fg">{eventAudienceLabel(event.audienceKind)}</dd>
@@ -369,7 +377,7 @@ export function EventDetail({
                   </span>
                   {event.capacityRemaining === 0 ? <span className="font-bold text-warning">Full</span> : null}
                 </div>
-                <div className="mt-1 h-2 overflow-hidden rounded-full bg-surface-2" role="progressbar" aria-valuemin={0} aria-valuemax={event.capacity} aria-valuenow={goingCount}>
+                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-3" role="progressbar" aria-valuemin={0} aria-valuemax={event.capacity} aria-valuenow={goingCount}>
                   <div className="h-full bg-accent" style={{ width: `${Math.min(100, (goingCount / event.capacity) * 100)}%` }} />
                 </div>
               </dd>
@@ -391,7 +399,7 @@ export function EventDetail({
           <p className="mt-3 text-small font-semibold text-warning">This event is full.</p>
         ) : null}
 
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap items-center gap-2">
           {event.status === "SCHEDULED" && !ended ? (
             <>
               <Button
@@ -421,9 +429,9 @@ export function EventDetail({
           )}
           <a
             href={`/api/events/${event.id}/ics`}
-            className="inline-flex min-h-11 items-center gap-2 rounded-button border border-border px-4 text-small font-semibold text-fg hover:bg-surface-2"
+            className="inline-flex min-h-12 items-center gap-2 rounded-button border border-border px-4 text-small font-semibold text-fg transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
           >
-            <Download aria-hidden="true" className="size-4" />
+            <Download aria-hidden="true" className="size-[18px]" />
             Add to calendar
           </a>
           {rsvpStatus === "GOING" && event.checkInEnabled ? (

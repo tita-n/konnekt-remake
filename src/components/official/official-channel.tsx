@@ -65,7 +65,7 @@ export function OfficialChannel({
           <p className="mt-1 text-small text-fg-muted">Announcements from verified official accounts. Read-only.</p>
         </div>
         {canPost ? (
-          <ButtonLink href="/official/compose" size="sm" className="mt-1">
+          <ButtonLink href="/official/compose" size="sm" className="mt-1 min-h-11">
             <PenLine aria-hidden="true" className="size-4" />
             New
           </ButtonLink>
@@ -77,7 +77,7 @@ export function OfficialChannel({
       {accounts.length > 0 ? (
         <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1" aria-label="Official accounts">
           {accounts.map((account) => (
-            <span key={account.id} className="shrink-0 rounded-chip border border-border bg-surface px-3 py-1.5 text-tiny font-semibold text-fg">
+            <span key={account.id} className="neutral-tile inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-chip px-2.5 py-1 text-tiny font-semibold">
               {account.name}
             </span>
           ))}
@@ -93,7 +93,7 @@ export function OfficialChannel({
           }}
           aria-pressed={category === null}
           className={cn(
-            "min-h-9 rounded-chip border px-3 text-small font-semibold",
+            "min-h-9 rounded-chip border px-3 text-small font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
             category === null ? "border-accent bg-accent-soft text-accent-soft-fg" : "border-border text-fg-muted",
           )}
         >
@@ -117,7 +117,12 @@ export function OfficialChannel({
             {entry.label}
           </button>
         ))}
-        <label className="ml-auto flex min-h-9 items-center gap-2 text-small font-semibold text-fg">
+        <label
+          className={cn(
+            "ml-auto inline-flex min-h-9 shrink-0 cursor-pointer items-center gap-2 rounded-chip border px-3 text-small font-semibold transition-colors focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus",
+            unreadOnly ? "border-accent bg-accent-soft text-accent-soft-fg" : "border-border text-fg-muted",
+          )}
+        >
           <input
             type="checkbox"
             checked={unreadOnly}
@@ -134,7 +139,7 @@ export function OfficialChannel({
       {loading ? (
         <div className="space-y-3" aria-busy="true" aria-label="Loading announcements">
           {[0, 1, 2].map((key) => (
-            <Skeleton key={key} className="h-40 w-full" rounded="rounded-card" />
+            <Skeleton key={key} className="h-[196px] w-full" rounded="rounded-card" />
           ))}
         </div>
       ) : error ? (
@@ -144,7 +149,7 @@ export function OfficialChannel({
       ) : feed.announcements.length === 0 ? (
         <div className="rounded-card border border-border bg-surface">
           <EmptyState
-            illustration="notifications"
+            illustration="announcements"
             title={unreadOnly ? "You're all caught up" : "No announcements yet"}
             description="Verified university accounts will post notices here. Critical notices appear on Pulse until you acknowledge them."
           />
@@ -175,7 +180,7 @@ export function OfficialChannel({
               setLoading(false);
             }
           }}
-          className="mx-auto flex min-h-11 items-center gap-2 rounded-button border border-border px-4 text-small font-semibold text-fg hover:bg-surface-2"
+          className="mx-auto flex min-h-12 items-center gap-2 rounded-button border border-border px-4 text-small font-semibold text-fg transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
         >
           <RefreshCw aria-hidden="true" className="size-4" />
           Load more

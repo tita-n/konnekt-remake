@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, Archive, CalendarClock, Megaphone, PenLine } from "lucide-react";
 import { Button, ButtonLink } from "@/components/ui/button";
+import { Badge } from "./status-badge";
 import { FormMessage } from "@/components/auth/auth-shell";
 import { apiPatch } from "@/lib/posts/client";
 import { formatEventDate, formatEventTime } from "@/lib/domain/event-display";
@@ -52,7 +53,7 @@ export function AnnouncementConsole({
           </p>
         </div>
         {canCompose ? (
-          <ButtonLink href="/official/compose" size="sm" className="mt-1">
+          <ButtonLink href="/official/compose" size="sm" className="mt-1 min-h-11">
             <PenLine aria-hidden="true" className="size-4" />
             Compose
           </ButtonLink>
@@ -68,18 +69,18 @@ export function AnnouncementConsole({
           announcements.map((announcement) => (
             <li key={announcement.id} className="rounded-card border border-border bg-surface p-4">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1 rounded-chip bg-accent-soft px-2 py-0.5 text-[0.625rem] font-bold uppercase text-accent-soft-fg">
+                <Badge tone="accent">
                   <Megaphone aria-hidden="true" className="size-3" />
                   {announcement.officialAccount.name}
-                </span>
-                <span className="rounded-chip border border-border px-2 py-0.5 text-[0.625rem] font-bold uppercase text-fg-muted">
+                </Badge>
+                <Badge tone={announcement.status === "SCHEDULED" ? "warning" : announcement.status === "ARCHIVED" ? "neutral" : "success"}>
                   {ANNOUNCEMENT_STATUS_LABELS[announcement.status as AnnouncementStatus] ?? announcement.status}
-                </span>
+                </Badge>
                 {announcement.critical ? (
-                  <span className="inline-flex items-center gap-1 rounded-chip bg-highlight px-2 py-0.5 text-[0.625rem] font-extrabold uppercase text-[#3a2500]">
+                  <Badge tone="danger">
                     <AlertTriangle aria-hidden="true" className="size-3" />
                     Critical
-                  </span>
+                  </Badge>
                 ) : null}
               </div>
               <h2 className="mt-2 text-h3 font-bold text-fg">{announcement.title}</h2>
@@ -96,26 +97,27 @@ export function AnnouncementConsole({
                     {formatEventDate(announcement.publishedAt ?? announcement.createdAt, timezone)}
                   </span>
                 )}
-                <span>{announcement.ackCount} acknowledgements</span>
+                <span className="nums">{announcement.ackCount ?? 0} acknowledgements</span>
                 {announcement.editedAt ? <span>Edited</span> : null}
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <Link
                   href={`/official/a/${announcement.id}`}
-                  className="inline-flex min-h-8 items-center rounded-button border border-border px-3 text-tiny font-semibold text-fg hover:bg-surface-2"
+                  className="inline-flex min-h-11 items-center rounded-button border border-border px-3 text-tiny font-semibold text-fg transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                 >
                   View
                 </Link>
                 <Link
                   href={`/official/a/${announcement.id}/edit`}
-                  className="inline-flex min-h-8 items-center rounded-button border border-border px-3 text-tiny font-semibold text-fg hover:bg-surface-2"
+                  className="inline-flex min-h-11 items-center rounded-button border border-border px-3 text-tiny font-semibold text-fg transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                 >
                   Edit
                 </Link>
                 {announcement.status !== "ARCHIVED" ? (
                   <Button
                     size="sm"
-                    variant="ghost"
+                    variant="secondary"
+                    className="min-h-11"
                     loading={busyId === announcement.id}
                     onClick={() => void archive(announcement)}
                   >

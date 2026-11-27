@@ -18,7 +18,10 @@ export type EmptyIllustrationType =
   | "unavailable"
   | "bookmarks"
   | "drafts"
-  | "hourglass";
+  | "hourglass"
+  | "announcements"
+  | "ticket"
+  | "locked";
 
 const KIND_MAP: Record<EmptyIllustrationType, ClayIllustrationKind> = {
   default: "emptyMailbox",
@@ -30,9 +33,12 @@ const KIND_MAP: Record<EmptyIllustrationType, ClayIllustrationKind> = {
   search: "magnifier",
   hourglass: "hourglass",
   communities: "welcomeHero",
-  events: "emptyBookmark",
+  events: "noEvents",
+  announcements: "noAnnouncements",
+  ticket: "ticketOffline",
   inbox: "emptyMailbox",
   notifications: "emptyMailbox",
+  locked: "happyPadlock",
 };
 
 export function EmptyState({

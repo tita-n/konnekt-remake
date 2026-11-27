@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { assertCsrf, getSession } from "@/lib/auth/session";
 import { SocialError } from "@/lib/posts/errors";
 import { loadSocialViewer, type SocialViewer } from "@/lib/services/social";
+import { markAuthComplete } from "@/lib/perf/trace";
 import type { SessionUser } from "@/lib/auth/guards";
 
 export function apiError(error: unknown): NextResponse {
@@ -25,6 +26,7 @@ export async function socialApi(
     return { response: NextResponse.json({ error: "Your session expired. Refresh and try again." }, { status: 403 }) };
   }
   const viewer = await loadSocialViewer(session.user);
+  markAuthComplete();
   if (!viewer) {
     return { response: NextResponse.json({ error: "Finish setting up your profile first." }, { status: 403 }) };
   }
