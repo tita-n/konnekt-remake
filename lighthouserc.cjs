@@ -7,7 +7,7 @@ module.exports = {
   ci: {
     collect: {
       url: [process.env.LHCI_URL ?? "http://localhost:3100/"],
-      numberOfRuns: 1,
+      numberOfRuns: 3,
       settings: {
         chromeFlags: "--headless=new --no-sandbox",
         // The recorded baseline is mobile with simulated slow 4G and 4x CPU.

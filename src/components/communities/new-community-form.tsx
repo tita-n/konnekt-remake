@@ -379,7 +379,7 @@ export function NewCommunityForm() {
         </section>
 
         <FormSection id="preview-title" title="Preview" description="This is how your community appears in Discover.">
-          <div className="pointer-events-none select-none" aria-hidden="true">
+          <div className="pointer-events-none select-none" inert>
             <CommunityCard community={previewCommunity} />
           </div>
         </FormSection>
