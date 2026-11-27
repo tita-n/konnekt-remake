@@ -53,3 +53,4 @@
 | Public sharing requires an explicit toggle | `tests/integration/events.test.ts` | `returns no public preview until the organiser opts in` |
 | Scheduled announcements publish exactly once | `tests/integration/events.test.ts` | `publishes a due announcement exactly once across repeated cron runs` |
 | Event permissions and audiences are table-driven | `tests/unit/events.test.ts` | `gives the creator edit, staff and check-in rights only while bookable`; `never lets an organiser compose above their own path` |
+
