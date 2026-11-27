@@ -191,6 +191,6 @@ test.describe("communities product", () => {
     await expect(page.getByText(/official/i).first()).toBeVisible();
 
     await page.goto(`/c/${community.slug}`, { waitUntil: "networkidle" });
-    await expect(page.getByText("Official").first()).toBeVisible();
+    await expect(page.getByRole("img", { name: "Official community" }).first()).toBeVisible();
   });
 });
