@@ -418,7 +418,15 @@ dialog.modal::backdrop {
 .action-bar-fixed {
   position: fixed;
   inset-inline: 0;
-  bottom: 0;
+  /* Clear the mobile tab bar (z-40, 64px) instead of hiding behind it. */
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  z-index: 45;
+}
+
+@media (min-width: 1024px) {
+  .action-bar-fixed {
+    bottom: 0;
+  }
 }
 
 /* Section header used by the hubs and tabs: 16/24 600 with an optional action. */
