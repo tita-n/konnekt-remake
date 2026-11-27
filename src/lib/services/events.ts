@@ -2,6 +2,7 @@ import "server-only";
 import type { Prisma } from "@prisma/client";
 import { writeAudit } from "@/lib/audit";
 import { tenantDb, withTenantTransaction, type TenantClient } from "@/lib/db/tenant";
+import { cloudinaryImageUrl } from "@/lib/media/image-url";
 import {
   audienceIsOnViewerPath,
   canSeeEvent,
@@ -198,7 +199,7 @@ export function coverUrl(publicId: string | null | undefined): string | null {
   // Demo seed art is served by the app itself, never uploaded to Cloudinary.
   if (publicId.startsWith("/")) return publicId;
   if (publicId.startsWith("local:")) return `/uploads/posts/${publicId.slice("local:".length)}.webp`;
-  return `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME ?? ""}/image/upload/c_fill,w_1200,h_675,q_auto,f_auto/${publicId}`;
+  return cloudinaryImageUrl(publicId, "cover");
 }
 
 /* ------------------------------- visibility ------------------------------- */

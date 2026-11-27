@@ -286,3 +286,25 @@ Events and communities get varied cover, icon and banner art served from
 Cloudinary URL), the critical registration notice has a PDF attachment, the
 live event is relative to seed time, and attendee lists are populated. This art
 is demo-only and never uploaded to Cloudinary.
+
+### The academic tree is cached per instance for 60 seconds
+
+Every request used to load the viewer's department plus every academic node in
+the university. The tree changes rarely and is identical for all viewers in a
+tenant, so it is cached for 60 seconds per server instance. Admin mutations call
+`invalidateAcademicTree`; the staleness window is bounded and never affects
+authorization (the post/community rule still rechecks the viewer's path).
+
+### One image delivery helper with named widths
+
+`src/lib/media/image-url.ts` is the only place that builds a Cloudinary URL.
+Only five named widths exist (`avatar`, `thumb`, `card`, `cover`, `full`) with
+`f_auto,q_auto,c_limit`. Ad-hoc widths were how a free plan would spend 25
+credits on transformation sprawl. Demo `/seed` paths pass through untouched.
+
+### Capacity is documented against the vendors, not assumed
+
+`docs/CAPACITY.md` records the verified free-tier limits, monthly usage at 500,
+2,000 and 5,000 users, the first limit to break (Vercel's non-commercial Hobby
+rule, then 1M invocations at ~1,700 monthly actives), upgrade triggers, the
+degradation ladder and where to monitor each service.

@@ -1,6 +1,7 @@
 import "server-only";
 import { createHash } from "node:crypto";
 import { env } from "@/lib/env";
+import { cloudinaryImageUrl } from "./image-url";
 
 /**
  * Post images are public-delivery Cloudinary assets with unguessable ids. The
@@ -11,7 +12,7 @@ export function postMediaUrl(publicId: string, storedUrl?: string | null): strin
   if (storedUrl) return storedUrl;
   if (publicId.startsWith("local:")) return null;
   if (!env.CLOUDINARY_CLOUD_NAME) return null;
-  return `https://res.cloudinary.com/${env.CLOUDINARY_CLOUD_NAME}/image/upload/f_auto,q_auto,w_1080/${publicId}`;
+  return cloudinaryImageUrl(publicId, "card", env.CLOUDINARY_CLOUD_NAME);
 }
 
 export function isAllowedPostPublicId(publicId: string): boolean {

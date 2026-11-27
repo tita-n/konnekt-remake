@@ -32,18 +32,38 @@ export interface SocialViewer {
   showEventAttendance: boolean;
 }
 
+/**
+ * The academic tree changes rarely and is identical for every viewer in a
+ * university. Cache it per instance for a minute instead of loading every node
+ * on every request. Admin mutations call `invalidateAcademicTree`.
+ */
+const academicTreeCache = new Map<string, { nodes: Array<{ id: string; name: string; type: "COLLEGE" | "FACULTY" | "DEPARTMENT"; parentId: string | null }>; at: number }>();
+const ACADEMIC_TREE_TTL_MS = 60_000;
+
+export function invalidateAcademicTree(universityId?: string): void {
+  if (universityId) academicTreeCache.delete(universityId);
+  else academicTreeCache.clear();
+}
+
 export async function loadSocialViewer(user: SessionUser): Promise<SocialViewer | null> {
   if (!user.departmentNodeId || !user.level) return null;
   const db = tenantDb(user.universityId);
+  const cached = academicTreeCache.get(user.universityId);
+  const fresh = cached && Date.now() - cached.at < ACADEMIC_TREE_TTL_MS;
   const [department, nodes] = await Promise.all([
     db.academicNode.findFirst({
       where: { id: user.departmentNodeId },
       select: { id: true, path: true, type: true },
     }),
-    db.academicNode.findMany({
-      select: { id: true, name: true, type: true, parentId: true },
-    }),
+    fresh
+      ? Promise.resolve(cached.nodes)
+      : db.academicNode.findMany({
+          select: { id: true, name: true, type: true, parentId: true },
+        }),
   ]);
+  if (!fresh && nodes.length > 0) {
+    academicTreeCache.set(user.universityId, { nodes, at: Date.now() });
+  }
   if (!department) return null;
   const lineage = lineageFor(nodes, department.id);
   return {
