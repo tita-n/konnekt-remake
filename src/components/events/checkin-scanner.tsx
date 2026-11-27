@@ -431,6 +431,19 @@ export function CheckinScanner({ event, initialCheckedIn }: { event: SerializedE
         </p>
       ) : null}
 
+      <SegmentedControl
+        label="Check-in method"
+        value={mode}
+        onChange={(next) => {
+          setMode(next);
+          setError(null);
+        }}
+        options={[
+          { value: "QR", label: "Scan QR" },
+          { value: "MANUAL", label: "Find student" },
+        ]}
+      />
+
       {mode === "QR" ? (
         <div className="rounded-card border border-border bg-surface p-4">
           <div className="scan-frame relative overflow-hidden rounded-button bg-black">

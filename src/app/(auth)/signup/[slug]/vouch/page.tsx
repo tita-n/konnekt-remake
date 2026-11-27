@@ -16,7 +16,26 @@ export default async function VouchPage({ params }: { params: Promise<{ slug: st
   if (!university.vouchingEnabled) redirect(`/signup/${slug}`);
 
   const vouchers = await listVouchers(university.id);
-  if (vouchers.length === 0) redirect(`/signup/${slug}`);
+
+  if (vouchers.length === 0) {
+    return (
+      <div style={accentCssVars(university.accentColor) as React.CSSProperties}>
+        <div className="mb-6">
+          <Stepper steps={["Verify", "Account", "Profile"]} current={0} />
+        </div>
+        <AuthShell
+          title="No vouchers listed yet"
+          description={`${university.name} allows vouching, but has not listed a course rep or reviewer. Ask your department, or verify another way.`}
+          backHref={`/signup/${slug}`}
+          backLabel={university.name}
+        >
+          <p className="rounded-card border border-border bg-surface-2 px-3.5 py-3 text-small text-fg-muted">
+            Vouching opens as soon as a reviewer or official is listed. Your student email or ID card works now.
+          </p>
+        </AuthShell>
+      </div>
+    );
+  }
 
   return (
     <div style={accentCssVars(university.accentColor) as React.CSSProperties}>

@@ -626,7 +626,7 @@ model Post {
   topicTag          String?
   acceptedCommentId String?      @unique
   status            PostStatus   @default(ACTIVE)
-  /// Recency with a small narrower-audience boost; cursor pagination sorts on this.
+  /// Legacy recency column kept for compatibility. Feeds order by createdAt.
   rankAt            DateTime     @default(now())
   editedAt          DateTime?
   removedAt         DateTime?
@@ -653,10 +653,10 @@ model Post {
   hashtags        PostHashtag[]
   communityPin    CommunityPin?
 
-  @@index([universityId, status, rankAt, id])
+  @@index([universityId, status, createdAt, id])
   @@index([universityId, audienceKind, rankAt])
   @@index([universityId, authorId, createdAt])
-  @@index([universityId, communityId, status, rankAt, id])
+  @@index([universityId, communityId, status, createdAt, id])
   @@index([repostOfId])
   @@index([createdAt])
 }
@@ -739,6 +739,8 @@ model Comment {
   postId           String
   authorId         String
   parentId         String?
+  /// 0 for a top-level comment; capped at 20 (never by display depth).
+  depth            Int           @default(0)
   body             String        @db.Text
   status           CommentStatus @default(ACTIVE)
   helpfulCount     Int           @default(0)
@@ -1128,6 +1130,20 @@ model CommunityOfficialRequest {
 
   @@index([universityId, status, createdAt])
   @@index([universityId, communityId, status])
+}
+
+/// Exactly-once mutation claims. Scoped to one user and expiring after 24h.
+model IdempotencyRecord {
+  id          String    @id @default(cuid())
+  userId      String
+  key         String
+  status      Int?
+  response    String?   @db.Text
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  @@unique([userId, key])
+  @@index([createdAt])
 }
 
 model WaitlistEntry {

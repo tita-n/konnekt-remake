@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { REPORT_REASONS, reportContent } from "@/lib/services/moderation";
 import { apiError, noStore, readJson, socialApi } from "@/lib/api/social";
+import { withIdempotency } from "@/lib/api/idempotency";
 import type { ReportReason } from "@prisma/client";
 
 export async function POST(request: NextRequest) {
@@ -14,13 +15,17 @@ export async function POST(request: NextRequest) {
     if (typeof body.targetId !== "string" || typeof body.reason !== "string" || !REPORT_REASONS.includes(body.reason as ReportReason)) {
       return noStore({ error: "Choose a reason for the report." }, { status: 400 });
     }
+    const targetType = body.targetType;
+    const targetId = body.targetId;
+    return await withIdempotency(request, context.viewer.userId, async () => {
     const result = await reportContent(context.viewer, {
-      targetType: body.targetType,
-      targetId: body.targetId,
+      targetType,
+      targetId,
       reason: body.reason as ReportReason,
       details: typeof body.details === "string" ? body.details : undefined,
     });
     return noStore(result, { status: 201 });
+    });
   } catch (error) {
     return apiError(error);
   }

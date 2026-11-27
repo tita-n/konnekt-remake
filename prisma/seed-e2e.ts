@@ -223,6 +223,15 @@ async function main() {
     level: 400,
     role: "UNIVERSITY_ADMIN",
   });
+  const desk = await account({
+    email: "desk@nova.edu.ng",
+    username: "nova_desk",
+    fullName: "Tunde Bakare",
+    status: "VERIFIED",
+    departmentKey: "swe",
+    level: 400,
+    role: "UNIVERSITY_ADMIN",
+  });
   const reviewer = await account({
     email: "reviewer@nova.edu.ng",
     username: "nova_reviewer",
@@ -667,6 +676,75 @@ async function main() {
       },
     });
   }
+
+  // A second, deliberately different tenant proves branding never leaks.
+  const lakeside = await db.university.upsert({
+    where: { slug: "lakeside-university" },
+    update: {
+      name: "Lakeside University",
+      shortName: "Lakeside",
+      status: "ACTIVE",
+      accentColor: "#0F766E",
+      studentEmailDomains: ["student.lakeside.edu.ng", "lakeside.edu.ng"],
+      idCardEnabled: true,
+      vouchingEnabled: false,
+      matricPattern: "^[A-Z]{2,4}/\\d{4}/\\d{3,4}$",
+      labels: { college: "College", faculty: "Faculty", department: "Department" },
+      featureFlags: { campusVoice: false, communities: true, events: true, messaging: false },
+    },
+    create: {
+      name: "Lakeside University",
+      shortName: "Lakeside",
+      slug: "lakeside-university",
+      status: "ACTIVE",
+      accentColor: "#0F766E",
+      studentEmailDomains: ["student.lakeside.edu.ng", "lakeside.edu.ng"],
+      idCardEnabled: true,
+      vouchingEnabled: false,
+      matricPattern: "^[A-Z]{2,4}/\\d{4}/\\d{3,4}$",
+      labels: { college: "College", faculty: "Faculty", department: "Department" },
+      featureFlags: { campusVoice: false, communities: true, events: true, messaging: false },
+    },
+  });
+  const lakesideCollege = await db.academicNode.upsert({
+    where: { universityId_parentPath_slug: { universityId: lakeside.id, parentPath: "", slug: "science" } },
+    update: { name: "Science", isActive: true },
+    create: { universityId: lakeside.id, type: "COLLEGE", name: "Science", slug: "science", path: "" },
+  });
+  const lakesideDept = await db.academicNode.upsert({
+    where: { universityId_parentPath_slug: { universityId: lakeside.id, parentPath: lakesideCollege.id, slug: "computer-science" } },
+    update: { name: "Computer Science", isActive: true, levels: [100, 200, 300, 400] },
+    create: {
+      universityId: lakeside.id,
+      parentId: lakesideCollege.id,
+      type: "DEPARTMENT",
+      name: "Computer Science",
+      slug: "computer-science",
+      path: lakesideCollege.id,
+      levels: [100, 200, 300, 400],
+    },
+  });
+  await db.user.upsert({
+    where: { email: "student@lakeside.edu.ng" },
+    update: { status: "VERIFIED", departmentNodeId: lakesideDept.id, level: 200, onboardingCompletedAt: new Date(), passwordHash },
+    create: {
+      universityId: lakeside.id,
+      email: "student@lakeside.edu.ng",
+      emailVerified: true,
+      username: "lakeside_student",
+      passwordHash,
+      fullName: "Damilola Ade",
+      status: "VERIFIED",
+      matricNumber: "CSC/2024/0101",
+      matricNormalized: "CSC/2024/0101",
+      departmentNodeId: lakesideDept.id,
+      level: 200,
+      consentPolicyVersion: "2026-01-01",
+      consentAcceptedAt: new Date(),
+      verifiedAt: new Date(),
+      onboardingCompletedAt: new Date(),
+    },
+  });
 
   void admin;
   void reviewer;

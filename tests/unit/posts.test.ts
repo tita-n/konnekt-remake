@@ -10,13 +10,13 @@ import {
   parseMentions,
   pollPercentages,
   pollResultsVisible,
-  rankingTimestamp,
   shouldFlagForReview,
   validatePollOptions,
   visibleAudienceFilter,
   visibleAudiencePaths,
 } from "@/lib/domain/posts";
 import { audienceOptionsFor, buildStudentPath, canSee } from "@/lib/domain/academic";
+import { decodeTimeCursor, encodeTimeCursor } from "@/lib/posts/cursor";
 
 const UNI = "uni_a";
 const OTHER_UNI = "uni_b";
@@ -220,10 +220,15 @@ describe("polls", () => {
 });
 
 describe("ordering and labels", () => {
-  it("boosts narrower audiences by a few minutes, not engagement", () => {
-    const now = new Date("2026-11-17T12:00:00Z");
-    expect(rankingTimestamp(now, "PUBLIC").toISOString()).toBe("2026-11-17T12:00:00.000Z");
-    expect(rankingTimestamp(now, "LEVEL").toISOString()).toBe("2026-11-17T12:40:00.000Z");
+  it("keeps strict time order with an id tiebreak and no audience boost", () => {
+    const first = new Date("2026-11-17T12:00:00Z");
+    const second = new Date("2026-11-17T12:00:00Z");
+    expect(first.getTime()).toBe(second.getTime());
+    const cursor = decodeTimeCursor(encodeTimeCursor(first, "post-b"));
+    expect(cursor).toEqual({ createdAt: first.toISOString(), id: "post-b" });
+    // The retired rankAt cursor shape is still readable.
+    const legacy = Buffer.from(JSON.stringify({ r: first.toISOString(), i: "post-a" })).toString("base64url");
+    expect(decodeTimeCursor(legacy)).toEqual({ createdAt: first.toISOString(), id: "post-a" });
   });
 
   it("uses the university's own layer labels", () => {

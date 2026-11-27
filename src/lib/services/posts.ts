@@ -21,11 +21,11 @@ import {
   pollPercentages,
   pollResultsVisible,
   pollIsOpen,
-  rankingTimestamp,
   shouldFlagForReview,
   validatePollOptions,
   visibleAudienceFilter,
   MAX_POST_LENGTH,
+  MAX_COMMENT_DEPTH,
   type PostAudienceKind,
 } from "@/lib/domain/posts";
 import { canAccessCommunityAction, type CommunityAccess } from "@/lib/domain/community";
@@ -39,9 +39,9 @@ import {
 } from "./community-access";
 import { isAllowedPostPublicId, postMediaUrl } from "@/lib/media/post-media";
 import {
-  decodeRankCursor,
+  decodeTimeCursor,
   decodeScoreCursor,
-  encodeRankCursor,
+  encodeTimeCursor,
   encodeScoreCursor,
 } from "@/lib/posts/cursor";
 import { SocialError } from "@/lib/posts/errors";
@@ -326,7 +326,7 @@ export async function getCommunityFeed(
   );
   const exclude = pinIds.length > 0 ? { id: { notIn: pinIds } } : {};
   if (sort === "latest") {
-    const decoded = decodeRankCursor(cursor);
+    const decoded = decodeTimeCursor(cursor);
     const rows = await db.post.findMany({
       where: {
         ...baseWhere,
@@ -336,15 +336,15 @@ export async function getCommunityFeed(
               AND: [
                 {
                   OR: [
-                    { rankAt: { lt: new Date(decoded.rankAt) } },
-                    { rankAt: new Date(decoded.rankAt), id: { lt: decoded.id } },
+                    { createdAt: { lt: new Date(decoded.createdAt) } },
+                    { createdAt: new Date(decoded.createdAt), id: { lt: decoded.id } },
                   ],
                 },
               ],
             }
           : {}),
       },
-      orderBy: [{ rankAt: "desc" }, { id: "desc" }],
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: 11,
       select: postSelect,
     });
@@ -353,7 +353,7 @@ export async function getCommunityFeed(
     return {
       posts: await serializeRows(db, viewer, page),
       pinned,
-      nextCursor: rows.length > 10 && last ? encodeRankCursor(last.rankAt, last.id) : null,
+      nextCursor: rows.length > 10 && last ? encodeTimeCursor(last.createdAt, last.id) : null,
       hasMore: rows.length > 10,
     };
   }
@@ -400,7 +400,7 @@ export async function getFeed(
     loadRelationships(db, viewer.userId),
     joinedActiveCommunityIds(db, viewer.userId),
   ]);
-  const decoded = decodeRankCursor(cursor);
+  const decoded = decodeTimeCursor(cursor);
   const pageSize = Math.min(Math.max(limit, 1), 20);
 
   const where = feedWhere(viewer, filter, relationships, joinedCommunityIds, {
@@ -409,8 +409,8 @@ export async function getFeed(
           AND: [
             {
               OR: [
-                { rankAt: { lt: new Date(decoded.rankAt) } },
-                { rankAt: new Date(decoded.rankAt), id: { lt: decoded.id } },
+                { createdAt: { lt: new Date(decoded.createdAt) } },
+                { createdAt: new Date(decoded.createdAt), id: { lt: decoded.id } },
               ],
             },
           ],
@@ -420,7 +420,7 @@ export async function getFeed(
 
   const rows = await db.post.findMany({
     where,
-    orderBy: [{ rankAt: "desc" }, { id: "desc" }],
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: pageSize + 1,
     select: postSelect,
   });
@@ -433,7 +433,7 @@ export async function getFeed(
   const last = visibleRows[visibleRows.length - 1];
   return {
     posts: await serializeRows(db, viewer, visibleRows),
-    nextCursor: hasMore && last ? encodeRankCursor(last.rankAt, last.id) : null,
+    nextCursor: hasMore && last ? encodeTimeCursor(last.createdAt, last.id) : null,
     hasMore,
   };
 }
@@ -484,6 +484,7 @@ const commentSelect = {
   id: true,
   postId: true,
   parentId: true,
+  depth: true,
   body: true,
   status: true,
   helpfulCount: true,
@@ -526,6 +527,7 @@ async function serializeComments(
       id: row.id,
       postId: row.postId,
       parentId: row.parentId,
+      depth: row.depth,
       body: removed ? "" : row.body,
       status: removed ? ("REMOVED" as const) : ("ACTIVE" as const),
       helpfulCount: row.helpfulCount,
@@ -555,40 +557,51 @@ async function getComments(
   sort: "top" | "newest",
 ): Promise<CommentView[]> {
   const statusFilter: CommentStatus[] = ["ACTIVE", "REMOVED"];
-  const topRows = await db.comment.findMany({
-    where: { postId, parentId: null, status: { in: statusFilter } },
-    orderBy:
-      sort === "top"
-        ? [{ helpfulCount: "desc" }, { createdAt: "desc" }, { id: "desc" }]
-        : [{ createdAt: "desc" }, { id: "desc" }],
-    take: COMMENT_PAGE_SIZE,
+  // One query returns the whole thread (bounded) so arbitrary nesting does not
+  // turn into a query per level. The client reveals deeper replies on demand.
+  const rows = await db.comment.findMany({
+    where: { postId, status: { in: statusFilter } },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    take: 1000,
     select: commentSelect,
   });
-  const visibleTop = topRows.filter((row) => !isHiddenAuthor(relationships, row.authorId, viewer.userId));
-  const replyRows = visibleTop.length
-    ? await db.comment.findMany({
-        where: { postId, parentId: { in: visibleTop.map((row) => row.id) }, status: { in: statusFilter } },
-        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-        take: 200,
-        select: commentSelect,
-      })
-    : [];
-  const visibleReplies = replyRows.filter((row) => !isHiddenAuthor(relationships, row.authorId, viewer.userId));
-  const [top, replies] = await Promise.all([
-    serializeComments(db, viewer, visibleTop),
-    serializeComments(db, viewer, visibleReplies),
-  ]);
-  const grouped = new Map<string, CommentView[]>();
-  for (const reply of replies) {
-    if (!reply.parentId) continue;
-    const list = grouped.get(reply.parentId) ?? [];
-    list.push(reply);
-    grouped.set(reply.parentId, list);
+  const visible = rows.filter((row) => !isHiddenAuthor(relationships, row.authorId, viewer.userId));
+  const all = await serializeComments(db, viewer, visible);
+  const byId = new Map(all.map((comment) => [comment.id, comment]));
+  for (const comment of all) {
+    if (!comment.parentId) {
+      comment.replyTo = null;
+      continue;
+    }
+    const parent = byId.get(comment.parentId);
+    comment.replyTo = parent?.author ? { id: parent.author.id, username: parent.author.username } : null;
+    comment.depth = parent ? parent.depth + 1 : comment.depth;
   }
-  return top.map((comment) => {
-    const children = grouped.get(comment.id) ?? [];
-    return { ...comment, replies: children, replyCount: children.length };
+
+  const grouped = new Map<string, CommentView[]>();
+  const tops: CommentView[] = [];
+  for (const comment of all) {
+    if (!comment.parentId || !byId.has(comment.parentId)) {
+      tops.push(comment);
+      continue;
+    }
+    const list = grouped.get(comment.parentId) ?? [];
+    list.push(comment);
+    grouped.set(comment.parentId, list);
+  }
+  const attach = (comment: CommentView): CommentView => {
+    const children = (grouped.get(comment.id) ?? []).map(attach);
+    return {
+      ...comment,
+      replies: children,
+      replyCount: children.reduce((sum, child) => sum + 1 + (child.replyCount ?? 0), 0),
+    };
+  };
+  const sortedTops = tops.sort((a, b) => {
+    if (sort === "top" && b.helpfulCount !== a.helpfulCount) return b.helpfulCount - a.helpfulCount;
+    return a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : b.id.localeCompare(a.id);
   });
+  return sortedTops.slice(0, COMMENT_PAGE_SIZE).map(attach);
 }
 
 export async function createComment(input: {
@@ -628,16 +641,21 @@ export async function createComment(input: {
   if (isHiddenAuthor(relationships, post.authorId, viewer.userId)) throw new SocialError("This post isn't available.", 404);
 
   let parentId: string | null = null;
+  let depth = 0;
   if (input.parentId) {
     const parent = await db.comment.findFirst({
       where: { id: input.parentId, postId: post.id },
-      select: { id: true, parentId: true, status: true, authorId: true },
+      select: { id: true, parentId: true, depth: true, status: true, authorId: true },
     });
-    if (!parent || parent.status !== "ACTIVE" || parent.parentId) {
-      throw new SocialError("You can reply to a top-level comment only.");
+    if (!parent || parent.status !== "ACTIVE") {
+      throw new SocialError("That comment is no longer available.", 404);
+    }
+    if (parent.depth >= MAX_COMMENT_DEPTH) {
+      throw new SocialError("This thread has reached its reply limit.", 400);
     }
     if (isHiddenAuthor(relationships, parent.authorId, viewer.userId)) throw new SocialError("This post isn't available.", 404);
     parentId = parent.id;
+    depth = parent.depth + 1;
   }
 
   const flag = shouldFlagForReview(body);
@@ -647,6 +665,7 @@ export async function createComment(input: {
       postId: post.id,
       authorId: viewer.userId,
       parentId,
+      depth,
       body,
       status: "ACTIVE",
     },
@@ -1255,7 +1274,7 @@ export async function createPost(input: CreatePostInput): Promise<{ id: string; 
         audiencePath: audience.audiencePath,
         audienceKind: audience.audienceKind,
         ...(communityId ? { communityId } : {}),
-        rankAt: rankingTimestamp(now, audience.audienceKind),
+        rankAt: now,
         ...(input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : {}),
         ...(repostOfId ? { repostOfId } : {}),
         ...(questionTitle ? { questionTitle } : {}),
@@ -1468,7 +1487,7 @@ export async function getHashtagPage(
   };
 
   if (sort === "latest") {
-    const decoded = decodeRankCursor(cursor);
+    const decoded = decodeTimeCursor(cursor);
     const rows = await db.post.findMany({
       where: {
         ...baseWhere,
@@ -1477,15 +1496,15 @@ export async function getHashtagPage(
               AND: [
                 {
                   OR: [
-                    { rankAt: { lt: new Date(decoded.rankAt) } },
-                    { rankAt: new Date(decoded.rankAt), id: { lt: decoded.id } },
+                    { createdAt: { lt: new Date(decoded.createdAt) } },
+                    { createdAt: new Date(decoded.createdAt), id: { lt: decoded.id } },
                   ],
                 },
               ],
             }
           : {}),
       },
-      orderBy: [{ rankAt: "desc" }, { id: "desc" }],
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: 11,
       select: postSelect,
     });
@@ -1497,7 +1516,7 @@ export async function getHashtagPage(
       tag: hashtag.tag,
       postCount: await db.post.count({ where: baseWhere }),
       posts: await serializeRows(db, viewer, page),
-      nextCursor: rows.length > 10 && last ? encodeRankCursor(last.rankAt, last.id) : null,
+      nextCursor: rows.length > 10 && last ? encodeTimeCursor(last.createdAt, last.id) : null,
       hasMore: rows.length > 10,
       sort,
     };
@@ -1645,7 +1664,7 @@ export async function getAuthorPosts(viewer: SocialViewer, authorId: string, lim
   if (isHiddenAuthor(relationships, authorId, viewer.userId)) return [];
   const rows = await db.post.findMany({
     where: feedWhere(viewer, "all", relationships, joinedIds, { authorId }),
-    orderBy: [{ rankAt: "desc" }, { id: "desc" }],
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: Math.min(limit, 30),
     select: postSelect,
   });

@@ -88,7 +88,7 @@ const HOUR_AGO = "2026-11-18T09:00:00.000Z";
 const TWO_HOURS_AGO = "2026-11-18T08:00:00.000Z";
 const FOUR_HOURS_AGO = "2026-11-18T06:00:00.000Z";
 
-const NOVA_UNI = { name: "Nova University", shortName: "Nova", logoUrl: null, accentColor: "#4f46e5", status: "ACTIVE" };
+const NOVA_UNI = { name: "Your University", shortName: "Demo", logoUrl: null, accentColor: "#4f46e5", status: "ACTIVE" };
 const VIEWER = { id: "u-chinedu", username: "chinedu_okafor", fullName: "Chinedu Okafor", photoUrl: null, status: "VERIFIED" as const, roles: [{ role: "STUDENT" as const, universityId: "uni-nova" }], level: 300, departmentName: "Software Engineering" };
 
 const POSTS: PostView[] = [
@@ -107,7 +107,7 @@ const POSTS: PostView[] = [
     acceptedCommentId: null,
     moderationReason: null,
     author: { id: "u-chinedu", username: "chinedu_okafor", fullName: "Chinedu Okafor", photoUrl: null, isOfficial: false, level: 300, departmentName: "Software Engineering" },
-    media: [{ id: "m-1", url: "/seed/campus-quad.svg", width: 1200, height: 675, alt: "Nova University campus quad" }],
+    media: [{ id: "m-1", url: "/seed/campus-quad.svg", width: 1200, height: 675, alt: "Your University campus quad" }],
     poll: null,
     repostOf: null,
     commentCount: 24,
@@ -147,7 +147,7 @@ const POSTS: PostView[] = [
     type: "POLL",
     body: "Best place to study at night before exams start next week?",
     audienceKind: "PUBLIC",
-    audienceLabel: "Public · Nova University",
+    audienceLabel: "Public · Your University",
     community: null,
     status: "ACTIVE",
     createdAt: FOUR_HOURS_AGO,
@@ -214,9 +214,9 @@ const POSTS: PostView[] = [
   {
     id: "preview-post-grid",
     type: "POST",
-    body: "Snapshots from the Nova Tech Summit hackathon floor and campus library sprints. #NovaUniversity #TechSummit",
+    body: "Snapshots from the Tech Summit hackathon floor and campus library sprints. #Campus #TechSummit",
     audienceKind: "PUBLIC",
-    audienceLabel: "Public · Nova University",
+    audienceLabel: "Public · Your University",
     community: null,
     status: "ACTIVE",
     createdAt: FOUR_HOURS_AGO,
@@ -264,6 +264,7 @@ const COMMENTS: CommentView[] = [
     id: "c-accepted",
     postId: "preview-question-1",
     parentId: null,
+    depth: 0,
     body: "I uploaded the 2021–2024 CSC 204 past questions pack in our department Drive folder. Start with Section B on recurrence relations.",
     status: "ACTIVE",
     helpfulCount: 14,
@@ -278,6 +279,7 @@ const COMMENTS: CommentView[] = [
         id: "c-reply-1",
         postId: "preview-question-1",
         parentId: "c-accepted",
+        depth: 1,
         body: "Saved my night! Question 4(b) from 2023 literally matches today's tutorial sheet.",
         status: "ACTIVE",
         helpfulCount: 3,
@@ -295,6 +297,7 @@ const COMMENTS: CommentView[] = [
     id: "c-second",
     postId: "preview-question-1",
     parentId: null,
+    depth: 0,
     body: "Also check the Engineering Library reserve desk — they keep the printed booklet until 8 PM.",
     status: "ACTIVE",
     helpfulCount: 5,
@@ -313,7 +316,7 @@ const AUDIENCES = [
   { id: "level", label: "My Level · 300L", description: "Students in Software Engineering 300L", scope: "level" as const },
   { id: "department", label: "My Department · Software Engineering", description: "All levels in Software Engineering", scope: "department" as const },
   { id: "college", label: "My College · Engineering", description: "Everyone in College of Engineering", scope: "college" as const },
-  { id: "public", label: "Public · Nova University", description: "Verified students across campus", scope: "public" as const },
+  { id: "public", label: "Public · Your University", description: "Verified students across campus", scope: "public" as const },
 ];
 
 const PROFILE_SELF: ProfileData = {
@@ -405,8 +408,8 @@ const STUDENT_HISTORY: StudentModerationHistory = {
 };
 
 const UNI_SETTINGS: UniversitySettings = {
-  name: "Nova University",
-  shortName: "Nova",
+  name: "Your University",
+  shortName: "Demo",
   slug: "nova",
   accentColor: "#4f46e5",
   logoUrl: null,
@@ -448,7 +451,7 @@ const COMMUNITY_CARDS: CommunityCardView[] = [
   },
   {
     id: "community-robotics",
-    name: "Nova Robotics Club",
+    name: "Robotics Club",
     slug: "nova-robotics-club",
     description: "Build nights, competition teams and hardware help for new and experienced makers.",
     category: "TECH",
@@ -482,7 +485,7 @@ const COMMUNITY_CARDS: CommunityCardView[] = [
     id: "community-design",
     name: "Campus Design Collective",
     slug: "campus-design-collective",
-    description: "A friendly space for UI, brand and illustration work made by Nova students.",
+    description: "A friendly space for UI, brand and illustration work made by Students.",
     category: "ARTS",
     privacy: "PUBLIC",
     status: "ACTIVE",
@@ -542,7 +545,7 @@ const COMMUNITY_REPORTS: CommunityReportView[] = [
 const COMMUNITY_ADMIN: CommunityAdminPayload = {
   total: 30,
   officialRequests: [
-    { id: "official-1", community: { id: "community-robotics", name: "Nova Robotics Club", slug: "nova-robotics-club" }, requestedBy: { username: "tunde_adeyemi", fullName: "Tunde Adeyemi" }, note: "We host the university's robotics competition team and need official status for announcements.", createdAt: HOUR_AGO },
+    { id: "official-1", community: { id: "community-robotics", name: "Robotics Club", slug: "nova-robotics-club" }, requestedBy: { username: "tunde_adeyemi", fullName: "Tunde Adeyemi" }, note: "We host the university's robotics competition team and need official status for announcements.", createdAt: HOUR_AGO },
   ],
   rows: COMMUNITY_CARDS.map((card, index) => ({
     id: card.id,
@@ -732,7 +735,7 @@ export function ScreenPreviewClient({ screen, theme }: { screen: string; theme: 
           </header>
           <div className="flex flex-1 items-center justify-center p-4">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/seed/campus-quad.svg" alt="Nova campus" className="max-h-[75vh] w-full rounded-card object-contain" />
+            <img src="/seed/campus-quad.svg" alt="Campus" className="max-h-[75vh] w-full rounded-card object-contain" />
           </div>
         </div>
       ) : null}
@@ -782,7 +785,7 @@ export function ScreenPreviewClient({ screen, theme }: { screen: string; theme: 
         <main className="mx-auto max-w-feed pb-16">
           <header className="glass sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-border px-4">
             <ArrowLeft aria-hidden="true" className="size-5 text-fg" />
-            <div className="min-w-0 flex-1"><p className="truncate font-display text-h3 font-bold text-fg">#TechSummit</p><p className="text-tiny text-fg-muted">42 posts at Nova University</p></div>
+            <div className="min-w-0 flex-1"><p className="truncate font-display text-h3 font-bold text-fg">#TechSummit</p><p className="text-tiny text-fg-muted">42 posts at Your University</p></div>
           </header>
           <div className="space-y-3 p-4">
             <div className="overflow-hidden rounded-card border border-border bg-surface">
@@ -799,7 +802,7 @@ export function ScreenPreviewClient({ screen, theme }: { screen: string; theme: 
         <div className="mx-auto max-w-feed bg-bg pb-20">
           <ProfileView
             profile={screen === "profile-self" ? PROFILE_SELF : { ...PROFILE_SELF, id: "u-aisha", username: "aisha_bello", fullName: "Aisha Bello", levelVisibility: "NOBODY" }}
-            university={{ name: "Nova University", shortName: "Nova", accentColor: "#4f46e5" }}
+            university={{ name: "Your University", shortName: "Demo", accentColor: "#4f46e5" }}
             labels={{}}
             isSelf={screen === "profile-self"}
             canViewDepartment
@@ -845,7 +848,7 @@ export function ScreenPreviewClient({ screen, theme }: { screen: string; theme: 
         <main className="mx-auto max-w-md space-y-5 px-4 py-6">
           <p className="text-tiny font-semibold uppercase tracking-[0.12em] text-accent-ink">Step 2 of 4</p>
           <h1 className="font-display text-h1 text-fg">Verify you&apos;re a student</h1>
-          <p className="text-body text-fg-muted">Pick how you want to prove you attend Nova University.</p>
+          <p className="text-body text-fg-muted">Pick how you want to prove you attend Your University.</p>
           <div className="space-y-3">
             {[
               { title: "Student email", badge: "Fastest", desc: "Instant code to your @student.nova.edu.ng inbox", icon: Mail },
@@ -894,7 +897,7 @@ export function ScreenPreviewClient({ screen, theme }: { screen: string; theme: 
             <Button variant="secondary" leftIcon={<Camera aria-hidden="true" className="size-4" />}>Camera</Button>
             <Button variant="secondary" leftIcon={<ImageIcon aria-hidden="true" className="size-4" />}>Gallery</Button>
           </div>
-          <TextField label="Matric number" defaultValue="NU/23/0564" hint="Format matches Nova University (NU/YY/NNNN)." />
+          <TextField label="Matric number" defaultValue="NU/23/0564" hint="Format matches Your University (NU/YY/NNNN)." />
           <Button fullWidth size="lg">Submit for review</Button>
         </main>
       ) : null}
@@ -903,7 +906,7 @@ export function ScreenPreviewClient({ screen, theme }: { screen: string; theme: 
         <main className="mx-auto max-w-md px-4 py-10 text-center">
           <div className="flex justify-center"><ClayIllustration kind="hourglass" /></div>
           <h1 className="mt-4 font-display text-h1 text-fg">We&apos;re checking your details</h1>
-          <p className="mt-2 text-body text-fg-muted">A reviewer at Nova University is looking at your student ID. Most requests are decided within a day.</p>
+          <p className="mt-2 text-body text-fg-muted">A reviewer at Your University is looking at your student ID. Most requests are decided within a day.</p>
           <div className="mt-3 flex justify-center gap-1.5" aria-hidden="true">
             <span className="size-2 rounded-full bg-accent/50" />
             <span className="size-2 rounded-full bg-accent/75" />
@@ -944,7 +947,7 @@ export function ScreenPreviewClient({ screen, theme }: { screen: string; theme: 
           <div className="flex-1 space-y-5 pb-6">
             <Stepper steps={["Profile", "Interests"]} current={1} />
             <h1 className="font-display text-h1 text-fg">What are you into?</h1>
-            <p className="text-body text-fg-muted">Pick at least 3 so Nova students with similar interests find you.</p>
+            <p className="text-body text-fg-muted">Pick at least 3 so Students with similar interests find you.</p>
             <div className="flex flex-wrap gap-2">
               {["Coding", "Photography", "Football", "Design", "Music", "Debate", "Robotics", "Medicine", "Entrepreneurship"].map((tag, i) => (
                 <Chip key={tag} selected={i < 3}>{tag}</Chip>
@@ -1093,9 +1096,9 @@ export function ScreenPreviewClient({ screen, theme }: { screen: string; theme: 
               </div>
             </Card>
             <div className="mt-5 flex items-center gap-3 rounded-card bg-accent-soft px-4 py-3.5">
-              <UniversityShieldMark shortName="Nova" className="size-9 shrink-0" />
+              <UniversityShieldMark shortName="Demo" className="size-9 shrink-0" />
               <div className="h-8 w-px shrink-0 bg-border-strong/40" aria-hidden="true" />
-              <p className="text-small font-medium text-accent-soft-fg">This post is shared with verified students of Nova University.</p>
+              <p className="text-small font-medium text-accent-soft-fg">This post is shared with verified students of Your University.</p>
             </div>
             <div className="mt-5 space-y-3">
               <Button fullWidth size="lg" className="rounded-full border-2 border-[#12141A] shadow-[4px_4px_0_#12141A] dark:border-fg dark:shadow-[4px_4px_0_rgba(242,243,245,0.85)]">Open in Konnekt</Button>
@@ -1194,7 +1197,7 @@ export function ScreenPreviewClient({ screen, theme }: { screen: string; theme: 
                   <div className="border-b border-border px-4 py-3"><h3 className="text-h3 text-fg">Submitted document</h3></div>
                   <div className="bg-surface-2 p-4">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/seed/student-id.svg" alt="Submitted Nova University Student ID card" className="mx-auto max-h-72 w-full rounded-input border border-border bg-surface object-contain" />
+                    <img src="/seed/student-id.svg" alt="Submitted Your University Student ID card" className="mx-auto max-h-72 w-full rounded-input border border-border bg-surface object-contain" />
                   </div>
                 </Card>
                 <div className="space-y-4">

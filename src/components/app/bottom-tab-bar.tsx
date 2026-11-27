@@ -14,7 +14,7 @@ const tabs = [
   { href: "/inbox", label: "Inbox", icon: Mail, fillOnActive: false },
 ] as const;
 
-export function BottomTabBar({ unreadInbox = 0 }: { unreadInbox?: number }) {
+export function BottomTabBar({ unreadInbox = 0, canAnnounce = false }: { unreadInbox?: number; canAnnounce?: boolean }) {
   const pathname = usePathname();
   const [createOpen, setCreateOpen] = useState(false);
 
@@ -51,7 +51,7 @@ export function BottomTabBar({ unreadInbox = 0 }: { unreadInbox?: number }) {
           ))}
         </ul>
       </nav>
-      <CreateSheet open={createOpen} onClose={() => setCreateOpen(false)} />
+      <CreateSheet open={createOpen} onClose={() => setCreateOpen(false)} canAnnounce={canAnnounce} />
     </>
   );
 }
@@ -103,7 +103,7 @@ function TabLink({
 /**
  * Desktop left navigation rail & right trending rail (Spec Section 7.R).
  */
-export function DesktopLeftRail({ unreadInbox = 0 }: { unreadInbox?: number }) {
+export function DesktopLeftRail({ unreadInbox = 0, canAnnounce = false }: { unreadInbox?: number; canAnnounce?: boolean }) {
   const pathname = usePathname();
   const [createOpen, setCreateOpen] = useState(false);
 
@@ -164,7 +164,7 @@ export function DesktopLeftRail({ unreadInbox = 0 }: { unreadInbox?: number }) {
           Create post
         </button>
       </div>
-      <CreateSheet open={createOpen} onClose={() => setCreateOpen(false)} />
+      <CreateSheet open={createOpen} onClose={() => setCreateOpen(false)} canAnnounce={canAnnounce} />
     </aside>
   );
 }

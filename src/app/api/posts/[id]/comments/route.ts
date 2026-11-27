@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { createComment, getPostDetail } from "@/lib/services/posts";
 import { apiError, noStore, readJson, socialApi } from "@/lib/api/social";
+import { withIdempotency } from "@/lib/api/idempotency";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const context = await socialApi(request);
@@ -22,13 +23,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   try {
     const { id } = await params;
     const body = await readJson(request);
-    const result = await createComment({
-      viewer: context.viewer,
-      postId: id,
-      body: typeof body.body === "string" ? body.body : "",
-      parentId: typeof body.parentId === "string" ? body.parentId : null,
+    return await withIdempotency(request, context.viewer.userId, async () => {
+      const result = await createComment({
+        viewer: context.viewer,
+        postId: id,
+        body: typeof body.body === "string" ? body.body : "",
+        parentId: typeof body.parentId === "string" ? body.parentId : null,
+      });
+      return noStore(result, { status: 201 });
     });
-    return noStore(result, { status: 201 });
   } catch (error) {
     return apiError(error);
   }

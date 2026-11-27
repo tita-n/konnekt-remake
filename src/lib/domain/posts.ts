@@ -19,32 +19,16 @@ export const MAX_POLL_OPTIONS = 4;
 export const MIN_POLL_OPTIONS = 2;
 export const POLL_DURATIONS = [1, 3, 7] as const;
 export const EDIT_LIMIT_MINUTES = 15;
-/** Narrower audiences get a mild recency boost, never engagement ranking. */
-export const AUDIENCE_BOOST_MINUTES = 10;
-
+/** Safety maximum for stored reply nesting; display flattens after level 3. */
+export const MAX_COMMENT_DEPTH = 20;
 export type PostAudienceKind = "PUBLIC" | "COLLEGE" | "FACULTY" | "DEPARTMENT" | "LEVEL" | "COMMUNITY";
 
-const RANK: Record<PostAudienceKind, number> = {
-  PUBLIC: 0,
-  COLLEGE: 1,
-  FACULTY: 2,
-  DEPARTMENT: 3,
-  LEVEL: 4,
-  COMMUNITY: 0,
-};
-
-export function audienceRank(kind: PostAudienceKind): number {
-  return RANK[kind] ?? 0;
-}
-
-/**
- * Feed ordering timestamp. Ten minutes per layer means a level post can sit
- * just above a slightly newer public post, but a day-old level post never
- * outranks fresh campus news.
+/*
+ * Feeds are strictly reverse-chronological by `createdAt` with an id tiebreak.
+ * There is deliberately no audience rank boost: it made a narrower post look
+ * newer and caused audiences to cluster in time order. Reposts are ordered by
+ * their own createdAt, and an edit never changes order.
  */
-export function rankingTimestamp(createdAt: Date, kind: PostAudienceKind): Date {
-  return new Date(createdAt.getTime() + audienceRank(kind) * AUDIENCE_BOOST_MINUTES * 60_000);
-}
 
 export function scopeForKind(kind: PostAudienceKind): "university" | AcademicLayer | "level" {
   if (kind === "PUBLIC") return "university";

@@ -3,6 +3,8 @@ import { getSession } from "@/lib/auth/session";
 import { accentCssVars } from "@/lib/domain/color";
 import { getTrendingTags } from "@/lib/services/posts";
 import { loadSocialViewer } from "@/lib/services/social";
+import { getOfficialPostingContext } from "@/lib/services/official";
+import { hasRole, isPlatformAdmin } from "@/lib/auth/guards";
 import { TopBar } from "@/components/app/top-bar";
 import { BottomTabBar, DesktopLeftRail, DesktopTrendingRail } from "@/components/app/bottom-tab-bar";
 import { InstallPrompt } from "@/components/pwa/pwa-provider";
@@ -19,19 +21,26 @@ export default async function ShellLayout({ children }: { children: React.ReactN
 
   const viewer = await loadSocialViewer(user).catch(() => null);
   const trending = viewer ? await getTrendingTags(viewer, "all").catch(() => []) : [];
+  const official = viewer ? await getOfficialPostingContext(viewer).catch(() => null) : null;
+  const canAnnounce =
+    isPlatformAdmin(user) ||
+    hasRole(user, "UNIVERSITY_ADMIN") ||
+    hasRole(user, "MODERATOR") ||
+    hasRole(user, "OFFICIAL") ||
+    Boolean(official?.defaultAccountId);
 
   return (
     <div style={accentCssVars(user.university.accentColor) as React.CSSProperties} className="min-h-dvh bg-bg">
       <TopBar user={user} university={user.university} />
       <div className="mx-auto w-full max-w-[1160px] px-0 sm:px-4 lg:grid lg:grid-cols-[220px_minmax(0,640px)_280px] lg:justify-center lg:gap-5 lg:pt-2">
-        <DesktopLeftRail />
+        <DesktopLeftRail canAnnounce={canAnnounce} />
         <main id="main" className="mx-auto w-full max-w-feed pb-[calc(5.75rem+env(safe-area-inset-bottom))] lg:pb-12">
           {children}
         </main>
         <DesktopTrendingRail tags={trending} />
       </div>
       <InstallPrompt />
-      <BottomTabBar />
+      <BottomTabBar canAnnounce={canAnnounce} />
     </div>
   );
 }

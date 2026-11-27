@@ -41,6 +41,7 @@
     "perf:baseline": "node scripts/build-budget.mjs --update",
     "check:no-mock-db": "node scripts/check-no-mock-db.mjs",
     "test:security": "node scripts/security-invariants.mjs",
+    "check:branding": "node scripts/check-university-branding.mjs",
     "db:seed:load": "tsx scripts/load-seed.ts"
   },
   "prisma": {

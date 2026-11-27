@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Check,
   ChevronDown,
@@ -39,6 +39,7 @@ export function CommentSection({
   const [sort, setSort] = useState(initialSort);
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
+  const pendingKey = useRef<string | null>(null);
   const [accepted, setAccepted] = useState(post.acceptedCommentId);
   const [reportTarget, setReportTarget] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -53,10 +54,17 @@ export function CommentSection({
   async function submit(parentId: string | null = null, text?: string) {
     const value = (text ?? body).trim();
     if (!value) return;
+    if (sending) return;
     setSending(true);
     setError(null);
+    pendingKey.current ??= crypto.randomUUID();
     try {
-      await apiPost(`/api/posts/${post.id}/comments`, { body: value, parentId });
+      await apiPost(
+        `/api/posts/${post.id}/comments`,
+        { body: value, parentId },
+        { idempotencyKey: pendingKey.current },
+      );
+      pendingKey.current = null;
       if (parentId === null) setBody("");
       await reload();
       if (parentId) toast({ title: "Reply posted" });
@@ -307,23 +315,24 @@ function CommentRow({
     );
   }
 
+  const level = Math.min(depth, 3);
   const cardClasses =
-    depth === 0
+    level === 0
       ? accepted
         ? "rounded-[14px] border border-success/40 border-l-[3px] border-l-success bg-success-soft p-3.5"
         : "rounded-[14px] border border-border bg-surface p-3.5"
       : "relative pl-10 pt-2.5";
 
   return (
-    <div className={cardClasses}>
-      {depth > 0 ? (
+    <div id={`comment-${comment.id}`} className={cardClasses}>
+      {level > 0 ? (
         <span
           aria-hidden="true"
           className="absolute -top-2 left-4 h-8 w-5 rounded-bl-[10px] border-b border-l border-border-strong/60"
         />
       ) : null}
 
-      {accepted && depth === 0 ? (
+      {accepted && level === 0 ? (
         <div className="mb-2 flex items-center justify-between gap-2">
           <span className="inline-flex h-6 items-center gap-1 rounded-full bg-success-solid px-2.5 text-[0.6875rem] font-semibold text-white">
             <Check aria-hidden="true" className="size-3" strokeWidth={2.8} /> Accepted answer
@@ -357,10 +366,10 @@ function CommentRow({
       <div className="flex items-start gap-2.5">
         {comment.author ? (
           <Link href={`/profile/${comment.author.username}`} aria-label={`${comment.author.fullName}'s profile`}>
-            <Avatar name={comment.author.fullName} seed={comment.author.username} src={comment.author.photoUrl} size={depth > 0 ? "xs" : "sm"} />
+            <Avatar name={comment.author.fullName} seed={comment.author.username} src={comment.author.photoUrl} size={level > 0 ? "xs" : "sm"} />
           </Link>
         ) : (
-          <Avatar name="Removed" size={depth > 0 ? "xs" : "sm"} />
+          <Avatar name="Removed" size={level > 0 ? "xs" : "sm"} />
         )}
 
         <div className="min-w-0 flex-1">
@@ -383,7 +392,7 @@ function CommentRow({
               </p>
             </div>
 
-            {!(accepted && depth === 0) ? (
+            {!(accepted && level === 0) ? (
               <div className="relative shrink-0">
                 <IconButton label="Comment options" onClick={() => setMenuOpen((value) => !value)} className="size-8">
                   <MoreHorizontal aria-hidden="true" className="size-4" />
@@ -424,9 +433,19 @@ function CommentRow({
               </div>
             </div>
           ) : (
-            <div className={cn("mt-2", !isQuestion && "rounded-[12px] bg-surface-2 px-3 py-2")}>
-              <RichText body={comment.body} className="whitespace-pre-line break-words text-small leading-relaxed text-fg" />
-            </div>
+            <>
+              {level >= 3 && comment.replyTo ? (
+                <p className="mt-1.5 text-tiny text-fg-muted">
+                  Replying to{" "}
+                  <a href={`#comment-${comment.replyTo.id}`} className="font-semibold text-accent-ink hover:underline">
+                    @{comment.replyTo.username}
+                  </a>
+                </p>
+              ) : null}
+              <div className={cn("mt-2", !isQuestion && "rounded-[12px] bg-surface-2 px-3 py-2")}>
+                <RichText body={comment.body} className="whitespace-pre-line break-words text-small leading-relaxed text-fg" />
+              </div>
+            </>
           )}
 
           <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -459,7 +478,7 @@ function CommentRow({
               </button>
             )}
 
-            {depth === 0 ? (
+            {depth < 20 ? (
               <button type="button" onClick={() => setReplying((value) => !value)} className="min-h-9 rounded-full px-2.5 text-tiny font-medium text-fg-muted hover:bg-surface-2">
                 Reply
               </button>
@@ -505,9 +524,9 @@ function CommentRow({
 
           {comment.replies && comment.replies.length > 0 ? (
             <div className="mt-2">
-              {showReplies ? (
+              {showReplies || comment.replies.length <= 2 ? (
                 <ul className="space-y-2">
-                  {comment.replies.map((reply) => (
+                  {(showReplies ? comment.replies : comment.replies.slice(0, 2)).map((reply) => (
                     <li key={reply.id}>
                       <CommentRow
                         comment={reply}
@@ -524,7 +543,7 @@ function CommentRow({
                         viewerName={viewerName}
                         viewerUsername={viewerUsername}
                         viewerPhoto={viewerPhoto}
-                        depth={1}
+                        depth={depth + 1}
                       />
                     </li>
                   ))}
