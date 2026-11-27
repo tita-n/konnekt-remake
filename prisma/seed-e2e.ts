@@ -223,6 +223,15 @@ async function main() {
     level: 400,
     role: "UNIVERSITY_ADMIN",
   });
+  const desk = await account({
+    email: "desk@nova.edu.ng",
+    username: "nova_desk",
+    fullName: "Tunde Bakare",
+    status: "VERIFIED",
+    departmentKey: "swe",
+    level: 400,
+    role: "UNIVERSITY_ADMIN",
+  });
   const reviewer = await account({
     email: "reviewer@nova.edu.ng",
     username: "nova_reviewer",
