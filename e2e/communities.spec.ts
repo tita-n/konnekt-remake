@@ -170,7 +170,9 @@ test.describe("communities product", () => {
 
   test("a university admin creates an official community from the console", async ({ page }) => {
     test.setTimeout(90_000);
-    await login(page, "admin@nova.edu.ng");
+    // A dedicated admin, so this case does not spend the shared admin's
+    // three-community daily creation allowance.
+    await login(page, "desk@nova.edu.ng");
     const suffix = Date.now().toString(36);
     const created = await mutation(page, "POST", "/api/admin/communities", {
       name: `E2E Campus Desk ${suffix}`,
@@ -189,6 +191,6 @@ test.describe("communities product", () => {
     await expect(page.getByText(/official/i).first()).toBeVisible();
 
     await page.goto(`/c/${community.slug}`, { waitUntil: "networkidle" });
-    await expect(page.getByText("Official").first()).toBeVisible();
+    await expect(page.getByRole("img", { name: "Official community" }).first()).toBeVisible();
   });
 });
