@@ -26,6 +26,12 @@ export default async function DesignPage({
         </div>
         <div className="flex gap-2">
           <Link
+            href="/design/auth-directions"
+            className="inline-flex h-10 items-center rounded-full border border-accent bg-accent-soft px-4 text-small font-semibold text-accent-ink transition-colors hover:bg-surface-2"
+          >
+            Auth directions
+          </Link>
+          <Link
             href="/design?view=screens"
             className={`inline-flex h-10 items-center rounded-full px-4 text-small font-semibold transition ${
               view === "screens" ? "bg-accent text-accent-fg" : "border border-border bg-surface text-fg-muted hover:bg-surface-2"
