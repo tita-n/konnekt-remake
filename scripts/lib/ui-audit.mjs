@@ -116,9 +116,24 @@ export function buildSummaryMarkdown(summary, options = {}) {
   const counts = defectCounts(defects);
   const groupCount = new Map(counts.byGroup.map((entry) => [entry.id, entry.count]));
   const widthCount = new Map(counts.byWidth.map((entry) => [String(entry.width), entry.count]));
-  const top = [...defects]
-    .sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9) || defectKey(a).localeCompare(defectKey(b)))
-    .slice(0, 40);
+  const sorted = [...defects].sort(
+    (a, b) => (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9) || defectKey(a).localeCompare(defectKey(b)),
+  );
+  // One row per route and rule first so the top table shows breadth, then fill
+  // with repeated widths/themes if the run has fewer than 40 distinct rules.
+  const top = [];
+  const seen = new Set();
+  for (const defect of sorted) {
+    if (top.length >= 40) break;
+    const key = `${defect.route}|${defect.rule}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    top.push(defect);
+  }
+  for (const defect of sorted) {
+    if (top.length >= 40) break;
+    if (!top.includes(defect)) top.push(defect);
+  }
 
   const lines = [];
   lines.push(`# UI audit — ${summary.branch ?? "unknown branch"}`);
