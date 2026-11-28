@@ -92,6 +92,7 @@ The seed refuses to run against production (`prisma/seed-guard.ts`). Seeding twi
 | `npm run smoke:staging -- <url>` | Deployed health/header/PWA/privacy/login smoke |
 | `npm run check:invariants` | Verify every invariant test still exists |
 | `npm run db:migrate` / `db:deploy` / `db:seed` | Prisma workflows |
+| `npm run lint:migrations` / `db:manifest` | Enforce expand-and-contract and refresh the expected-migration manifest |
 | `npm run icons` | Regenerate PWA icons from the flat mark |
 | `npm run shots` | Capture the local design-review screenshots |
 | `npm run lighthouse` | Lighthouse CI against `LHCI_URL` or `http://localhost:3100` |
@@ -127,7 +128,7 @@ The guard refuses a missing/unsafe URL, the dev database, or a production-lookin
 
 ## Deploy
 
-The app targets Vercel + Neon. `.github/workflows/deploy.yml` is manual: it validates the environment, applies `prisma migrate deploy` using the unpooled Neon URL, deploys, then runs the staging smoke test. Follow [`docs/STAGING.md`](./docs/STAGING.md) for every account, variable, GitHub secret and manual step.
+The app targets Vercel + Neon. Vercel's automatic Git deployments are disabled in `vercel.json`; every deployment goes through `.github/workflows/deploy.yml`. It runs automatically after CI succeeds on `main` (and can be dispatched manually for staging), validating the environment, applying `prisma migrate deploy` using the unpooled Neon URL, deploying, then running the staging smoke test. Migrations follow the expand-and-contract policy and destructive DDL is rejected by `npm run lint:migrations` unless reviewed; see [`DECISIONS.md`](./DECISIONS.md). Follow [`docs/STAGING.md`](./docs/STAGING.md) for every account, variable, GitHub secret and manual step.
 
 ## Documentation
 
