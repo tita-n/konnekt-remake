@@ -28,3 +28,6 @@ public/uploads
 
 # Local perf measurement output
 perf/journeys.local.json
+
+# UI audit local output
+.ui-audit/
