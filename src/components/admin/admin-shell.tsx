@@ -91,7 +91,7 @@ export function AdminShell({
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex shrink-0 min-h-9 items-center gap-1.5 rounded-full px-3 py-1.5 text-small font-semibold transition",
+                  "flex shrink-0 min-h-11 items-center gap-1.5 rounded-full px-3 py-1.5 text-small font-semibold transition",
                   active ? "bg-accent text-accent-fg" : "text-fg-muted hover:bg-surface-2",
                 )}
               >
@@ -105,7 +105,7 @@ export function AdminShell({
 
       {/* Desktop sidebar */}
       <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-border bg-surface px-3 py-5 md:flex">
-        <Link href="/pulse" className="mx-2 mb-6 flex items-center gap-2.5 text-fg">
+        <Link href="/pulse" className="mx-2 mb-6 flex min-h-11 items-center gap-2.5 text-fg">
           <LogoMark className="size-8" />
           <span className="font-display text-[1.25rem] font-extrabold tracking-tight text-fg">Konnekt</span>
         </Link>
@@ -152,7 +152,7 @@ export function AdminShell({
             </div>
           </div>
 
-          <Link href="/pulse" className="flex min-h-10 items-center gap-2 rounded-button px-2.5 py-1.5 text-tiny font-medium text-fg-muted hover:bg-surface-2 hover:text-fg">
+          <Link href="/pulse" className="flex min-h-11 items-center gap-2 rounded-button px-2.5 py-1.5 text-tiny font-medium text-fg-muted hover:bg-surface-2 hover:text-fg">
             <ArrowLeft aria-hidden="true" className="size-3.5" /> Back to Pulse
           </Link>
         </div>

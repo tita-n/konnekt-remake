@@ -451,7 +451,7 @@ export function CommunitySettings({
                 <button
                   type="button"
                   onClick={() => void navigator.clipboard?.writeText(newLink)}
-                  className="flex size-9 items-center justify-center rounded-full text-accent-ink hover:bg-surface"
+                  className="flex size-11 items-center justify-center rounded-full text-accent-ink hover:bg-surface"
                   aria-label="Copy invite link"
                 >
                   <Copy aria-hidden="true" className="size-4" />

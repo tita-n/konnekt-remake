@@ -242,7 +242,7 @@ export function CommunityConsole({ initial, isAdmin }: { initial: CommunityAdmin
                   <Link
                     href={`/c/${row.slug}`}
                     aria-label={`Open ${row.name}`}
-                    className="flex size-9 items-center justify-center rounded-full text-fg-subtle hover:bg-surface-2 hover:text-fg"
+                    className="flex size-11 items-center justify-center rounded-full text-fg-subtle hover:bg-surface-2 hover:text-fg"
                   >
                     <ArrowUpRight aria-hidden="true" className="size-4" />
                   </Link>

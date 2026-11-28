@@ -23,7 +23,7 @@ function tableStatusBadge(status: UserStatus) {
     case "SUSPENDED":
       return { label: "Suspended", badge: "bg-danger-soft text-danger", dot: "bg-danger" };
     case "PENDING":
-      return { label: "Pending", badge: "bg-highlight-soft text-highlight-fg", dot: "bg-highlight" };
+      return { label: "Pending", badge: "bg-highlight-soft highlight-ink", dot: "bg-highlight" };
     case "ALUMNI":
       return { label: "Alumni", badge: "bg-accent-soft text-accent-ink", dot: "bg-accent" };
     default:
@@ -120,7 +120,7 @@ export default async function StudentsPage({
               key={pill.key}
               href={buildHref({ nextStatus: pill.key, nextPage: 1, nextSelected: null })}
               className={cn(
-                "inline-flex h-9 items-center rounded-full px-3.5 text-small font-semibold transition",
+                "inline-flex -my-1 min-h-11 items-center rounded-full px-3.5 text-small font-semibold transition",
                 active
                   ? "bg-accent text-accent-fg shadow-sm"
                   : "border border-border bg-surface text-fg-muted hover:bg-surface-2 hover:text-fg",
@@ -239,7 +239,7 @@ export default async function StudentsPage({
                 href={buildHref({ nextPage: pageNum, nextSelected: null })}
                 aria-current={result.page === pageNum ? "page" : undefined}
                 className={cn(
-                  "flex size-9 items-center justify-center rounded-lg text-small font-semibold transition",
+                  "flex size-11 items-center justify-center rounded-lg text-small font-semibold transition",
                   result.page === pageNum
                     ? "bg-accent text-accent-fg"
                     : "border border-border bg-surface text-fg-muted hover:bg-surface-2",
@@ -254,7 +254,7 @@ export default async function StudentsPage({
                 <Link
                   href={buildHref({ nextPage: result.pageCount, nextSelected: null })}
                   className={cn(
-                    "flex size-9 items-center justify-center rounded-lg text-small font-semibold transition",
+                    "flex size-11 items-center justify-center rounded-lg text-small font-semibold transition",
                     result.page === result.pageCount
                       ? "bg-accent text-accent-fg"
                       : "border border-border bg-surface text-fg-muted hover:bg-surface-2",

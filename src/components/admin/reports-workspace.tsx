@@ -18,7 +18,7 @@ import { cn, timeAgo } from "@/lib/utils";
 
 const SEVERITY_STYLE = {
   high: "bg-danger-soft text-danger",
-  medium: "bg-highlight-soft text-highlight-fg",
+  medium: "bg-highlight-soft highlight-ink",
   low: "bg-success-soft text-success",
 } as const;
 
@@ -257,7 +257,7 @@ export function ReportsWorkspace({
                 href={`/admin/reports?status=${status}&type=${item.value}`}
                 aria-current={type === item.value ? "page" : undefined}
                 className={cn(
-                  "inline-flex h-8 items-center rounded-chip px-3 text-tiny font-semibold transition",
+                  "inline-flex -my-1.5 min-h-11 items-center rounded-chip px-3 text-tiny font-semibold transition",
                   type === item.value
                     ? "bg-accent text-accent-fg"
                     : "border border-border bg-surface text-fg-muted hover:text-fg",

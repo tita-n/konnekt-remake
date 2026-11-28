@@ -67,7 +67,7 @@ export default async function BookmarksPage({
               href={`/bookmarks?${new URLSearchParams({ type: item.value, ...(params.q ? { q: params.q } : {}) }).toString()}`}
               aria-current={type === item.value ? "page" : undefined}
               className={cn(
-                "inline-flex h-8 shrink-0 items-center rounded-full px-4 text-small font-semibold transition",
+                "inline-flex -my-1.5 min-h-11 shrink-0 items-center rounded-full px-4 text-small font-semibold transition",
                 type === item.value ? "bg-accent text-accent-fg" : "border border-border bg-surface text-fg-muted hover:text-fg",
               )}
             >

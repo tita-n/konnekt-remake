@@ -488,7 +488,7 @@ function CommentRow({
               <button
                 type="button"
                 onClick={onAccept}
-                className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-full border border-accent/60 bg-surface px-3 text-tiny font-semibold text-accent-ink transition hover:bg-accent-soft"
+                className="ml-auto inline-flex -my-1.5 min-h-11 items-center gap-1.5 rounded-full border border-accent/60 bg-surface px-3 text-tiny font-semibold text-accent-ink transition hover:bg-accent-soft"
               >
                 <Check aria-hidden="true" className="size-3.5" /> Accept answer
               </button>
@@ -516,7 +516,7 @@ function CommentRow({
                 placeholder="Write a reply…"
                 className="min-h-9 flex-1 resize-none rounded-full border border-border bg-surface px-3.5 py-1.5 text-small focus:border-accent"
               />
-              <button type="submit" className="flex size-9 items-center justify-center rounded-full bg-accent text-accent-fg" aria-label="Send reply">
+              <button type="submit" className="flex size-11 items-center justify-center rounded-full bg-accent text-accent-fg" aria-label="Send reply">
                 <Send aria-hidden="true" className="size-3.5" />
               </button>
             </form>

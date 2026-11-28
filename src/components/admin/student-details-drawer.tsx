@@ -34,7 +34,7 @@ function statusPillStyle(status: string): { label: string; badge: string; dot: s
     case "SUSPENDED":
       return { label: "Suspended", badge: "bg-danger-soft text-danger", dot: "bg-danger" };
     case "PENDING":
-      return { label: "Pending", badge: "bg-highlight-soft text-highlight-fg", dot: "bg-highlight" };
+      return { label: "Pending", badge: "bg-highlight-soft highlight-ink", dot: "bg-highlight" };
     case "ALUMNI":
       return { label: "Alumni", badge: "bg-accent-soft text-accent-ink", dot: "bg-accent" };
     default:
@@ -45,7 +45,7 @@ function statusPillStyle(status: string): { label: string; badge: string; dot: s
 function historyReasonPill(reasonLabel: string): string {
   const lower = reasonLabel.toLowerCase();
   if (lower.includes("harass") || lower.includes("violen")) return "bg-danger-soft text-danger";
-  if (lower.includes("hate") || lower.includes("abuse")) return "bg-highlight-soft text-highlight-fg";
+  if (lower.includes("hate") || lower.includes("abuse")) return "bg-highlight-soft highlight-ink";
   return "bg-accent-soft text-accent-ink";
 }
 

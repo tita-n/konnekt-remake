@@ -61,7 +61,15 @@ rules are for presentation changes only.
 - Body text must be 4.5:1; large text and non-text UI boundaries may use 3:1
   only where WCAG allows it.
 - Preserve a visible focus ring (`:focus-visible`), 44 px touch targets on
-  primary actions, and the skip link.
+  **every** interactive control, and the skip link. The floor lives in the
+  primitives, not in per-page overrides: `buttonSizes` is `sm`/`md` = 44 px and
+  `lg` = 48 px, `Chip` and `SegmentedControl` are 44 px, `Checkbox` labels the
+  whole row so the 20 px box is never the only hit target, and `Switch` grows its
+  button to 44 px with `-my-2` so the visible 28 px track is unchanged. Density
+  comes from padding, gap and type size — never from a shorter box. The CI UI
+  audit (`design/responsive-audit/run.mjs`) reports any interactive box below
+  44×44 and any side-by-side pair closer than 8 px, so this is enforced, not
+  advisory.
 - Never encode meaning with colour alone. Pair status colour with text or an
   icon.
 - Motion must respect `prefers-reduced-motion`; blur is never animated.

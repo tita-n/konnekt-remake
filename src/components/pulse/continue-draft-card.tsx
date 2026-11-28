@@ -82,14 +82,14 @@ export function ContinueDraftCard({ draft }: { draft: DraftView }) {
               <>
                 <Link
                   href={href}
-                  className="inline-flex h-8 items-center rounded-full bg-accent px-3.5 text-small font-semibold text-accent-fg"
+                  className="inline-flex -my-1.5 min-h-11 items-center rounded-full bg-accent px-3.5 text-small font-semibold text-accent-fg"
                 >
                   Continue
                 </Link>
                 <button
                   type="button"
                   onClick={discard}
-                  className="inline-flex h-8 items-center rounded-full px-3 text-small font-semibold text-accent-ink hover:bg-surface/60"
+                  className="inline-flex -my-1.5 min-h-11 items-center rounded-full px-3 text-small font-semibold text-accent-ink hover:bg-surface/60"
                 >
                   Discard
                 </button>

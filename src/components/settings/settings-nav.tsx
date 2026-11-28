@@ -27,7 +27,7 @@ export function SettingsNav() {
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "inline-flex h-9 items-center rounded-chip px-3 text-small font-semibold transition-colors",
+                  "inline-flex -my-1 min-h-11 items-center rounded-chip px-3 text-small font-semibold transition-colors",
                   active ? "bg-accent-soft text-accent-soft-fg" : "text-fg-muted hover:bg-surface-2 hover:text-fg",
                 )}
               >

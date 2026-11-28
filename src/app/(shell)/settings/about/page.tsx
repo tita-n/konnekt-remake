@@ -24,7 +24,7 @@ export default async function AboutPage() {
           </p>
           <a
             href="/api/account/export"
-            className="mt-3 inline-flex h-9 items-center gap-2 rounded-button border border-border-strong bg-surface px-3 text-small font-semibold text-fg hover:bg-surface-2"
+            className="mt-3 inline-flex -my-1 min-h-11 items-center gap-2 rounded-button border border-border-strong bg-surface px-3 text-small font-semibold text-fg hover:bg-surface-2"
           >
             <Download aria-hidden="true" className="size-4" />
             Export my data (JSON)

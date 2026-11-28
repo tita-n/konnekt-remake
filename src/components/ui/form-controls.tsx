@@ -237,7 +237,8 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
   const id = providedId ?? generated;
   return (
     <div>
-      <div className="flex items-start gap-3">
+      {/* The label wraps the row so the 20px box is not the only hit target. */}
+      <label htmlFor={id} className="flex min-h-11 cursor-pointer items-start gap-3">
         <span className="relative mt-0.5 flex size-5 shrink-0 items-center justify-center">
           <input
             ref={ref}
@@ -258,16 +259,14 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
             strokeWidth={3}
           />
         </span>
-        <div className="min-w-0">
-          <label htmlFor={id} className="cursor-pointer text-[0.9375rem] leading-snug text-fg">
-            {label}
-          </label>
-          {description ? (
-            <p id={`${id}-description`} className="mt-0.5 text-small text-fg-subtle">
-              {description}
-            </p>
-          ) : null}
-        </div>
+        <span className="min-w-0 text-[0.9375rem] leading-snug text-fg">{label}</span>
+      </label>
+      <div className="pl-8">
+        {description ? (
+          <p id={`${id}-description`} className="mt-0.5 text-small text-fg-subtle">
+            {description}
+          </p>
+        ) : null}
       </div>
       {error ? (
         <p id={`${id}-error`} className="mt-1.5 flex items-start gap-1.5 text-small font-medium text-danger">
@@ -308,16 +307,24 @@ export function Switch({ checked, onCheckedChange, label, description, disabled,
         disabled={disabled}
         onClick={() => onCheckedChange(!checked)}
         className={cn(
-          "relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:opacity-50",
-          checked ? "border-accent bg-accent" : "border-border-strong bg-surface-3",
+          // The button is 44px tall so the switch is a real touch target; the
+          // -my-2 keeps the row height identical to the 28px track you can see.
+          "relative -my-2 inline-flex h-11 w-12 shrink-0 items-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:opacity-50",
         )}
       >
         <span
           className={cn(
-            "inline-block size-5 rounded-full bg-surface shadow-sm transition-transform duration-200 ease-spring",
-            checked ? "translate-x-[22px] bg-accent-fg" : "translate-x-[3px]",
+            "flex h-7 w-12 items-center rounded-full border transition-colors duration-200",
+            checked ? "border-accent bg-accent" : "border-border-strong bg-surface-3",
           )}
-        />
+        >
+          <span
+            className={cn(
+              "inline-block size-5 rounded-full bg-surface shadow-sm transition-transform duration-200 ease-spring",
+              checked ? "translate-x-[22px] bg-accent-fg" : "translate-x-[3px]",
+            )}
+          />
+        </span>
       </button>
     </div>
   );
@@ -336,7 +343,7 @@ export function Chip({ selected = false, children, className, icon, ...props }: 
       type="button"
       aria-pressed={selected}
       className={cn(
-        "inline-flex min-h-9 items-center gap-1.5 rounded-chip border px-3 text-small font-medium transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
+        "inline-flex min-h-11 items-center gap-1.5 rounded-chip border px-3 text-small font-medium transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
         className,
         selected
           ? "border-accent bg-accent text-accent-fg"

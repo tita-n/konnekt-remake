@@ -50,7 +50,7 @@ export default async function AdminOverviewPage() {
         {cards.map((card) => (
           <Card key={card.label} className="p-4">
             <div className="flex items-start justify-between gap-3">
-              <span className="flex size-9 items-center justify-center rounded-[10px] bg-accent-soft text-accent-soft-fg">
+              <span className="flex size-11 items-center justify-center rounded-[10px] bg-accent-soft text-accent-soft-fg">
                 <card.icon aria-hidden="true" className="size-[18px]" />
               </span>
               <span className="text-[1.75rem] font-bold leading-none tabular-nums text-fg">{card.value}</span>

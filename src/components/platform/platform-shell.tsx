@@ -46,7 +46,7 @@ export function PlatformShell({ children, email }: { children: React.ReactNode; 
       </header>
 
       <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-border bg-surface px-3 py-5 md:flex">
-        <div className="mx-2 mb-6 flex items-center gap-2.5">
+        <div className="mx-2 mb-6 flex min-h-11 items-center gap-2.5">
           <LogoMark className="size-9" />
           <span>
             <span className="block font-display text-small font-bold">Konnekt</span>
