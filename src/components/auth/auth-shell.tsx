@@ -21,7 +21,7 @@ export function AuthShell({
       {backHref ? (
         <Link
           href={backHref}
-          className="mb-5 inline-flex items-center gap-1.5 rounded-button text-small font-semibold text-fg-muted transition hover:text-fg"
+          className="mb-2 inline-flex min-h-11 items-center gap-1.5 rounded-button text-small font-semibold text-fg-muted transition hover:text-fg"
         >
           <ArrowLeft aria-hidden="true" className="size-4" />
           {backLabel}

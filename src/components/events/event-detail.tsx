@@ -350,7 +350,7 @@ export function EventDetail({
                     href={`https://www.openstreetmap.org/?mlat=${event.place.latitude}&mlon=${event.place.longitude}#map=17/${event.place.latitude}/${event.place.longitude}`}
                     target="_blank"
                     rel="noreferrer noopener"
-                    className="mt-1 flex w-fit min-h-8 items-center text-tiny font-semibold text-accent-ink underline underline-offset-4"
+                    className="mt-1 flex w-fit min-h-11 items-center text-tiny font-semibold text-accent-ink underline underline-offset-4"
                   >
                     Open in Maps
                   </a>

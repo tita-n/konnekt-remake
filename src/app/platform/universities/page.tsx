@@ -46,7 +46,7 @@ export default async function UniversitiesPage({
               </div>
               <div>
                 <label htmlFor="status" className="mb-1 block text-small font-semibold text-fg">Status</label>
-                <select id="status" name="status" defaultValue={status} className="h-10 rounded-input border border-border bg-surface px-3 text-small">
+                <select id="status" name="status" defaultValue={status} className="h-11 rounded-input border border-border bg-surface px-3 text-small">
                   {STATUSES.map((value) => <option key={value} value={value}>{value === "ALL" ? "All" : value.toLowerCase()}</option>)}
                 </select>
               </div>

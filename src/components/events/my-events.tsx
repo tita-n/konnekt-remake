@@ -63,7 +63,11 @@ export function MyEvents({ initialTab, initialEvents }: { initialTab: Tab; initi
         </a>
       </header>
 
-      <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4" role="tablist" aria-label="My event lists">
+      {/* The rail is a full-bleed scroller, so its negative margin has to match the
+          page gutter (px-3 on /events/mine): a -mx-4 rail inside a px-3 page was
+          4px wider than the viewport at every width, which the audit reported as
+          horizontal overflow on the whole screen. */}
+      <div className="no-scrollbar -mx-3 flex gap-2 overflow-x-auto px-3" role="tablist" aria-label="My event lists">
         {TABS.map((entry) => (
           <button
             key={entry.tab}

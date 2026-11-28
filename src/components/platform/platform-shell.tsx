@@ -24,7 +24,7 @@ export function PlatformShell({ children, email }: { children: React.ReactNode; 
           <p className="flex-1 text-small font-bold">Konnekt platform</p>
           <Link href="/pulse" className="inline-flex min-h-11 items-center text-[0.75rem] font-semibold text-accent-ink">Back to app</Link>
         </div>
-        <nav aria-label="Platform sections" className="flex gap-1 overflow-x-auto px-4 pb-2">
+        <nav aria-label="Platform sections" className="flex gap-2 overflow-x-auto px-4 pb-2">
           {NAV.map((item) => {
             const active = pathname === item.href || (item.href !== "/platform" && pathname.startsWith(item.href));
             return (
@@ -33,7 +33,7 @@ export function PlatformShell({ children, email }: { children: React.ReactNode; 
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex min-h-9 shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-small font-semibold",
+                  "flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-small font-semibold",
                   active ? "bg-accent text-accent-fg" : "text-fg-muted hover:bg-surface-2",
                 )}
               >
@@ -75,7 +75,7 @@ export function PlatformShell({ children, email }: { children: React.ReactNode; 
         <div className="border-t border-border pt-3">
           <p className="px-3 text-[0.6875rem] font-semibold uppercase tracking-wide text-fg-subtle">Platform admin</p>
           <p className="truncate px-3 pt-1 text-small font-semibold">{email}</p>
-          <Link href="/pulse" className="mt-2 flex items-center gap-2 rounded-button px-3 py-2 text-small text-fg-muted hover:bg-surface-2">
+          <Link href="/pulse" className="mt-2 flex min-h-11 items-center gap-2 rounded-button px-3 py-2 text-small text-fg-muted hover:bg-surface-2">
             <ArrowLeft aria-hidden="true" className="size-4" /> Back to app
           </Link>
         </div>

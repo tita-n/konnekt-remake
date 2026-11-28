@@ -23,7 +23,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div className="space-y-5">
-      <Link href="/admin/students" className="inline-flex items-center gap-1.5 text-small font-semibold text-fg-muted hover:text-fg">
+      <Link href="/admin/students" className="inline-flex min-h-11 items-center gap-1.5 text-small font-semibold text-fg-muted hover:text-fg">
         <ArrowLeft aria-hidden="true" className="size-4" /> Students
       </Link>
 

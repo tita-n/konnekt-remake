@@ -239,7 +239,9 @@ export function CommunitySettings({
           <Link href={`/c/${community.slug}`} aria-label="Back" className="flex size-11 items-center justify-center rounded-full hover:bg-surface-2">
             <ArrowLeft aria-hidden="true" className="size-5" />
           </Link>
-          <h1 className="flex-1 truncate text-center font-display text-[1.0625rem] font-bold">
+          {/* Two short lines fit inside the 56px bar at 320px; one truncated line loses the
+            word that says which page this is. */}
+          <h1 className="line-clamp-2 flex-1 text-center font-display text-[0.9375rem] font-bold leading-[1.15] sm:text-[1.0625rem]">
             {community.name} settings
           </h1>
           <span className="size-11" aria-hidden="true" />
@@ -328,7 +330,7 @@ export function CommunitySettings({
                   type="button"
                   aria-label={`Remove rule ${index + 1}`}
                   onClick={() => setRules((current) => current.filter((_, i) => i !== index))}
-                  className="flex size-8 items-center justify-center rounded-full text-fg-subtle hover:bg-surface-2 hover:text-danger"
+                  className="flex -m-1.5 size-11 items-center justify-center rounded-full text-fg-subtle hover:bg-surface-2 hover:text-danger"
                 >
                   <Trash2 aria-hidden="true" className="size-4" />
                 </button>

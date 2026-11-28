@@ -213,7 +213,7 @@ export function CommunityConsole({ initial, isAdmin }: { initial: CommunityAdmin
                   <Link href={`/c/${row.slug}`} className="truncate text-small font-bold text-fg hover:text-accent-ink">
                     {row.name}
                   </Link>
-                  <p className="truncate text-tiny text-fg-muted">
+                  <p className="line-clamp-2 text-tiny text-fg-muted">
                     {COMMUNITY_PRIVACY_LABELS[row.privacy]} · {CATEGORY_LABELS.get(row.category) ?? row.category}
                     {row.isOfficial ? " · official" : ""}
                   </p>
@@ -235,7 +235,7 @@ export function CommunityConsole({ initial, isAdmin }: { initial: CommunityAdmin
                 <span className={row.reportCount > 0 ? "hidden text-small font-semibold text-danger md:block" : "hidden text-small text-fg-muted md:block"}>
                   {row.reportCount}
                 </span>
-                <span className="hidden truncate text-tiny text-fg-muted md:block">
+                <span className="hidden text-tiny text-fg-muted md:block">
                   {row.owner ? `@${row.owner.username}` : "No owner"}
                 </span>
                 <div className="flex shrink-0 items-center gap-1">

@@ -60,7 +60,7 @@ export function ContinueDraftCard({ draft }: { draft: DraftView }) {
               type="button"
               aria-label="Dismiss draft reminder"
               onClick={() => setVisible(false)}
-              className="-mr-1.5 -mt-1 flex size-8 shrink-0 items-center justify-center rounded-full text-accent-ink hover:bg-surface/60"
+              className="-mr-3 -mt-2.5 flex size-11 shrink-0 items-center justify-center rounded-full text-accent-ink hover:bg-surface/60"
             >
               <X aria-hidden="true" className="size-4" />
             </button>

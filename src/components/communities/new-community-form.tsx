@@ -347,7 +347,7 @@ export function NewCommunityForm() {
                     type="button"
                     aria-label={`Remove rule ${index + 1}`}
                     onClick={() => setRules((current) => current.filter((_, i) => i !== index))}
-                    className="flex size-8 items-center justify-center rounded-full text-fg-subtle hover:bg-surface-2 hover:text-danger"
+                    className="flex -m-1.5 size-11 items-center justify-center rounded-full text-fg-subtle hover:bg-surface-2 hover:text-danger"
                   >
                     <Trash2 aria-hidden="true" className="size-4" />
                   </button>

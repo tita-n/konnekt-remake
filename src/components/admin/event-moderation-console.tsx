@@ -112,7 +112,7 @@ export function EventModerationConsole({
             type="button"
             onClick={() => setStatus(entry.value)}
             aria-pressed={status === entry.value}
-            className={`min-h-9 rounded-chip border px-3 text-small font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ${
+            className={`min-h-11 rounded-chip border px-3 text-small font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ${
               status === entry.value ? "border-accent bg-accent-soft text-accent-soft-fg" : "border-border text-fg-muted"
             }`}
           >

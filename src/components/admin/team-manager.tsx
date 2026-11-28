@@ -70,8 +70,8 @@ export function TeamManager({
                     {member.user.fullName.slice(0, 1)}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-small font-semibold text-fg">{member.user.fullName}</span>
-                    <span className="block truncate text-[0.75rem] text-fg-subtle">{member.user.email}</span>
+                    <span className="block line-clamp-2 text-small font-semibold text-fg">{member.user.fullName}</span>
+                    <span className="block line-clamp-2 text-[0.75rem] text-fg-subtle">{member.user.email}</span>
                   </span>
                   <Badge tone={member.role === "UNIVERSITY_ADMIN" ? "accent" : "neutral"}>
                     {member.role.replaceAll("_", " ").toLowerCase()}
@@ -96,7 +96,7 @@ export function TeamManager({
                 <li key={invite.id} className="flex items-center gap-3 px-4 py-3">
                   <MailPlus aria-hidden="true" className="size-4 shrink-0 text-fg-subtle" />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-small font-semibold text-fg">{invite.email}</span>
+                    <span className="block line-clamp-2 text-small font-semibold text-fg">{invite.email}</span>
                     <span className="block text-[0.75rem] text-fg-subtle">
                       {invite.role.replaceAll("_", " ").toLowerCase()} · expires{" "}
                       {new Intl.DateTimeFormat("en-NG", { dateStyle: "medium" }).format(invite.expiresAt)}

@@ -59,6 +59,10 @@ const DEFAULT_THEMES = ["light", "dark"];
 /** Shots are the expensive artefact: every defective route once per width/theme,
  *  bounded so the results branch stays small. The full defect set is always in summary.json. */
 const MAX_DEFECT_SHOTS = Number.parseInt(process.env.UI_AUDIT_MAX_SHOTS ?? "120", 10);
+/** Fairness guard: the global budget must not be spent by whichever group happened to
+ *  run first, because a reviewer needs to see one screen per group, not thirteen widths
+ *  of the landing page. */
+const MAX_SHOTS_PER_GROUP_THEME = Number.parseInt(process.env.UI_AUDIT_SHOTS_PER_GROUP ?? "10", 10);
 const MAX_OVERVIEW_SHOTS = Number.parseInt(process.env.UI_AUDIT_MAX_OVERVIEWS ?? "40", 10);
 const OVERVIEW_WIDTHS = [390, 1280];
 /** Per-page reporting caps, per rule. Caps bound output size, never detection:
@@ -66,7 +70,7 @@ const OVERVIEW_WIDTHS = [390, 1280];
 const CAPS = {
   "horizontal-overflow": 2,
   "masked-overflow": 2,
-  "touch-target": 14,
+  "touch-target": 26,
   "touch-spacing": 6,
   "fixed-bar-collision": 6,
   overlap: 4,
@@ -740,7 +744,13 @@ const AUDIT = function auditPage(options) {
     if (style.position !== "fixed" && style.position !== "sticky") continue;
     if (!isVisible(element)) continue;
     const rect = element.getBoundingClientRect();
-    if (rect.width < viewportWidth * 0.35 || rect.height < 8 || rect.height > viewportHeight * 0.6) continue;
+    // A `position: sticky` element taller than ~96px is a sticky *wrapper* (the pulse
+    // feed, a sidebar) rather than a bar: its rect spans content that scrolls freely,
+    // so measuring it as a bar claimed the bottom nav overlaps the whole feed. Only a
+    // short strip pinned against an edge counts.
+    const pinned = style.position === "fixed" || (rect.height <= 96 && (rect.top <= 4 || rect.bottom >= viewportHeight - 4));
+    if (!pinned) continue;
+    if (rect.width < viewportWidth * 0.35 || rect.height < 8 || rect.height > viewportHeight * 0.4) continue;
     const colour = parseColor(style.backgroundColor);
     const painted = (colour && colour.a > 0.2) || (style.backgroundImage && style.backgroundImage !== "none") || style.backdropFilter !== "none";
     if (!painted) continue;
@@ -755,6 +765,7 @@ const AUDIT = function auditPage(options) {
       if (a.element.contains(b.element) || b.element.contains(a.element)) continue;
       const width = Math.max(0, Math.min(a.rect.right, b.rect.right) - Math.max(a.rect.left, b.rect.left));
       const height = Math.max(0, Math.min(a.rect.bottom, b.rect.bottom) - Math.max(a.rect.top, b.rect.top));
+      if (height <= 4) continue; // an abutting border is not a collision
       if (width * height < 400) continue;
       push(
         "overlap",
@@ -768,8 +779,14 @@ const AUDIT = function auditPage(options) {
 
   // A bar sitting on top of controls or text that the page has not padded away.
   // Only a `position: fixed` bar actually hides content: a sticky one is in flow
-  // and moves out of the way. The control must be inside the current viewport,
-  // otherwise this reports content that is merely further down the page.
+  // and moves out of the way. Measured at the bottom of the scroll, because that is
+  // the only place a control can be permanently stuck: at scroll 0 the rows under
+  // the nav are merely further down the page, which is what a bottom bar is for.
+  const maxScroll = Math.max(0, document.documentElement.scrollHeight - viewportHeight);
+  if (maxScroll > 0) {
+    window.scrollTo(0, maxScroll);
+    for (const bar of bars) bar.rect = bar.element.getBoundingClientRect();
+  }
   for (const bar of bars) {
     if (!bar.fixed) continue;
     if (!bar.top && !bar.bottom) continue;
@@ -780,6 +797,7 @@ const AUDIT = function auditPage(options) {
       const centreY = rect.top + rect.height / 2;
       const centreX = rect.left + rect.width / 2;
       if (centreY < 0 || centreY > viewportHeight) continue;
+      if (bar.bottom && centreY < bar.rect.top) continue; // scrolled clear of the bar
       const covered = centreY > bar.rect.top + 1 && centreY < bar.rect.bottom - 1 && centreX > bar.rect.left && centreX < bar.rect.right;
       if (!covered) continue;
       push(
@@ -805,6 +823,24 @@ const AUDIT = function auditPage(options) {
     const clippedY = !clamped && (style.overflowY === "hidden" || style.overflowY === "clip") && element.scrollHeight > element.clientHeight + 4;
     if (!clippedX && !clippedY) continue;
     if (clippedX && style.whiteSpace !== "nowrap" && style.whiteSpace !== "pre") continue;
+    // Single-line ellipsis is an accepted pattern in dense rows — but only when the
+    // full string is still reachable (a title attribute, or the row being a link to
+    // the page that shows it). Ellipsis with no fallback loses information, so it is
+    // reported as its own rule rather than being excused.
+    if (clippedX && style.textOverflow === "ellipsis") {
+      const row = element.closest("a,button,[role='button'],article,li");
+      const hasTitle = element.hasAttribute("title") || element.getAttribute("aria-label");
+      const linkedRow = row && (row.tagName === "A" || row.tagName === "BUTTON" || row.getAttribute("role") === "link");
+      if (hasTitle || linkedRow) continue;
+      push(
+        "clipped-text",
+        element,
+        `ellipsis hides ${element.scrollWidth - element.clientWidth}px of ${element.scrollWidth}px and nothing exposes the full text (add a title, or make the row a link)`,
+        "medium",
+        { text: element.textContent.trim() },
+      );
+      continue;
+    }
     push(
       "clipped-text",
       element,
@@ -849,6 +885,10 @@ const AUDIT = function auditPage(options) {
         .map((image) => image.getAttribute("alt"))
         .join(" ")
         .trim();
+    // A `tabIndex={-1}` duplicate — the cover link inside a card whose title link is the
+    // real target — is deliberately unnamed: it is not in the tab order, and labelling it
+    // would read the same text twice. Only focusable icon-only controls are a defect.
+    if (element.getAttribute("tabindex") === "-1" && !element.matches("[role='tab'],[role='button']")) continue;
     if (element.querySelector("svg,img,i,use") && !name) {
       push("accessible-name", element, "icon-only control has no accessible name", "high");
     }
@@ -923,6 +963,8 @@ const AUDIT = function auditPage(options) {
     );
   }
 
+  if (maxScroll > 0) window.scrollTo(0, 0);
+
   return {
     defects,
     capped: [...capped],
@@ -966,12 +1008,14 @@ async function run() {
 
   const defects = [];
   const routeErrors = [];
+  const cappedNotes = new Map();
   const screenshots = [];
   let defectShotCount = 0;
   let overviewShotCount = 0;
   let routeStates = 0;
   const overviewDone = new Set();
   const shotKeys = new Set();
+  const shotsByGroup = new Map();
 
   // Same escape hatch as scripts/shots.mjs, so the audit can run against a system
   // Chromium where Playwright's own download is unavailable.
@@ -981,12 +1025,13 @@ async function run() {
   // only per-route cost is the navigation itself.
   const CHUNK = Math.max(2, Number.parseInt(process.env.UI_AUDIT_CHUNK ?? "6", 10));
   const tasks = [];
-  for (const theme of themes) {
-    for (const role of roles) {
-      const forRole = routes.filter((route) => (route.role ?? "anonymous") === role);
-      for (let index = 0; index < forRole.length; index += CHUNK) {
-        tasks.push({ theme, role, routes: forRole.slice(index, index + CHUNK) });
-      }
+  // Chunk first, theme second: lanes then alternate light and dark, so the shot
+  // budget and the defect list cover both themes instead of exhausting the run on one.
+  for (const role of roles) {
+    const forRole = routes.filter((route) => (route.role ?? "anonymous") === role);
+    for (let index = 0; index < forRole.length; index += CHUNK) {
+      const chunk = forRole.slice(index, index + CHUNK);
+      for (const theme of themes) tasks.push({ theme, role, routes: chunk });
     }
   }
 
@@ -1055,11 +1100,24 @@ async function run() {
             }
             if (found.capped?.length) {
               for (const rule of found.capped) {
-                routeErrors.push({ route: route.id, path: route.path, width, theme: task.theme, message: `reporting cap reached for ${rule}; more exist` });
+                const noteKey = `${route.id}|${rule}`;
+                if (!cappedNotes.has(noteKey)) {
+                  cappedNotes.set(noteKey, { route: route.id, rule, widths: [], message: `more ${rule} findings exist than the per-page reporting cap (${CAPS[rule] ?? 8}); the totals still count every one of them` });
+                }
+                const note = cappedNotes.get(noteKey);
+                if (!note.widths.includes(width)) note.widths.push(width);
               }
             }
 
-            if (rows.length > 0 && !shotKeys.has(shotName) && defectShotCount < MAX_DEFECT_SHOTS) {
+            const groupThemeKey = `${route.group}|${task.theme}`;
+            const groupTaken = shotsByGroup.get(groupThemeKey) ?? 0;
+            if (
+              rows.length > 0 &&
+              !shotKeys.has(shotName) &&
+              defectShotCount < MAX_DEFECT_SHOTS &&
+              groupTaken < MAX_SHOTS_PER_GROUP_THEME
+            ) {
+              shotsByGroup.set(groupThemeKey, groupTaken + 1);
               await captureJpeg(page, path.join(outDir, shotName));
               shotKeys.add(shotName);
               screenshots.push(shotName);
@@ -1075,7 +1133,6 @@ async function run() {
             if (
               overviewShotCount < MAX_OVERVIEW_SHOTS &&
               OVERVIEW_WIDTHS.includes(width) &&
-              !rows.length &&
               !overviewDone.has(overviewKey)
             ) {
               overviewDone.add(overviewKey);
@@ -1168,6 +1225,7 @@ async function run() {
     resolverError,
     seedKeys: Object.keys(tokens),
     routeErrors,
+    reportingCaps: [...cappedNotes.values()],
     defects,
     distinct,
     screenshots,
@@ -1198,7 +1256,13 @@ async function run() {
       .map(([rule, count]) => `| ${rule} | ${count} | ${defects.filter((defect) => defect.rule === rule).length} |`),
     "",
     `Routes skipped because their seeded id could not be resolved: ${skipped.length}${resolverError ? ` (${resolverError.slice(0, 120)})` : ""}.`,
-    `Route errors (navigation, missing actions, status codes, reporting caps): ${routeErrors.length}.`,
+    `Route errors (navigation, missing actions, status codes): ${routeErrors.length}.`,
+    summary.reportingCaps.length > 0
+      ? `Per-page reporting caps reached (${summary.reportingCaps.length} route/rule pairs): ${summary.reportingCaps
+          .slice(0, 8)
+          .map((note) => `${note.route} · ${note.rule}`)
+          .join(", ")}${summary.reportingCaps.length > 8 ? `, and ${summary.reportingCaps.length - 8} more` : ""}.`
+      : "Per-page reporting caps: none reached, so every finding is listed.",
     "",
     `_Engine: \`design/responsive-audit/run.mjs\` — rules ${summary.rules.join(", ")}. Defects are informational unless \`UI_AUDIT_STRICT\` is true._`,
   ].join("\n");

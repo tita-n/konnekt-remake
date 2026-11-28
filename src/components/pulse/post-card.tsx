@@ -285,7 +285,7 @@ export function PostCard({
               {local.isOwner && local.moderationReason && local.moderationReason !== "This post was removed by a moderator." ? (
                 <p className="mt-1 text-small text-fg-muted">Reason: {local.moderationReason}</p>
               ) : null}
-              <Link href="/legal/community-rules" className="mt-1 inline-block text-small font-semibold text-accent-ink underline underline-offset-2 hover:opacity-80">
+              <Link href="/legal/community-rules" className="mt-1 inline-flex min-h-11 items-center px-1 text-small font-semibold text-accent-ink underline underline-offset-2 hover:opacity-80">
                 Learn more
               </Link>
             </div>

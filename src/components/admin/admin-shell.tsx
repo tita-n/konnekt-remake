@@ -82,7 +82,7 @@ export function AdminShell({
           </div>
           <Avatar name={user.fullName} src={user.photoUrl} size="xs" />
         </div>
-        <nav aria-label="Admin sections" className="flex gap-1 overflow-x-auto px-4 pb-2">
+        <nav aria-label="Admin sections" className="flex gap-2 overflow-x-auto px-4 pb-2">
           {visible.map((item) => {
             const active = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
             return (
@@ -118,7 +118,7 @@ export function AdminShell({
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex items-center gap-2.5 rounded-button px-3 py-2.5 text-small font-semibold transition",
+                  "flex min-h-11 items-center gap-2.5 rounded-button px-3 py-2.5 text-small font-semibold transition",
                   active ? "bg-accent-soft text-accent-ink" : "text-fg-muted hover:bg-surface-2 hover:text-fg",
                 )}
               >

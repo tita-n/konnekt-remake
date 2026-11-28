@@ -83,7 +83,7 @@ export default async function VerificationQueuePage({
             <label htmlFor="status" className="mb-1 block text-small font-semibold text-fg">
               Status
             </label>
-            <select id="status" name="status" defaultValue={status} className="h-10 rounded-input border border-border bg-surface px-3 text-small text-fg">
+            <select id="status" name="status" defaultValue={status} className="h-11 rounded-input border border-border bg-surface px-3 text-small text-fg">
               {STATUSES.map((value) => (
                 <option key={value} value={value}>
                   {value === "ALL" ? "All statuses" : value.charAt(0) + value.slice(1).toLowerCase()}
@@ -95,7 +95,7 @@ export default async function VerificationQueuePage({
             <label htmlFor="method" className="mb-1 block text-small font-semibold text-fg">
               Method
             </label>
-            <select id="method" name="method" defaultValue={method} className="h-10 rounded-input border border-border bg-surface px-3 text-small text-fg">
+            <select id="method" name="method" defaultValue={method} className="h-11 rounded-input border border-border bg-surface px-3 text-small text-fg">
               {METHODS.map((value) => (
                 <option key={value} value={value}>
                   {value === "ALL" ? "All methods" : value.replaceAll("_", " ").toLowerCase()}

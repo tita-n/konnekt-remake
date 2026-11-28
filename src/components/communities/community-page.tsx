@@ -129,7 +129,7 @@ export function CommunityPage({
         <Link
           href="/communities"
           aria-label="Back to communities"
-          className="glass absolute left-4 top-3 flex size-10 items-center justify-center rounded-full border border-border/50 text-fg transition-colors duration-150 hover:bg-surface"
+          className="glass absolute left-3 top-2 flex size-11 items-center justify-center rounded-full border border-border/50 text-fg transition-colors duration-150 hover:bg-surface"
         >
           <ArrowLeft aria-hidden="true" className="size-5" />
         </Link>
@@ -217,7 +217,7 @@ export function CommunityPage({
       </header>
 
       {/* Sticky tabs are solid — glass is reserved for the top bar, tab bar and sheets. */}
-      <div className="no-scrollbar sticky top-14 z-20 mt-4 flex gap-1 overflow-x-auto border-b border-border bg-surface px-4">
+      <div className="no-scrollbar sticky top-14 z-20 mt-4 flex gap-2 overflow-x-auto border-b border-border bg-surface px-4">
         {tabs.map((entry) => {
           const Icon = entry.icon;
           const selected = tab === entry.value;
@@ -767,11 +767,11 @@ function MembersTab({ community, initial }: { community: CommunityPageView; init
             <li key={member.userId} className="flex min-h-16 items-center gap-3 rounded-button px-1 py-2">
               <CommunityMemberAvatar member={member} />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-small font-semibold text-fg">
+                <p className="line-clamp-2 text-small font-semibold text-fg">
                   {member.fullName}
                   {member.isViewer ? <span className="ml-1 text-tiny font-normal text-fg-subtle">(you)</span> : null}
                 </p>
-                <p className="truncate text-tiny text-fg-muted">
+                <p className="line-clamp-2 text-tiny text-fg-muted">
                   @{member.username}
                   {member.departmentName ? ` · ${member.departmentName}` : ""}
                   {member.level ? ` · ${member.level}L` : ""}

@@ -214,7 +214,7 @@ export function EventsHub({
           onClick={() => setCategory(null)}
           aria-pressed={category === null}
           className={cn(
-            "min-h-9 shrink-0 rounded-chip border px-3 text-small font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
+            "min-h-11 shrink-0 rounded-chip border px-3 text-small font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
             category === null ? "border-accent bg-accent-soft text-accent-soft-fg" : "border-border text-fg-muted hover:bg-surface-2",
           )}
         >
@@ -227,7 +227,7 @@ export function EventsHub({
             onClick={() => setCategory(category === entry.value ? null : entry.value)}
             aria-pressed={category === entry.value}
             className={cn(
-              "min-h-9 shrink-0 rounded-chip border px-3 text-small font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
+              "min-h-11 shrink-0 rounded-chip border px-3 text-small font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
               category === entry.value
                 ? "border-accent bg-accent-soft text-accent-soft-fg"
                 : "border-border text-fg-muted hover:bg-surface-2",

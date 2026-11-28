@@ -16,7 +16,7 @@ export default async function DraftsPage() {
   return (
     <div className="pb-4">
       <header className="sticky top-14 z-20 flex h-14 items-center border-b border-border bg-surface px-2">
-        <Link href="/profile/me" aria-label="Back to profile" className="flex size-10 items-center justify-center rounded-full text-fg hover:bg-surface-2">
+        <Link href="/profile/me" aria-label="Back to profile" className="flex size-11 items-center justify-center rounded-full text-fg hover:bg-surface-2">
           <ArrowLeft aria-hidden="true" className="size-5" />
         </Link>
         <h1 className="flex-1 text-center text-h2 text-fg">Drafts</h1>

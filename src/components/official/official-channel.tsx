@@ -93,7 +93,7 @@ export function OfficialChannel({
           }}
           aria-pressed={category === null}
           className={cn(
-            "min-h-9 rounded-chip border px-3 text-small font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
+            "min-h-11 rounded-chip border px-3 text-small font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
             category === null ? "border-accent bg-accent-soft text-accent-soft-fg" : "border-border text-fg-muted",
           )}
         >
@@ -110,7 +110,7 @@ export function OfficialChannel({
             }}
             aria-pressed={category === entry.value}
             className={cn(
-              "min-h-9 rounded-chip border px-3 text-small font-semibold",
+              "min-h-11 rounded-chip border px-3 text-small font-semibold",
               category === entry.value ? "border-accent bg-accent-soft text-accent-soft-fg" : "border-border text-fg-muted",
             )}
           >

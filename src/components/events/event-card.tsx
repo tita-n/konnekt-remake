@@ -56,7 +56,7 @@ export function EventCard({
         </p>
       ) : null}
 
-      <Link href={`/events/${event.id}`} className="group block focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus">
+      <Link href={`/events/${event.id}`} aria-label={event.title} className="group block focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus">
         <div className="relative aspect-[16/9] w-full overflow-hidden bg-surface-3">
           {event.coverUrl ? (
             // Covers are re-encoded by the upload pipeline.
@@ -102,18 +102,18 @@ export function EventCard({
           <span className="nums font-display text-[1.375rem] font-bold leading-[1.19] text-fg">{day}</span>
         </div>
         <div className="min-w-0 flex-1">
-          <Link href={`/events/${event.id}`} className="block focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus">
+          <Link href={`/events/${event.id}`} className="block min-h-11 -my-2 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus">
             <h2 id={`event-${event.id}-title`} className="line-clamp-2 font-display text-[1.0625rem] font-semibold leading-6 text-fg">
               {event.title}
             </h2>
           </Link>
           <p className="mt-1 flex items-center gap-1.5 text-small leading-5 text-fg-muted">
             <MapPin aria-hidden="true" className="size-4 shrink-0" />
-            <span className="truncate">{event.venueName}</span>
+            <span className="line-clamp-2">{event.venueName}</span>
           </p>
           <p className="mt-0.5 flex items-center gap-1.5 text-small leading-5 text-fg-muted">
             <CalendarDays aria-hidden="true" className="size-4 shrink-0" />
-            <span className="nums truncate">
+            <span className="nums line-clamp-2">
               {formatEventTime(event.startsAt, event.timezone)}
               {event.endsAt ? ` – ${formatEventTime(event.endsAt, event.timezone)}` : ""}
             </span>
@@ -168,7 +168,7 @@ function EventCardState({
   isFull: boolean;
 }) {
   const base =
-    "inline-flex h-9 shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-button px-3 text-tiny font-semibold transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
+    "inline-flex min-h-11 -my-1 shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-button px-3 text-tiny font-semibold transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
   const cancelled = event.status === "CANCELLED";
   const ended = Boolean(event.ended);
 
