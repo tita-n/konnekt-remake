@@ -1,6 +1,6 @@
 import { UniversityShieldMark, Wordmark } from "@/components/brand/logo";
 import { cn } from "@/lib/utils";
-import type { DirectionUniversity } from "./fixtures";
+import type { DirectionUniversity } from "../../../../fixtures/auth-directions";
 
 /**
  * The brand slot has exactly two states, and which one you get is decided by

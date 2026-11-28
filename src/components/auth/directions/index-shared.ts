@@ -10,5 +10,5 @@ export {
   INTERESTS,
   VOUCHERS,
   matricExample,
-} from "./fixtures";
-export type { DirectionUniversity } from "./fixtures";
+} from "../../../../fixtures/auth-directions";
+export type { DirectionUniversity } from "../../../../fixtures/auth-directions";
