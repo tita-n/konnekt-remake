@@ -33,7 +33,7 @@ export function PlatformShell({ children, email }: { children: React.ReactNode; 
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-small font-semibold",
+                  "flex min-h-11 min-w-11 shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-small font-semibold",
                   active ? "bg-accent text-accent-fg" : "text-fg-muted hover:bg-surface-2",
                 )}
               >

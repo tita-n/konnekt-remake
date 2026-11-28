@@ -95,10 +95,10 @@ export function CreateUniversityForm() {
       </div>
 
       <div className="flex flex-wrap gap-4 text-small">
-        <label className="flex items-center gap-2 font-semibold text-fg">
+        <label className="flex min-h-11 items-center gap-2 font-semibold text-fg">
           <input type="checkbox" name="idCardEnabled" defaultChecked className="size-4 accent-[var(--accent)]" /> ID card review
         </label>
-        <label className="flex items-center gap-2 font-semibold text-fg">
+        <label className="flex min-h-11 items-center gap-2 font-semibold text-fg">
           <input type="checkbox" name="vouchingEnabled" className="size-4 accent-[var(--accent)]" /> Vouching
         </label>
       </div>

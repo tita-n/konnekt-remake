@@ -15,7 +15,7 @@ function RoleRemoveForm({ assignmentId, name }: { assignmentId: string; name: st
       <button
         type="submit"
         disabled={pending}
-        className="text-[0.75rem] font-semibold text-danger hover:underline disabled:opacity-50"
+        className="inline-flex min-h-11 min-w-11 items-center px-1 text-[0.75rem] font-semibold text-danger hover:underline disabled:opacity-50"
         aria-label={`Remove role from ${name}`}
       >
         Remove

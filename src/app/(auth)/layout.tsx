@@ -9,7 +9,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <LogoMark className="size-9 text-accent" />
           <Wordmark className="text-[1.125rem]" />
         </Link>
-        <Link href="/legal/terms" className="inline-flex min-h-11 items-center px-1 text-small text-fg-subtle underline-offset-4 hover:text-fg hover:underline">
+        <Link href="/legal/terms" className="inline-flex min-h-11 min-w-11 items-center px-1 text-small text-fg-subtle underline-offset-4 hover:text-fg hover:underline">
           Terms
         </Link>
       </header>

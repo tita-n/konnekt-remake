@@ -458,7 +458,7 @@ export function EventDetail({
               Who&apos;s going
             </h2>
             {permissions.canViewAttendees ? (
-              <Link href={`/events/${event.id}/dashboard#attendees`} className="text-small font-semibold text-accent-ink underline underline-offset-4">
+              <Link href={`/events/${event.id}/dashboard#attendees`} className="inline-flex min-h-11 items-center text-small font-semibold text-accent-ink underline underline-offset-4">
                 Attendee list
               </Link>
             ) : null}

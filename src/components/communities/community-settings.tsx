@@ -342,7 +342,7 @@ export function CommunitySettings({
                 }
                 aria-label={`Rule ${index + 1} description`}
                 rows={2}
-                className="mt-1 w-full resize-none bg-transparent text-small text-fg-muted outline-none"
+                className="mt-1 w-full min-h-11 resize-none bg-transparent text-small text-fg-muted outline-none"
               />
             </div>
           ))}

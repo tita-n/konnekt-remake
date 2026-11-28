@@ -117,7 +117,7 @@ export function MyEvents({ initialTab, initialEvents }: { initialTab: Tab; initi
                 ) : null}
                 <a
                   href={`/api/events/${event.id}/ics`}
-                  className="inline-flex min-h-11 items-center gap-1 rounded-button px-2 text-tiny font-semibold text-fg-muted underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                  className="inline-flex min-h-11 min-w-11 items-center gap-1 rounded-button px-2 text-tiny font-semibold text-fg-muted underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                 >
                   Add to calendar
                 </a>

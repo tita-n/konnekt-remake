@@ -72,7 +72,7 @@ export function ReportDetailPane({
             <Link
               href={`/admin/students/${report.target.authorId}/moderation`}
               aria-label={`View ${report.target.authorName} moderation history`}
-              className="flex size-10 items-center justify-center rounded-full text-fg-subtle hover:bg-surface-2"
+              className="flex size-11 items-center justify-center rounded-full text-fg-subtle hover:bg-surface-2"
             >
               <MoreHorizontal aria-hidden="true" className="size-4" />
             </Link>
@@ -135,7 +135,7 @@ export function ReportDetailPane({
             {report.target ? (
               <Link
                 href={`/admin/students/${report.target.authorId}/moderation`}
-                className="inline-flex min-h-11 items-center px-1 text-tiny font-semibold text-accent-ink hover:underline"
+                className="inline-flex min-h-11 min-w-11 items-center px-1 text-tiny font-semibold text-accent-ink hover:underline"
               >
                 History
               </Link>

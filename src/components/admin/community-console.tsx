@@ -217,7 +217,7 @@ export function CommunityConsole({ initial, isAdmin }: { initial: CommunityAdmin
                     {COMMUNITY_PRIVACY_LABELS[row.privacy]} · {CATEGORY_LABELS.get(row.category) ?? row.category}
                     {row.isOfficial ? " · official" : ""}
                   </p>
-                  <div className="mt-1 flex flex-wrap gap-1 md:hidden">
+                  <div className="mt-1 flex flex-wrap gap-2 md:hidden">
                     <StatusPill status={row.status} />
                     <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[0.625rem] text-fg-muted">{row.memberCount} members</span>
                     {row.reportCount > 0 ? (

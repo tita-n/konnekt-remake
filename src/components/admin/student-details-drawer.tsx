@@ -128,7 +128,7 @@ export function StudentDetailsDrawer({
             type="button"
             onClick={onClose}
             aria-label="Close student details"
-            className="flex size-10 items-center justify-center rounded-full text-fg-muted hover:bg-surface-2 hover:text-fg"
+            className="flex size-11 items-center justify-center rounded-full text-fg-muted hover:bg-surface-2 hover:text-fg"
           >
             <X aria-hidden="true" className="size-5" />
           </button>
@@ -136,7 +136,7 @@ export function StudentDetailsDrawer({
           <Link
             href={closeHref}
             aria-label="Close student details"
-            className="flex size-10 items-center justify-center rounded-full text-fg-muted hover:bg-surface-2 hover:text-fg"
+            className="flex size-11 items-center justify-center rounded-full text-fg-muted hover:bg-surface-2 hover:text-fg"
           >
             <X aria-hidden="true" className="size-5" />
           </Link>

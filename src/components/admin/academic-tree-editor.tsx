@@ -222,7 +222,7 @@ export function AcademicTreeEditor({ nodes, labels }: { nodes: EditorNode[]; lab
                   <legend className="mb-1.5 text-small font-semibold text-fg">Levels offered</legend>
                   <div className="flex flex-wrap gap-2">
                     {LEVEL_OPTIONS.map((level) => (
-                      <label key={level} className="inline-flex min-h-11 items-center gap-1.5 rounded-chip border border-border px-2.5 py-1 text-[0.75rem] font-semibold has-[:checked]:border-accent has-[:checked]:bg-accent-soft has-[:checked]:text-accent-soft-fg">
+                      <label key={level} className="inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-chip border border-border px-2.5 py-1 text-[0.75rem] font-semibold has-[:checked]:border-accent has-[:checked]:bg-accent-soft has-[:checked]:text-accent-soft-fg">
                         <input type="checkbox" name="levels" value={level} defaultChecked={[100, 200, 300, 400].includes(level)} className="size-3 accent-[var(--accent)]" />
                         {level}
                       </label>
@@ -251,7 +251,7 @@ export function AcademicTreeEditor({ nodes, labels }: { nodes: EditorNode[]; lab
             <p className="mt-1 text-small text-fg-muted">
               Columns: college, faculty, department, levels (semicolon separated). Header optional.
             </p>
-            <label className="mt-3 flex cursor-pointer items-center justify-center gap-2 rounded-button border border-dashed border-border-strong px-3 py-2.5 text-small font-semibold text-fg-muted hover:bg-surface-2">
+            <label className="mt-3 flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-button border border-dashed border-border-strong px-3 py-2.5 text-small font-semibold text-fg-muted hover:bg-surface-2">
               <FileUp aria-hidden="true" className="size-4" />
               {fileName ?? "Choose a CSV file"}
               <input
@@ -349,7 +349,7 @@ export function AcademicTreeEditor({ nodes, labels }: { nodes: EditorNode[]; lab
                 <legend className="mb-1.5 text-small font-semibold text-fg">Levels</legend>
                 <div className="flex flex-wrap gap-2">
                   {LEVEL_OPTIONS.map((level) => (
-                    <label key={level} className="inline-flex min-h-11 items-center gap-1.5 rounded-chip border border-border px-2.5 py-1 text-[0.75rem] font-semibold has-[:checked]:border-accent has-[:checked]:bg-accent-soft">
+                    <label key={level} className="inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-chip border border-border px-2.5 py-1 text-[0.75rem] font-semibold has-[:checked]:border-accent has-[:checked]:bg-accent-soft">
                       <input type="checkbox" name="levels" value={level} defaultChecked={editing.levels.includes(level)} className="size-3 accent-[var(--accent)]" />
                       {level}
                     </label>

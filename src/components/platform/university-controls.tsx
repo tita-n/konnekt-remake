@@ -109,7 +109,7 @@ export function FeaturesForm({
         <p className="text-[0.6875rem] text-fg-subtle">Features that do not exist yet stay off. The flag is ready for its phase.</p>
         <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
           {FLAGS.map((flag) => (
-            <label key={flag.key} className="flex items-center gap-2 rounded-input bg-surface-2 px-2.5 py-1.5 text-[0.75rem] font-semibold text-fg">
+            <label key={flag.key} className="min-h-11 flex items-center gap-2 rounded-input bg-surface-2 px-2.5 py-1.5 text-[0.75rem] font-semibold text-fg">
               <input type="checkbox" name={flag.key} defaultChecked={featureFlags[flag.key]} className="size-3.5 accent-[var(--accent)]" />
               {flag.label}
             </label>

@@ -37,7 +37,7 @@ export function PulseEventModules({
               </span>
               Happening now
             </h2>
-            <Link href="/events" className="inline-flex min-h-11 items-center px-1 text-tiny font-semibold text-accent-ink">
+            <Link href="/events" className="inline-flex min-h-11 min-w-11 items-center px-1 text-tiny font-semibold text-accent-ink">
               All events
               <ChevronRight aria-hidden="true" className="size-4" />
             </Link>
@@ -63,7 +63,7 @@ export function PulseEventModules({
               <CalendarDays aria-hidden="true" className="size-4 text-fg-muted" />
               Upcoming on campus
             </h2>
-            <Link href="/events" className="inline-flex min-h-11 items-center px-1 text-tiny font-semibold text-accent-ink">
+            <Link href="/events" className="inline-flex min-h-11 min-w-11 items-center px-1 text-tiny font-semibold text-accent-ink">
               See all
               <ChevronRight aria-hidden="true" className="size-4" />
             </Link>

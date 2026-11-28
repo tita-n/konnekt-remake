@@ -265,7 +265,7 @@ export function CommunityCard({
     <article className="flex min-h-[88px] items-start gap-3 rounded-card border border-border bg-surface p-4">
       <Link
         href={`/c/${community.slug}`}
-        className="-my-1 flex min-h-11 shrink-0 items-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+        className="-my-1 flex min-h-11 min-w-11 shrink-0 items-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
         tabIndex={-1}
       >
         <CommunityIcon community={community} />

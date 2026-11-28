@@ -16,7 +16,7 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
             <LogoMark className="size-8 text-accent" />
             <Wordmark className="text-[1.0625rem]" />
           </Link>
-          <Link href="/login" className="inline-flex min-h-11 items-center px-1.5 text-small font-semibold text-fg-muted hover:text-fg">
+          <Link href="/login" className="inline-flex min-h-11 min-w-11 items-center px-1.5 text-small font-semibold text-fg-muted hover:text-fg">
             Log in
           </Link>
         </div>
@@ -25,7 +25,7 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
         {children}
         <nav aria-label="Legal documents" className="mt-10 flex flex-wrap gap-x-4 gap-y-2 border-t border-border pt-5 text-small">
           {links.map((link) => (
-            <Link key={link.href} href={link.href} className="inline-flex min-h-11 items-center px-1.5 font-medium text-accent-ink underline-offset-2 hover:underline">
+            <Link key={link.href} href={link.href} className="inline-flex min-h-11 min-w-11 items-center px-1.5 font-medium text-accent-ink underline-offset-2 hover:underline">
               {link.label}
             </Link>
           ))}

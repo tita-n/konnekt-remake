@@ -181,7 +181,7 @@ export default async function StudentsPage({
                       <td className="px-3 py-3.5">
                         <Link
                           href={buildHref({ nextSelected: student.id })}
-                          className="flex items-center gap-3 focus:outline-none"
+                          className="flex min-h-11 items-center gap-3 focus:outline-none"
                         >
                           <Avatar name={student.fullName} seed={student.username} src={student.photoUrl} size="sm" />
                           <span className="min-w-0">
@@ -228,7 +228,7 @@ export default async function StudentsPage({
               <Link
                 href={buildHref({ nextPage: result.page - 1, nextSelected: null })}
                 aria-label="Previous page"
-                className={cn(buttonStyles({ variant: "secondary", size: "sm" }), "size-9 rounded-lg px-0")}
+                className={cn(buttonStyles({ variant: "secondary", size: "sm" }), "size-11 rounded-lg px-0")}
               >
                 <ChevronLeft aria-hidden="true" className="size-4" />
               </Link>
@@ -268,7 +268,7 @@ export default async function StudentsPage({
               <Link
                 href={buildHref({ nextPage: result.page + 1, nextSelected: null })}
                 aria-label="Next page"
-                className={cn(buttonStyles({ variant: "secondary", size: "sm" }), "size-9 rounded-lg px-0")}
+                className={cn(buttonStyles({ variant: "secondary", size: "sm" }), "size-11 rounded-lg px-0")}
               >
                 <ChevronRight aria-hidden="true" className="size-4" />
               </Link>

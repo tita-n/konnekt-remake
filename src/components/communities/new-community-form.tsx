@@ -360,7 +360,7 @@ export function NewCommunityForm() {
                   placeholder="Explain the rule"
                   aria-label={`Rule ${index + 1} description`}
                   rows={2}
-                  className="mt-1.5 w-full resize-none bg-transparent text-small text-fg-muted outline-none placeholder:text-fg-subtle"
+                  className="mt-1.5 w-full min-h-11 resize-none bg-transparent text-small text-fg-muted outline-none placeholder:text-fg-subtle"
                 />
               </div>
             ))}

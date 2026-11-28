@@ -91,7 +91,7 @@ export function AdminShell({
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex shrink-0 min-h-11 items-center gap-1.5 rounded-full px-3 py-1.5 text-small font-semibold transition",
+                  "flex shrink-0 min-h-11 min-w-11 items-center gap-1.5 rounded-full px-3 py-1.5 text-small font-semibold transition",
                   active ? "bg-accent text-accent-fg" : "text-fg-muted hover:bg-surface-2",
                 )}
               >
@@ -152,7 +152,7 @@ export function AdminShell({
             </div>
           </div>
 
-          <Link href="/pulse" className="flex min-h-11 items-center gap-2 rounded-button px-2.5 py-1.5 text-tiny font-medium text-fg-muted hover:bg-surface-2 hover:text-fg">
+          <Link href="/pulse" className="flex min-h-11 min-w-11 items-center gap-2 rounded-button px-2.5 py-1.5 text-tiny font-medium text-fg-muted hover:bg-surface-2 hover:text-fg">
             <ArrowLeft aria-hidden="true" className="size-3.5" /> Back to Pulse
           </Link>
         </div>

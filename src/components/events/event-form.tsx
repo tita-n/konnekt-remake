@@ -150,7 +150,7 @@ export function EventForm({
           <h1 className="text-h1 text-fg">{mode === "create" ? "Create event" : "Edit event"}</h1>
           <p className="mt-1 text-small text-fg-muted">Times are in {timezone.replace(/_/g, " ")}.</p>
         </div>
-        <Link href={event ? `/events/${event.id}` : "/events"} className="inline-flex min-h-11 items-center px-1 text-small font-semibold text-fg-muted underline underline-offset-4">
+        <Link href={event ? `/events/${event.id}` : "/events"} className="inline-flex min-h-11 min-w-11 items-center px-1 text-small font-semibold text-fg-muted underline underline-offset-4">
           Cancel
         </Link>
       </header>

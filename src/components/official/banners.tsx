@@ -62,7 +62,7 @@ export function CriticalBanner({ announcement }: { announcement: SerializedAnnou
             </button>
             <Link
               href={`/official/a/${announcement.id}`}
-              className="inline-flex min-h-11 items-center gap-1 whitespace-nowrap rounded-button px-2 text-small font-semibold text-fg underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+              className="inline-flex min-h-11 min-w-11 items-center gap-1 whitespace-nowrap rounded-button px-2 text-small font-semibold text-fg underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
             >
               Read full notice
               <ChevronRight aria-hidden="true" className="size-4" />

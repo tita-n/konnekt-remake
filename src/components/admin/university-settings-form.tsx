@@ -245,14 +245,14 @@ export function UniversitySettingsForm({ settings }: { settings: UniversitySetti
               <button
                 type="button"
                 onClick={() => setPreviewTheme("light")}
-                className={`rounded-chip px-2.5 py-1 transition ${previewTheme === "light" ? "bg-surface text-fg" : "text-fg-muted"}`}
+                className={`min-h-11 min-w-11 rounded-chip px-2.5 py-1 transition ${previewTheme === "light" ? "bg-surface text-fg" : "text-fg-muted"}`}
               >
                 Light
               </button>
               <button
                 type="button"
                 onClick={() => setPreviewTheme("dark")}
-                className={`rounded-chip px-2.5 py-1 transition ${previewTheme === "dark" ? "bg-surface text-fg" : "text-fg-muted"}`}
+                className={`min-h-11 min-w-11 rounded-chip px-2.5 py-1 transition ${previewTheme === "dark" ? "bg-surface text-fg" : "text-fg-muted"}`}
               >
                 Dark
               </button>
@@ -326,7 +326,7 @@ export function UniversitySettingsForm({ settings }: { settings: UniversitySetti
           </p>
         ) : null}
         {state.ok ? (
-          <p role="status" className="flex items-center gap-2 rounded-input border border-success/30 bg-success-soft px-3 py-2 text-small font-semibold text-success">
+          <p role="status" className="min-h-11 flex items-center gap-2 rounded-input border border-success/30 bg-success-soft px-3 py-2 text-small font-semibold text-success">
             <Check aria-hidden="true" className="size-4" /> {state.message}
           </p>
         ) : null}

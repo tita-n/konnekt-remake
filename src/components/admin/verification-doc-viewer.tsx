@@ -43,7 +43,7 @@ export function VerificationDocViewer({
           href={href}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex min-h-11 items-center gap-1.5 px-2 text-small font-semibold text-accent-ink hover:underline"
+          className="inline-flex min-h-11 min-w-11 items-center gap-1.5 px-2 text-small font-semibold text-accent-ink hover:underline"
         >
           Open full size <ExternalLink aria-hidden="true" className="size-3.5" />
         </a>
