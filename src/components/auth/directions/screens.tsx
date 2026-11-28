@@ -9,9 +9,9 @@ import { UniversityPicker } from "@/components/auth/university-picker";
 import { EmptyState } from "@/components/ui/feedback";
 import { ButtonLink } from "@/components/ui/button";
 import { VouchForm } from "@/components/auth/vouch-form";
-import { UNIVERSITIES, VOUCHERS, matricExample } from "./fixtures";
+import { UNIVERSITIES, VOUCHERS, matricExample } from "../../../../fixtures/auth-directions";
 import type { AuthStepId } from "./steps";
-import type { DirectionUniversity } from "./fixtures";
+import type { DirectionUniversity } from "../../../../fixtures/auth-directions";
 
 /**
  * Every direction renders the *real* form components, so field names, order,
