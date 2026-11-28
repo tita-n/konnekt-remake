@@ -137,6 +137,7 @@ The app targets Vercel + Neon. `.github/workflows/deploy.yml` is manual: it vali
 - [`docs/ENV.md`](./docs/ENV.md) — every environment variable, adapter and production requirement.
 - [`docs/UI-REFINEMENT.md`](./docs/UI-REFINEMENT.md) — the refined visual system and what changed.
 - [`docs/UI-CONVENTIONS.md`](./docs/UI-CONVENTIONS.md) — presentation, accessibility and test conventions.
+- [`docs/UI-AUDIT-RELAY.md`](./docs/UI-AUDIT-RELAY.md) — CI screenshots and responsive audits for UI branches.
 - [`docs/UI-SYNC-AUDIT.md`](./docs/UI-SYNC-AUDIT.md) — UI-sync audit, security reverts, invariant matrix and verification.
 - [`docs/SECURITY-ADVISORIES.md`](./docs/SECURITY-ADVISORIES.md) — advisory inventory and temporary allowlist.
 - [`docs/INVARIANTS.md`](./docs/INVARIANTS.md) — invariant-to-test map.

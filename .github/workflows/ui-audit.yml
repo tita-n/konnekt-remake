@@ -1,0 +1,270 @@
+name: UI audit relay
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Same-repository ui/** branch to audit
+        required: true
+        type: string
+
+concurrency:
+  group: ui-audit-${{ github.event.pull_request.number || inputs.branch }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  NODE_ENV: test
+  AUTH_SECRET: ci-only-secret-0123456789abcdefghijklmnopqrstuvwxyz
+  SESSION_TTL_DAYS: "30"
+
+jobs:
+  audit:
+    name: Responsive audit and screenshots
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+      startsWith(github.event.pull_request.head.ref, 'ui/'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/konnekt_audit
+      AUTH_SECRET: ci-only-secret-0123456789abcdefghijklmnopqrstuvwxyz
+      APP_URL: http://127.0.0.1:3100
+      SEED_PLATFORM_ADMIN_EMAIL: admin@konnekt.ng
+      UI_AUDIT_STRICT: ${{ vars.UI_AUDIT_STRICT || 'false' }}
+      UI_AUDIT_WIDTHS: 320,360,375,390,412,430,600,768,820,1024,1280,1440,1920
+      UI_AUDIT_THEMES: light,dark
+    steps:
+      - name: Checkout the audited branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.branch || github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Verify trusted same-repository ui branch
+        env:
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_REF: ${{ github.head_ref || inputs.branch }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ] && [ "$HEAD_REPO" != "$GITHUB_REPOSITORY" ]; then
+            echo "UI audit refuses fork pull requests."
+            exit 1
+          fi
+          case "$HEAD_REF" in
+            ui/*) ;;
+            *) echo "UI audit only runs on ui/** branches (got '$HEAD_REF')."; exit 1 ;;
+          esac
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            git fetch origin "$BASE_REF" --depth=1
+            if git diff --name-only "origin/$BASE_REF...HEAD" | grep -q '^\.github/'; then
+              echo "UI audit refuses a pull request that modifies .github/**."
+              exit 1
+            fi
+          fi
+
+      - name: Resolve pull request number
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_REF: ${{ github.head_ref || inputs.branch }}
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            PR_NUMBER="${{ github.event.pull_request.number }}"
+          else
+            PR_NUMBER="$(gh pr list --head "$HEAD_REF" --state open --json number --jq '.[0].number // empty')"
+          fi
+          if [ -z "$PR_NUMBER" ]; then
+            echo "No open pull request for $HEAD_REF; open one so the audit can comment."
+            exit 1
+          fi
+          echo "PR_NUMBER=$PR_NUMBER" >> "$GITHUB_ENV"
+          echo "UI_AUDIT_BRANCH=$HEAD_REF" >> "$GITHUB_ENV"
+          echo "UI_AUDIT_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          echo "UI_AUDIT_RUN_URL=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" >> "$GITHUB_ENV"
+          echo "UI_AUDIT_PR=$PR_NUMBER" >> "$GITHUB_ENV"
+          echo "UI_AUDIT_RUN=$GITHUB_RUN_NUMBER" >> "$GITHUB_ENV"
+
+      - name: Create the audit database
+        env:
+          PGPASSWORD: postgres
+        run: psql -h 127.0.0.1 -U postgres -d postgres -c 'CREATE DATABASE konnekt_audit;'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npx prisma generate
+
+      - name: Migrate and seed the demo database
+        run: |
+          set -euo pipefail
+          npx prisma migrate deploy
+          npm run db:seed
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: Mint real sessions through the login UI
+        env:
+          NODE_ENV: development
+          APP_URL: http://127.0.0.1:3102
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/konnekt_audit
+          TURNSTILE_BYPASS: "1"
+        run: |
+          set -euo pipefail
+          npx next dev -p 3102 > "$RUNNER_TEMP/ui-audit-login-server.log" 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 120); do
+            if curl -fsS http://127.0.0.1:3102/api/health > /dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:3102/api/health > /dev/null
+          node scripts/ui-audit-login.mjs --base-url http://127.0.0.1:3102 --out .ui-audit/auth
+
+      - name: Build the production bundle
+        env:
+          NODE_ENV: production
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/konnekt_audit
+          AUTH_SECRET: ci-only-secret-0123456789abcdefghijklmnopqrstuvwxyz
+          APP_URL: http://127.0.0.1:3100
+          TURNSTILE_BYPASS: "0"
+          UPSTASH_REDIS_REST_URL: https://example.invalid
+          UPSTASH_REDIS_REST_TOKEN: ci
+          CLOUDINARY_CLOUD_NAME: ci
+          CLOUDINARY_API_KEY: ci
+          CLOUDINARY_API_SECRET: ci
+          RESEND_API_KEY: re_ci
+          EMAIL_FROM: Konnekt <hello@konnekt.ng>
+          TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
+          NEXT_PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
+        run: npm run build
+
+      - name: Audit the production app
+        env:
+          NODE_ENV: production
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/konnekt_audit
+          AUTH_SECRET: ci-only-secret-0123456789abcdefghijklmnopqrstuvwxyz
+          APP_URL: http://127.0.0.1:3100
+          EMAIL_FROM: Konnekt <hello@konnekt.ng>
+          TURNSTILE_BYPASS: "0"
+          UPSTASH_REDIS_REST_URL: https://example.invalid
+          UPSTASH_REDIS_REST_TOKEN: ci
+          CLOUDINARY_CLOUD_NAME: ci
+          CLOUDINARY_API_KEY: ci
+          CLOUDINARY_API_SECRET: ci
+          RESEND_API_KEY: re_ci
+          TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
+          NEXT_PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
+          UI_AUDIT_AUTH_DIR: ${{ github.workspace }}/.ui-audit/auth
+          UI_AUDIT_CONCURRENCY: "5"
+        run: |
+          set -euo pipefail
+          npx next start -p 3100 > "$RUNNER_TEMP/ui-audit-production-server.log" 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:3100/api/health > /dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:3100/api/health > /dev/null
+          if [ -f design/responsive-audit/run.mjs ]; then
+            SCRIPT="design/responsive-audit/run.mjs"
+          else
+            SCRIPT="scripts/ui-audit-fallback.mjs"
+          fi
+          node "$SCRIPT" \
+            --base-url http://127.0.0.1:3100 \
+            --routes design/audit-routes.json \
+            --widths "$UI_AUDIT_WIDTHS" \
+            --themes "$UI_AUDIT_THEMES" \
+            --out .ui-audit
+
+      - name: Prepare the results branch and previous summary
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          RESULTS="$RUNNER_TEMP/ui-audit-results"
+          if git ls-remote --exit-code --heads origin ui-audit-results > /dev/null 2>&1; then
+            git fetch origin ui-audit-results
+            git worktree add -B ui-audit-results "$RESULTS" origin/ui-audit-results
+          else
+            TREE="$(git mktree < /dev/null)"
+            COMMIT="$(printf 'Initialise UI audit results\n' | git commit-tree "$TREE")"
+            git branch ui-audit-results "$COMMIT"
+            git worktree add "$RESULTS" ui-audit-results
+          fi
+          PREVIOUS="$(find "$RESULTS/$PR_NUMBER" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' 2>/dev/null | sort -n | tail -1 || true)"
+          if [ -n "$PREVIOUS" ] && [ -f "$RESULTS/$PR_NUMBER/$PREVIOUS/summary.json" ]; then
+            cp "$RESULTS/$PR_NUMBER/$PREVIOUS/summary.json" "$RUNNER_TEMP/previous-ui-audit.json"
+            echo "UI_AUDIT_PREVIOUS=$RUNNER_TEMP/previous-ui-audit.json" >> "$GITHUB_ENV"
+            echo "Previous audit run: $PREVIOUS"
+          else
+            echo "No previous audit run for this PR"
+          fi
+          echo "UI_AUDIT_RESULTS_ROOT=$RESULTS" >> "$GITHUB_ENV"
+
+      - name: Publish results branch
+        run: node scripts/ui-audit-publish.mjs --root "$UI_AUDIT_RESULTS_ROOT" --out .ui-audit --pr "$PR_NUMBER" --run "$UI_AUDIT_RUN"
+
+      - name: Update the sticky PR comment
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          ARGS=(
+            --summary .ui-audit/summary.json
+            --pr "$PR_NUMBER"
+            --run "$UI_AUDIT_RUN"
+            --branch "$UI_AUDIT_BRANCH"
+            --run-url "$UI_AUDIT_RUN_URL"
+            --results-path "$PR_NUMBER/$UI_AUDIT_RUN"
+          )
+          if [ -n "${UI_AUDIT_PREVIOUS:-}" ]; then ARGS+=(--previous "$UI_AUDIT_PREVIOUS"); fi
+          node scripts/ui-audit-comment.mjs "${ARGS[@]}"
+
+      - name: Enforce strict mode
+        if: env.UI_AUDIT_STRICT == 'true'
+        run: |
+          node -e 'const s=require("./.ui-audit/summary.json"); if ((s.totals?.defects ?? 0) > 0) { console.error(`${s.totals.defects} UI defects with UI_AUDIT_STRICT=true`); process.exit(1); }'
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-audit-${{ github.run_number }}
+          path: .ui-audit
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Show server logs on failure
+        if: failure()
+        run: |
+          tail -80 "$RUNNER_TEMP/ui-audit-login-server.log" 2>/dev/null || true
+          tail -120 "$RUNNER_TEMP/ui-audit-production-server.log" 2>/dev/null || true

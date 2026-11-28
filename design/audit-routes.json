@@ -1,0 +1,189 @@
+{
+  "version": 1,
+  "description": "Live Konnekt screens audited by CI. Tokens in braces resolve against the demo seed at runtime; click actions reach client-only tabs and chips.",
+  "roles": {
+    "anonymous": null,
+    "student": "student@nova.edu.ng",
+    "admin": "admin@nova.edu.ng",
+    "platform": "admin@konnekt.ng"
+  },
+  "resolvers": {
+    "studentUsername": { "kind": "user", "email": "student@nova.edu.ng", "field": "username" },
+    "otherUsername": { "kind": "user", "email": "levelmate@nova.edu.ng", "field": "username" },
+    "adminStudentId": { "kind": "user", "email": "pending@nova.edu.ng", "field": "id" },
+    "postId": { "kind": "post", "authorEmail": "levelmate@nova.edu.ng", "audienceKind": "PUBLIC", "field": "id" },
+    "hashtag": { "kind": "hashtag", "field": "tag" },
+    "communitySlug": { "kind": "community", "name": "Software Engineering Hub", "field": "slug" },
+    "ownedCommunitySlug": { "kind": "community-membership", "email": "student@nova.edu.ng", "role": "OWNER", "field": "slug" },
+    "requestCommunitySlug": { "kind": "community-not-member", "email": "student@nova.edu.ng", "privacy": "REQUEST", "field": "slug" },
+    "inviteCommunitySlug": { "kind": "community-not-member", "email": "student@nova.edu.ng", "privacy": "INVITE_ONLY", "field": "slug" },
+    "eventUpcomingId": { "kind": "event", "title": "Engineering Career Fair", "field": "id" },
+    "eventScannerId": { "kind": "event", "title": "Live Check-in Lab", "field": "id" },
+    "eventJoinableId": { "kind": "event", "title": "Open Campus Picnic", "field": "id" },
+    "eventFullId": { "kind": "event", "title": "Inter-Faculty Football Final", "field": "id" },
+    "eventPastId": { "kind": "event", "title": "Freshers' Welcome Mixer", "field": "id" },
+    "eventCancelledId": { "kind": "event", "title": "Cancelled: Hallowe'en Costume Parade", "field": "id" },
+    "eventUpdatedId": { "kind": "event", "title": "Updated: Design Systems Workshop", "field": "id" },
+    "announcementId": { "kind": "announcement", "title": "Course registration closes Friday at 5pm", "field": "id" },
+    "reportId": { "kind": "report", "status": "PENDING", "field": "id" },
+    "verificationId": { "kind": "verification", "status": "PENDING", "field": "id" },
+    "platformUniversityId": { "kind": "university", "slug": "nova-university", "field": "id" }
+  },
+  "groups": [
+    {
+      "id": "public",
+      "label": "Public and auth",
+      "routes": [
+        { "id": "welcome", "path": "/", "role": "anonymous", "state": "welcome" },
+        { "id": "find-university", "path": "/signup", "role": "anonymous", "state": "find university" },
+        { "id": "signup-methods", "path": "/signup/nova-university", "role": "anonymous", "state": "verification methods" },
+        { "id": "signup-email", "path": "/signup/nova-university/email", "role": "anonymous", "state": "student email" },
+        { "id": "signup-id", "path": "/signup/nova-university/id", "role": "anonymous", "state": "ID card" },
+        { "id": "signup-vouch", "path": "/signup/nova-university/vouch", "role": "anonymous", "state": "vouch" },
+        { "id": "login", "path": "/login", "role": "anonymous", "state": "login" },
+        { "id": "forgot-password", "path": "/forgot-password", "role": "anonymous", "state": "forgot password" },
+        { "id": "reset-password", "path": "/reset-password?token=demo-invalid", "role": "anonymous", "state": "invalid reset token" },
+        { "id": "legal-terms", "path": "/legal/terms", "role": "anonymous", "state": "terms" },
+        { "id": "legal-privacy", "path": "/legal/privacy", "role": "anonymous", "state": "privacy" },
+        { "id": "install", "path": "/install", "role": "anonymous", "state": "install" },
+        { "id": "public-post", "path": "/p/{postId}", "role": "anonymous", "state": "public post preview" },
+        { "id": "public-event", "path": "/e/{eventUpcomingId}", "role": "anonymous", "state": "public event preview" },
+        { "id": "invalid-invite", "path": "/invite/not-a-real-invite", "role": "anonymous", "state": "invalid invite" }
+      ]
+    },
+    {
+      "id": "pulse",
+      "label": "Pulse",
+      "routes": [
+        { "id": "pulse-all", "path": "/pulse", "role": "student", "state": "all" },
+        { "id": "pulse-level", "path": "/pulse", "role": "student", "state": "my level", "actions": [{ "type": "click", "role": "button", "name": "My Level" }] },
+        { "id": "pulse-department", "path": "/pulse", "role": "student", "state": "my department", "actions": [{ "type": "click", "role": "button", "name": "My Department" }] },
+        { "id": "pulse-college", "path": "/pulse", "role": "student", "state": "my college", "actions": [{ "type": "click", "role": "button", "name": "My College" }] },
+        { "id": "pulse-public", "path": "/pulse", "role": "student", "state": "public", "actions": [{ "type": "click", "role": "button", "name": "Public" }] },
+        { "id": "pulse-communities", "path": "/pulse", "role": "student", "state": "communities", "actions": [{ "type": "click", "role": "button", "name": "Communities" }] },
+        { "id": "compose-post", "path": "/compose", "role": "student", "state": "post composer" },
+        { "id": "compose-question", "path": "/compose?type=question", "role": "student", "state": "question composer" },
+        { "id": "compose-poll", "path": "/compose?type=poll", "role": "student", "state": "poll composer" },
+        { "id": "post-detail", "path": "/p/{postId}", "role": "student", "state": "signed-in post detail" },
+        { "id": "drafts", "path": "/drafts", "role": "student", "state": "drafts" },
+        { "id": "bookmarks", "path": "/bookmarks", "role": "student", "state": "all" },
+        { "id": "bookmarks-posts", "path": "/bookmarks?type=POST", "role": "student", "state": "posts" },
+        { "id": "bookmarks-questions", "path": "/bookmarks?type=QUESTION", "role": "student", "state": "questions" },
+        { "id": "hashtag-top", "path": "/hashtag/{hashtag}", "role": "student", "state": "top" },
+        { "id": "hashtag-latest", "path": "/hashtag/{hashtag}?sort=latest", "role": "student", "state": "latest" },
+        { "id": "search", "path": "/search", "role": "student", "state": "community search" }
+      ]
+    },
+    {
+      "id": "social",
+      "label": "Profiles and settings",
+      "routes": [
+        { "id": "profile-self", "path": "/profile/me", "role": "student", "state": "own profile" },
+        { "id": "profile-other", "path": "/profile/{otherUsername}", "role": "student", "state": "other profile" },
+        { "id": "settings", "path": "/settings", "role": "student", "state": "settings index" },
+        { "id": "settings-profile", "path": "/settings/profile", "role": "student", "state": "profile settings" },
+        { "id": "settings-privacy", "path": "/settings/privacy", "role": "student", "state": "privacy settings" },
+        { "id": "settings-account", "path": "/settings/account", "role": "student", "state": "account and sessions" },
+        { "id": "settings-appearance", "path": "/settings/appearance", "role": "student", "state": "appearance" },
+        { "id": "settings-blocked", "path": "/settings/blocked", "role": "student", "state": "blocked and muted" },
+        { "id": "settings-about", "path": "/settings/about", "role": "student", "state": "about" },
+        { "id": "notifications", "path": "/notifications", "role": "student", "state": "notifications" },
+        { "id": "inbox", "path": "/inbox", "role": "student", "state": "inbox" }
+      ]
+    },
+    {
+      "id": "communities",
+      "label": "Communities",
+      "routes": [
+        { "id": "communities-hub", "path": "/communities", "role": "student", "state": "hub" },
+        { "id": "community-posts", "path": "/c/{communitySlug}", "role": "student", "state": "posts" },
+        { "id": "community-resources", "path": "/c/{communitySlug}", "role": "student", "state": "resources", "actions": [{ "type": "click", "role": "button", "name": "Resources" }] },
+        { "id": "community-members", "path": "/c/{communitySlug}", "role": "student", "state": "members", "actions": [{ "type": "click", "role": "button", "name": "Members" }] },
+        { "id": "community-about", "path": "/c/{communitySlug}", "role": "student", "state": "about", "actions": [{ "type": "click", "role": "button", "name": "About" }] },
+        { "id": "community-request", "path": "/c/{requestCommunitySlug}", "role": "student", "state": "request to join" },
+        { "id": "community-invite", "path": "/c/{inviteCommunitySlug}", "role": "student", "state": "invite only", "expectedStatus": 404 },
+        { "id": "community-create", "path": "/communities/new", "role": "student", "state": "create" },
+        { "id": "community-settings", "path": "/c/{ownedCommunitySlug}/settings", "role": "student", "state": "owner settings" }
+      ]
+    },
+    {
+      "id": "events",
+      "label": "Events and tickets",
+      "routes": [
+        { "id": "events-for-you", "path": "/events", "role": "student", "state": "for you" },
+        { "id": "events-this-week", "path": "/events", "role": "student", "state": "this week", "actions": [{ "type": "click", "role": "radio", "name": "This week" }] },
+        { "id": "events-calendar", "path": "/events", "role": "student", "state": "calendar", "actions": [{ "type": "click", "role": "radio", "name": "Calendar" }] },
+        { "id": "events-tech", "path": "/events", "role": "student", "state": "tech category", "actions": [{ "type": "click", "role": "button", "name": "Tech" }] },
+        { "id": "event-upcoming", "path": "/events/{eventUpcomingId}", "role": "student", "state": "upcoming" },
+        { "id": "event-full", "path": "/events/{eventFullId}", "role": "student", "state": "full" },
+        { "id": "event-past", "path": "/events/{eventPastId}", "role": "student", "state": "past" },
+        { "id": "event-cancelled", "path": "/events/{eventCancelledId}", "role": "student", "state": "cancelled" },
+        { "id": "event-updated", "path": "/events/{eventUpdatedId}", "role": "student", "state": "materially updated" },
+        { "id": "event-ticket", "path": "/events/{eventScannerId}/ticket", "role": "student", "state": "ticket" },
+        { "id": "event-scanner", "path": "/events/{eventScannerId}/scan", "role": "student", "state": "scanner" },
+        { "id": "event-dashboard", "path": "/events/{eventScannerId}/dashboard", "role": "student", "state": "organiser dashboard" },
+        { "id": "event-edit", "path": "/events/{eventUpdatedId}/edit", "role": "student", "state": "edit event" },
+        { "id": "event-new", "path": "/events/new", "role": "student", "state": "create event" },
+        { "id": "events-mine-going", "path": "/events/mine?tab=going", "role": "student", "state": "going" },
+        { "id": "events-mine-interested", "path": "/events/mine?tab=interested", "role": "student", "state": "interested" },
+        { "id": "events-mine-waitlisted", "path": "/events/mine?tab=waitlisted", "role": "student", "state": "waitlist" },
+        { "id": "events-mine-past", "path": "/events/mine?tab=past", "role": "student", "state": "past" }
+      ]
+    },
+    {
+      "id": "official",
+      "label": "Official channel",
+      "routes": [
+        { "id": "official", "path": "/official", "role": "student", "state": "channel" },
+        { "id": "announcement", "path": "/official/a/{announcementId}", "role": "student", "state": "critical announcement" },
+        { "id": "official-compose", "path": "/official/compose", "role": "admin", "state": "compose" },
+        { "id": "official-edit", "path": "/official/a/{announcementId}/edit", "role": "admin", "state": "edit" }
+      ]
+    },
+    {
+      "id": "admin",
+      "label": "University admin",
+      "routes": [
+        { "id": "admin-overview", "path": "/admin", "role": "admin", "state": "overview" },
+        { "id": "admin-reports", "path": "/admin/reports", "role": "admin", "state": "queue" },
+        { "id": "admin-report-detail", "path": "/admin/reports/{reportId}", "role": "admin", "state": "report detail" },
+        { "id": "admin-students", "path": "/admin/students", "role": "admin", "state": "directory" },
+        { "id": "admin-student-detail", "path": "/admin/students/{adminStudentId}", "role": "admin", "state": "student drawer" },
+        { "id": "admin-student-moderation", "path": "/admin/students/{adminStudentId}/moderation", "role": "admin", "state": "moderation history" },
+        { "id": "admin-verification", "path": "/admin/verification", "role": "admin", "state": "review queue" },
+        { "id": "admin-verification-detail", "path": "/admin/verification/{verificationId}", "role": "admin", "state": "verification detail" },
+        { "id": "admin-events", "path": "/admin/events", "role": "admin", "state": "event moderation" },
+        { "id": "admin-official", "path": "/admin/official", "role": "admin", "state": "official accounts" },
+        { "id": "admin-announcements", "path": "/admin/announcements", "role": "admin", "state": "announcements" },
+        { "id": "admin-communities", "path": "/admin/communities", "role": "admin", "state": "communities" },
+        { "id": "admin-places", "path": "/admin/places", "role": "admin", "state": "places" },
+        { "id": "admin-academic", "path": "/admin/academic", "role": "admin", "state": "academic tree" },
+        { "id": "admin-team", "path": "/admin/team", "role": "admin", "state": "team" },
+        { "id": "admin-settings", "path": "/admin/settings", "role": "admin", "state": "university settings" }
+      ]
+    },
+    {
+      "id": "platform",
+      "label": "Platform admin",
+      "routes": [
+        { "id": "platform-overview", "path": "/platform", "role": "platform", "state": "overview" },
+        { "id": "platform-universities", "path": "/platform/universities", "role": "platform", "state": "universities" },
+        { "id": "platform-university", "path": "/platform/universities/{platformUniversityId}", "role": "platform", "state": "university detail" },
+        { "id": "platform-waitlist", "path": "/platform/waitlist", "role": "platform", "state": "waitlist" },
+        { "id": "platform-audit", "path": "/platform/audit", "role": "platform", "state": "audit log" }
+      ]
+    },
+    {
+      "id": "system",
+      "label": "System states",
+      "routes": [
+        { "id": "offline", "path": "/offline", "role": "anonymous", "state": "offline" },
+        { "id": "status", "path": "/status", "role": "anonymous", "state": "status" },
+        { "id": "status-resubmit", "path": "/status/resubmit", "role": "anonymous", "state": "resubmit" },
+        { "id": "suspended", "path": "/suspended", "role": "anonymous", "state": "suspended" },
+        { "id": "account-deleted", "path": "/account/deleted", "role": "anonymous", "state": "deleted" },
+        { "id": "not-found", "path": "/events/not-a-real-event", "role": "student", "state": "not found", "expectedStatus": 404 }
+      ]
+    }
+  ]
+}
