@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "migrations": {
+    "20261121103453_community_last_seen": "38c4fa461a2c7c1cb07c439b70b269466fcb1b878dc841f3e37a4e0ef27524a1",
+    "20261126120000_chronological_feeds": "3dc0d310101523815002a5f31b2fd1cf50761c75bbabb75cdf2ed44fad596c31",
+    "20261127120000_reposts_and_drafts": "e6b39b38198d0b323df0cc78d10814d5fe3ab96f244285b85128da20e24dcda3"
+  }
+}
