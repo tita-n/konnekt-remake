@@ -341,7 +341,7 @@ export function NewCommunityForm() {
                     }
                     placeholder="Rule title"
                     aria-label={`Rule ${index + 1} title`}
-                    className="min-w-0 flex-1 bg-transparent text-small font-semibold text-fg outline-none placeholder:text-fg-subtle"
+                    className="min-h-11 -my-2 min-w-0 flex-1 bg-transparent text-small font-semibold text-fg outline-none placeholder:text-fg-subtle"
                   />
                   <button
                     type="button"

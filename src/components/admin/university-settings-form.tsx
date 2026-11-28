@@ -59,14 +59,14 @@ export function UniversitySettingsForm({ settings }: { settings: UniversitySetti
   };
 
   return (
-    <form action={formAction} className="grid gap-4 lg:grid-cols-[1.3fr_1fr]">
+    <form action={formAction} className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[1.3fr_1fr]">
       <div className="space-y-4">
         <section className="rounded-card border border-border bg-surface p-4">
           <h2 className="text-h3 text-fg">Identity</h2>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <label htmlFor="uni-name" className="mb-1 block text-small font-semibold text-fg">University name</label>
-              <input id="uni-name" name="name" defaultValue={settings.name} required maxLength={120} className="h-10 w-full rounded-input border border-border bg-surface px-3 text-small" />
+              <input id="uni-name" name="name" defaultValue={settings.name} required maxLength={120} className="h-11 w-full rounded-input border border-border bg-surface px-3 text-small" />
             </div>
             <div>
               <label htmlFor="uni-short" className="mb-1 block text-small font-semibold text-fg">Short name</label>
@@ -77,7 +77,7 @@ export function UniversitySettingsForm({ settings }: { settings: UniversitySetti
                 onChange={(event) => setShortName(event.target.value)}
                 required
                 maxLength={24}
-                className="h-10 w-full rounded-input border border-border bg-surface px-3 text-small text-fg"
+                className="h-11 w-full rounded-input border border-border bg-surface px-3 text-small text-fg"
               />
             </div>
             <div>
@@ -90,14 +90,14 @@ export function UniversitySettingsForm({ settings }: { settings: UniversitySetti
                   onChange={(event) => setAccent(event.target.value)}
                   required
                   pattern="^#[0-9a-fA-F]{6}$"
-                  className="h-10 min-w-0 flex-1 rounded-input border border-border bg-surface px-3 font-mono text-small"
+                  className="h-11 min-w-0 flex-1 rounded-input border border-border bg-surface px-3 font-mono text-small"
                 />
                 <input
                   type="color"
                   value={/^#[0-9a-fA-F]{6}$/.test(accent) ? accent : "#4F46E5"}
                   onChange={(event) => setAccent(event.target.value)}
                   aria-label="Pick accent colour"
-                  className="h-10 w-12 cursor-pointer rounded-input border border-border bg-surface p-1"
+                  className="h-11 w-12 cursor-pointer rounded-input border border-border bg-surface p-1"
                 />
               </div>
             </div>
@@ -192,7 +192,7 @@ export function UniversitySettingsForm({ settings }: { settings: UniversitySetti
                 name="studentEmailDomains"
                 defaultValue={settings.studentEmailDomains.join(", ")}
                 placeholder="student.nova.edu.ng, nova.edu.ng"
-                className="h-10 w-full rounded-input border border-border bg-surface px-3 text-small text-fg"
+                className="h-11 w-full rounded-input border border-border bg-surface px-3 text-small text-fg"
               />
               <p className="mt-1 text-[0.75rem] text-fg-subtle">Comma or space separated. Only these addresses can auto-verify.</p>
             </div>
@@ -218,7 +218,7 @@ export function UniversitySettingsForm({ settings }: { settings: UniversitySetti
                 value={pattern}
                 onChange={(event) => setPattern(event.target.value)}
                 required
-                className="h-10 w-full rounded-input border border-border bg-surface px-3 font-mono text-[0.75rem]"
+                className="h-11 w-full rounded-input border border-border bg-surface px-3 font-mono text-[0.75rem]"
               />
               <div className="mt-2 flex items-center gap-2">
                 <input
@@ -300,15 +300,15 @@ export function UniversitySettingsForm({ settings }: { settings: UniversitySetti
           <div className="mt-3 space-y-3">
             <div>
               <label htmlFor="label-college" className="mb-1 block text-small font-semibold text-fg">Top layer</label>
-              <input id="label-college" name="labelCollege" defaultValue={settings.labels.college} maxLength={24} className="h-10 w-full rounded-input border border-border bg-surface px-3 text-small" />
+              <input id="label-college" name="labelCollege" defaultValue={settings.labels.college} maxLength={24} className="h-11 w-full rounded-input border border-border bg-surface px-3 text-small" />
             </div>
             <div>
               <label htmlFor="label-faculty" className="mb-1 block text-small font-semibold text-fg">Middle layer</label>
-              <input id="label-faculty" name="labelFaculty" defaultValue={settings.labels.faculty} maxLength={24} className="h-10 w-full rounded-input border border-border bg-surface px-3 text-small" />
+              <input id="label-faculty" name="labelFaculty" defaultValue={settings.labels.faculty} maxLength={24} className="h-11 w-full rounded-input border border-border bg-surface px-3 text-small" />
             </div>
             <div>
               <label htmlFor="label-department" className="mb-1 block text-small font-semibold text-fg">Department layer</label>
-              <input id="label-department" name="labelDepartment" defaultValue={settings.labels.department} maxLength={24} className="h-10 w-full rounded-input border border-border bg-surface px-3 text-small" />
+              <input id="label-department" name="labelDepartment" defaultValue={settings.labels.department} maxLength={24} className="h-11 w-full rounded-input border border-border bg-surface px-3 text-small" />
             </div>
           </div>
         </section>

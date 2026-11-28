@@ -744,12 +744,11 @@ const AUDIT = function auditPage(options) {
     if (style.position !== "fixed" && style.position !== "sticky") continue;
     if (!isVisible(element)) continue;
     const rect = element.getBoundingClientRect();
-    // A `position: sticky` element taller than ~96px is a sticky *wrapper* (the pulse
-    // feed, a sidebar) rather than a bar: its rect spans content that scrolls freely,
-    // so measuring it as a bar claimed the bottom nav overlaps the whole feed. Only a
-    // short strip pinned against an edge counts.
-    const pinned = style.position === "fixed" || (rect.height <= 96 && (rect.top <= 4 || rect.bottom >= viewportHeight - 4));
-    if (!pinned) continue;
+    // Only a `position: fixed` element can be a bar: a sticky one is in flow, so its
+    // rect covers content that simply scrolls past it. Treating the pulse feed's sticky
+    // wrapper as a bar produced "the filter bar collides with the bottom nav" rows for
+    // a layout that is fine at every scroll offset.
+    if (style.position !== "fixed") continue;
     if (rect.width < viewportWidth * 0.35 || rect.height < 8 || rect.height > viewportHeight * 0.4) continue;
     const colour = parseColor(style.backgroundColor);
     const painted = (colour && colour.a > 0.2) || (style.backgroundImage && style.backgroundImage !== "none") || style.backdropFilter !== "none";
@@ -857,7 +856,8 @@ const AUDIT = function auditPage(options) {
     const style = styleOf(image);
     const hasAttributes = image.hasAttribute("width") && image.hasAttribute("height");
     const hasAspect = style.aspectRatio && style.aspectRatio !== "auto";
-    const parentReserves = image.parentElement?.parentElement ? styleOf(image.parentElement).aspectRatio !== "auto" : false;
+    const parentStyle = image.parentElement ? styleOf(image.parentElement) : null;
+    const parentReserves = Boolean(parentStyle) && (parentStyle.aspectRatio !== "auto" || Number.parseFloat(parentStyle.minHeight) >= 40);
     if (!hasAttributes && !hasAspect && !parentReserves) {
       push("image-aspect", image, `${image.naturalWidth}×${image.naturalHeight} natural, no width/height or aspect-ratio box`, "low");
     }

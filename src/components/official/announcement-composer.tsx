@@ -126,14 +126,14 @@ export function AnnouncementComposer({
 
   return (
     <form onSubmit={submit} className="space-y-5 pb-12">
-      <header className="flex items-start justify-between gap-3">
+      <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-h1 text-fg">{mode === "create" ? "New announcement" : "Edit announcement"}</h1>
           <p className="mt-1 text-small text-fg-muted">
             {critical ? "Critical notices stay on Pulse until every student acknowledges them." : "Published by a verified official account."}
           </p>
         </div>
-        <Link href="/official" className="mt-1 text-small font-semibold text-fg-muted underline underline-offset-4">
+        <Link href="/official" className="mt-1 inline-flex min-h-11 items-center text-small font-semibold text-fg-muted underline underline-offset-4">
           Cancel
         </Link>
       </header>
@@ -194,7 +194,7 @@ export function AnnouncementComposer({
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-2">
         <div>
           <label htmlFor="announcement-category" className="text-small font-semibold text-fg">
             Category
@@ -253,7 +253,7 @@ export function AnnouncementComposer({
           {attachments.map((attachment, index) => (
             <li key={`${attachment.name}-${index}`} className="flex items-center gap-2 rounded-button border border-border bg-surface p-2">
               <FileText aria-hidden="true" className="size-4 shrink-0 text-accent-ink" />
-              <span className="min-w-0 flex-1 truncate text-small text-fg">{attachment.name}</span>
+              <span className="min-w-0 flex-1 truncate text-small text-fg" title={attachment.name}>{attachment.name}</span>
               <span className="text-tiny text-fg-subtle">{(attachment.sizeBytes / (1024 * 1024)).toFixed(1)} MB</span>
               <button
                 type="button"

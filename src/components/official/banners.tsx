@@ -55,14 +55,14 @@ export function CriticalBanner({ announcement }: { announcement: SerializedAnnou
               type="button"
               onClick={() => void ack()}
               disabled={busy}
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-button bg-danger-btn px-3.5 text-small font-bold text-danger-fg transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:opacity-50"
+              className="inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-button bg-danger-btn px-3.5 text-small font-bold text-danger-fg transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:opacity-50"
             >
               <Check aria-hidden="true" className="size-4" />
               I understand
             </button>
             <Link
               href={`/official/a/${announcement.id}`}
-              className="inline-flex min-h-11 items-center gap-1 rounded-button px-2 text-small font-semibold text-fg underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+              className="inline-flex min-h-11 items-center gap-1 whitespace-nowrap rounded-button px-2 text-small font-semibold text-fg underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
             >
               Read full notice
               <ChevronRight aria-hidden="true" className="size-4" />

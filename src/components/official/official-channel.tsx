@@ -55,7 +55,7 @@ export function OfficialChannel({
 
   return (
     <div className="space-y-4 pb-12">
-      <header className="flex items-start justify-between gap-3">
+      <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="flex items-center gap-1.5 text-tiny font-bold uppercase tracking-widest text-accent-ink">
             <Megaphone aria-hidden="true" className="size-3.5" />
@@ -93,7 +93,7 @@ export function OfficialChannel({
           }}
           aria-pressed={category === null}
           className={cn(
-            "min-h-11 rounded-chip border px-3 text-small font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
+            "min-h-11 min-w-11 rounded-chip border px-3 text-small font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
             category === null ? "border-accent bg-accent-soft text-accent-soft-fg" : "border-border text-fg-muted",
           )}
         >
@@ -110,7 +110,7 @@ export function OfficialChannel({
             }}
             aria-pressed={category === entry.value}
             className={cn(
-              "min-h-11 rounded-chip border px-3 text-small font-semibold",
+              "min-h-11 min-w-11 rounded-chip border px-3 text-small font-semibold",
               category === entry.value ? "border-accent bg-accent-soft text-accent-soft-fg" : "border-border text-fg-muted",
             )}
           >
@@ -119,7 +119,7 @@ export function OfficialChannel({
         ))}
         <label
           className={cn(
-            "ml-auto inline-flex min-h-9 shrink-0 cursor-pointer items-center gap-2 rounded-chip border px-3 text-small font-semibold transition-colors focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus",
+            "ml-auto inline-flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center gap-2 rounded-chip border px-3 text-small font-semibold transition-colors focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus",
             unreadOnly ? "border-accent bg-accent-soft text-accent-soft-fg" : "border-border text-fg-muted",
           )}
         >

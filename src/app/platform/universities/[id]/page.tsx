@@ -44,7 +44,7 @@ export default async function PlatformUniversityPage({ params }: { params: Promi
         </div>
       </header>
 
-      <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[1.4fr_1fr]">
         <div className="space-y-4">
           <Card className="p-4">
             <h2 className="text-h3 text-fg">Space</h2>

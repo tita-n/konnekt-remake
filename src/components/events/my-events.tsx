@@ -47,7 +47,7 @@ export function MyEvents({ initialTab, initialEvents }: { initialTab: Tab; initi
 
   return (
     <div className="space-y-4 pb-12">
-      <header className="flex items-start justify-between gap-3">
+      <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-h1 text-fg">My events</h1>
           <p className="mt-1 text-small text-fg-muted">Your tickets and RSVPs in one place.</p>
@@ -75,7 +75,7 @@ export function MyEvents({ initialTab, initialEvents }: { initialTab: Tab; initi
             role="tab"
             aria-selected={tab === entry.tab}
             onClick={() => setTab(entry.tab)}
-            className={`min-h-11 shrink-0 whitespace-nowrap rounded-chip border px-3.5 text-small font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ${
+            className={`min-h-11 min-w-11 shrink-0 whitespace-nowrap rounded-chip border px-3.5 text-small font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus ${
               tab === entry.tab ? "border-accent bg-accent-soft text-accent-soft-fg" : "border-border text-fg-muted hover:bg-surface-2"
             }`}
           >
@@ -104,7 +104,7 @@ export function MyEvents({ initialTab, initialEvents }: { initialTab: Tab; initi
           />
         </div>
       ) : (
-        <ul className="grid gap-4 sm:grid-cols-2">
+        <ul className="grid grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-2">
           {events.map((event) => (
             <li key={event.id} className="space-y-2">
               <EventCard event={event} rsvpStatus={event.rsvpStatus} />

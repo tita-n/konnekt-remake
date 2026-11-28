@@ -324,7 +324,7 @@ export function CommunitySettings({
                     setRules((current) => current.map((item, i) => (i === index ? { ...item, title: event.target.value.slice(0, 60) } : item)))
                   }
                   aria-label={`Rule ${index + 1} title`}
-                  className="min-w-0 flex-1 bg-transparent text-small font-semibold text-fg outline-none"
+                  className="min-h-11 -my-2 min-w-0 flex-1 bg-transparent text-small font-semibold text-fg outline-none"
                 />
                 <button
                   type="button"
@@ -429,7 +429,7 @@ export function CommunitySettings({
                 />
               </div>
             ) : (
-              <div className="mt-3 grid grid-cols-2 gap-2">
+              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <SelectField
                   label="Expires"
                   value={String(inviteDays)}

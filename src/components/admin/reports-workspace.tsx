@@ -112,7 +112,7 @@ export function ReportDetailPane({
         </div>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-2">
         <section className="rounded-[14px] border border-border bg-surface p-3.5">
           <h3 className="text-small font-bold text-fg">Reports</h3>
           <div className="mt-2.5 flex items-center justify-between gap-2 text-small">
@@ -135,7 +135,7 @@ export function ReportDetailPane({
             {report.target ? (
               <Link
                 href={`/admin/students/${report.target.authorId}/moderation`}
-                className="text-tiny font-semibold text-accent-ink hover:underline"
+                className="inline-flex min-h-11 items-center px-1 text-tiny font-semibold text-accent-ink hover:underline"
               >
                 History
               </Link>
@@ -212,7 +212,7 @@ export function ReportsWorkspace({
   const selectedId = selectedDetail?.id ?? reports[0]?.id ?? null;
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[360px_minmax(0,1fr)] lg:items-start">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[360px_minmax(0,1fr)] lg:items-start">
       <div className="space-y-3.5">
         <header>
           <h1 className="font-display text-h1 text-fg">Reports</h1>

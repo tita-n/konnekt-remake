@@ -361,7 +361,7 @@ export function CheckPill({ checked, children }: { checked: boolean; children: R
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-chip px-2.5 py-1 text-small font-medium",
+        "inline-flex min-h-11 items-center gap-1.5 rounded-chip px-2.5 py-1 text-small font-medium",
         checked ? "bg-success-soft text-success" : "bg-surface-2 text-fg-muted",
       )}
     >

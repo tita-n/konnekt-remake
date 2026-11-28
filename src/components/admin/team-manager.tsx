@@ -53,7 +53,7 @@ export function TeamManager({
   const [state, action, pending] = useActionState(inviteTeamAction, emptyFormState);
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[1.4fr_1fr]">
       <div className="space-y-4">
         <section className="rounded-card border border-border bg-surface">
           <div className="border-b border-border px-4 py-3">
@@ -124,12 +124,12 @@ export function TeamManager({
               type="email"
               required
               placeholder="reviewer@university.edu.ng"
-              className="h-10 w-full rounded-input border border-border bg-surface px-3 text-small"
+              className="h-11 w-full rounded-input border border-border bg-surface px-3 text-small"
             />
           </div>
           <div>
             <label htmlFor="invite-role" className="mb-1 block text-small font-semibold text-fg">Role</label>
-            <select id="invite-role" name="role" defaultValue="REVIEWER" className="h-10 w-full rounded-input border border-border bg-surface px-3 text-small">
+            <select id="invite-role" name="role" defaultValue="REVIEWER" className="h-11 w-full rounded-input border border-border bg-surface px-3 text-small">
               <option value="REVIEWER">Reviewer — verification queue only</option>
               <option value="UNIVERSITY_ADMIN">University admin — full console</option>
               <option value="MODERATOR">Moderator — later phases</option>

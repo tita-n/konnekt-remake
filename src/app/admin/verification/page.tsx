@@ -75,7 +75,7 @@ export default async function VerificationQueuePage({
                 name="q"
                 defaultValue={q}
                 placeholder="Name, username or matric number"
-                className="h-10 w-full rounded-input border border-border bg-surface pl-9 pr-3 text-small text-fg placeholder:text-fg-subtle"
+                className="h-11 w-full rounded-input border border-border bg-surface pl-9 pr-3 text-small text-fg placeholder:text-fg-subtle"
               />
             </div>
           </div>

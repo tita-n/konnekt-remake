@@ -150,7 +150,7 @@ export function EventForm({
           <h1 className="text-h1 text-fg">{mode === "create" ? "Create event" : "Edit event"}</h1>
           <p className="mt-1 text-small text-fg-muted">Times are in {timezone.replace(/_/g, " ")}.</p>
         </div>
-        <Link href={event ? `/events/${event.id}` : "/events"} className="text-small font-semibold text-fg-muted underline underline-offset-4">
+        <Link href={event ? `/events/${event.id}` : "/events"} className="inline-flex min-h-11 items-center px-1 text-small font-semibold text-fg-muted underline underline-offset-4">
           Cancel
         </Link>
       </header>
@@ -292,7 +292,7 @@ export function EventForm({
           </p>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label htmlFor="event-start" className="text-small font-semibold text-fg">
               Starts
@@ -344,7 +344,7 @@ export function EventForm({
                 id="event-place"
                 value={placeId}
                 onChange={(change) => setPlaceId(change.target.value)}
-                className="min-h-10 flex-1 rounded-button border border-border bg-surface px-2 text-small text-fg"
+                className="min-h-11 flex-1 rounded-button border border-border bg-surface px-2 text-small text-fg"
               >
                 <option value="">Not on the campus map</option>
                 {options.places.map((place) => (
@@ -365,7 +365,7 @@ export function EventForm({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label htmlFor="event-capacity" className="text-small font-semibold text-fg">
               Capacity <span className="font-normal text-fg-muted">(optional)</span>

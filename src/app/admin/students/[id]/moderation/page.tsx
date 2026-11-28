@@ -65,7 +65,7 @@ export default async function StudentModerationPage({ params }: { params: Promis
         </p>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[1.4fr_1fr]">
         <section className="rounded-[18px] border border-border bg-surface p-5 shadow-card">
           <h2 className="font-display text-h3 text-fg">Moderation history</h2>
           {history.history.length === 0 ? (

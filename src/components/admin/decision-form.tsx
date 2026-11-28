@@ -31,7 +31,7 @@ export function DecisionForm({ requestId }: { requestId: string }) {
 
       <fieldset>
         <legend className="text-small font-semibold text-fg">Decision</legend>
-        <div className="mt-2 grid grid-cols-2 gap-2">
+        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
           <label
             className={`flex cursor-pointer items-center justify-center gap-2 rounded-button border px-3 py-2.5 text-small font-semibold transition ${
               decision === "approve" ? "border-success bg-success-soft text-success" : "border-border bg-surface text-fg-muted"

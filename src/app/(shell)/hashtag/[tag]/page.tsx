@@ -73,7 +73,7 @@ export default async function HashtagPage({
               href={`${base}?sort=${value}`}
               aria-current={sort === value ? "page" : undefined}
               className={cn(
-                "flex h-9 flex-1 items-center justify-center rounded-full text-small font-semibold capitalize transition",
+                "flex h-11 flex-1 items-center justify-center rounded-full text-small font-semibold capitalize transition",
                 sort === value ? "bg-accent text-accent-fg" : "text-fg-muted hover:text-fg",
               )}
             >

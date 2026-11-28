@@ -46,7 +46,7 @@ export default async function AdminOverviewPage() {
         </Link>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {cards.map((card) => (
           <Card key={card.label} className="p-4">
             <div className="flex items-start justify-between gap-3">
@@ -61,7 +61,7 @@ export default async function AdminOverviewPage() {
         ))}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[1.4fr_1fr]">
         <Card>
           <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3.5">
             <div>

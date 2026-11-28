@@ -33,7 +33,7 @@ export default async function UniversitiesPage({
         <p className="mt-1 text-small text-fg-muted">Create spaces, switch them on, and control what each campus can do.</p>
       </header>
 
-      <div className="grid gap-4 xl:grid-cols-[1.35fr_1fr]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 xl:grid-cols-[1.35fr_1fr]">
         <div className="space-y-3">
           <Card className="p-3">
             <form action="/platform/universities" method="get" className="flex flex-col gap-2 sm:flex-row sm:items-end">
@@ -41,7 +41,7 @@ export default async function UniversitiesPage({
                 <label htmlFor="q" className="mb-1 block text-small font-semibold text-fg">Search</label>
                 <div className="relative">
                   <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fg-subtle" />
-                  <input id="q" name="q" defaultValue={q} placeholder="Name or slug" className="h-10 w-full rounded-input border border-border bg-surface pl-9 pr-3 text-small" />
+                  <input id="q" name="q" defaultValue={q} placeholder="Name or slug" className="h-11 w-full rounded-input border border-border bg-surface pl-9 pr-3 text-small" />
                 </div>
               </div>
               <div>

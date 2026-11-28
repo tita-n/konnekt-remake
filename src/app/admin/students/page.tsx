@@ -171,7 +171,7 @@ export default async function StudentsPage({
                           href={buildHref({ nextSelected: isSelected ? null : student.id })}
                           aria-label={isSelected ? `Deselect ${student.fullName}` : `Select ${student.fullName}`}
                           className={cn(
-                            "flex size-4 items-center justify-center rounded border transition",
+                            "flex size-11 -m-3.5 items-center justify-center rounded border transition",
                             isSelected ? "border-accent bg-accent" : "border-border bg-surface",
                           )}
                         >
