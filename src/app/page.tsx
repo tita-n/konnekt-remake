@@ -28,6 +28,9 @@ export default async function WelcomePage() {
 
   return (
     <main id="main" className="flex min-h-dvh flex-col bg-bg">
+      <div data-audit-probe="fixed-width" style={{ width: 900 }} className="mt-2 rounded-card border border-danger bg-danger-soft p-3 text-small text-danger">
+        Audit probe: this fixed-width element is deliberately wider than a phone.
+      </div>
       <div className="relative overflow-hidden">
         {/* Subtle top accent-tint gradient wash (Spec Section 7.A) */}
         <div
