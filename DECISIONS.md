@@ -308,3 +308,80 @@ credits on transformation sprawl. Demo `/seed` paths pass through untouched.
 2,000 and 5,000 users, the first limit to break (Vercel's non-commercial Hobby
 rule, then 1M invocations at ~1,700 monthly actives), upgrade triggers, the
 degradation ladder and where to monitor each service.
+
+## Reposts and drafts (November 2026)
+
+### A plain repost is a profile record, not a post
+
+`Post` keeps its dual role for quotes, but every `REPOST` row now carries a
+`RepostKind`. `PLAIN` rows are profile-only: every feed, hashtag, bookmark,
+search and community query excludes them, while the author's Posts tab includes
+them and labels them “reposted”. A quote is a `QUOTE` row with the author's
+comment and stays a real feed post that embeds the original.
+
+The alternative — a separate `Repost` table — would have required rewriting
+every existing feed, bookmark, report and moderation path at once. Keeping one
+row type, with an explicit kind and query guard, preserves those paths and the
+moderation record.
+
+### One repost per user per original is a partial unique index
+
+Two partial unique indexes enforce `(authorId, repostOfId)` for `PLAIN` and
+`QUOTE` separately, ignoring soft-deleted rows. That makes undo-then-repost
+possible and lets a student both repost and quote the same original. The
+migration keeps the earliest duplicate per kind, soft-deletes the rest, and
+recomputes `repostCount` as the count of distinct active plain reposters.
+`repostCount` deliberately does **not** include quotes; quotes are separate
+feed posts with their own reactions and comments.
+
+Counters move inside the same transaction as the insert/delete. A concurrent
+duplicate loses the unique race and returns the winner's id, so the counter can
+never be incremented twice. Moderator removal follows the same kind split: a
+removed `PLAIN` repost decrements the original's `repostCount` and leaves the
+community `postCount` alone, because a plain repost never incremented it. A
+removed `QUOTE` behaves like any other removed community post.
+
+### Reposting a repost resolves to the original
+
+Both the client and the service resolve a repost target to the root original
+before checking visibility, blocks, self-repost and audience. A quote therefore
+cannot be used to launder a hidden original: the embedded card is rechecked
+against the viewer, and a blocked, muted, removed or deleted original renders an
+unavailable state with no author or body.
+
+### Drafts are local-first, then versioned
+
+The composer writes to an IndexedDB `drafts` store after a 300 ms trailing
+debounce. Every record is namespaced by user id, and the whole database is
+deleted on logout, so a shared phone never exposes the previous student's text.
+Unsent image blobs stay on the device; uploaded media are stored as references.
+
+The server copy is a PUT upsert keyed by a device-generated `clientDraftId`
+(unique per university and user). It carries a monotonic version and the device
+timestamp. A lower version, or the same version with an older timestamp, gets a
+409 with the current draft instead of overwriting a newer tab. The 2-second
+server debounce is flushed on blur, `visibilitychange`, `pagehide` and the
+`online` event with keepalive.
+
+Limits are product decisions: 20 drafts per student, 30-day purge, 10 KB plus
+media references, and 120 saves per hour. Drafts are private to the author,
+tenant-scoped, cascade-deleted with the account and included in the data
+export. Auto-restore only considers a draft newer than seven days for the same
+composer context (`post`, `question`, `poll` or `community:<id>`).
+
+### The e2e web server is ready when the health route answers
+
+Playwright's `webServer` probe now waits on `/api/health` with a 300-second
+budget instead of the app shell with 120 seconds. The shell probe compiled every
+shared layout before replying, so a cold dev server could miss the window. The
+health route compiles quickly and also proves the e2e database is migrated; the
+tests themselves and their timeouts are unchanged.
+
+### Posting is optimistic through the outbox
+
+Every submit writes the idempotent outbox item and navigates to Pulse at once.
+Pulse renders the item as “Posting…” at the top, flushes it with the original
+idempotency key, then reconciles with the server. A 4xx stays in the outbox with
+Retry; a successful send deletes its draft (idempotently) and the local copy.
+The previous direct-POST composer is gone, so there is one path for online,
+offline and retried posts.

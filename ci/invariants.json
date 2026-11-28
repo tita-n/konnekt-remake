@@ -28,7 +28,57 @@
       "name": "Reposts inherit the original audience",
       "file": "tests/unit/posts.test.ts",
       "tests": [
-        "inherits the original audience on every repost"
+        "inherits the original audience on every repost",
+        "keeps a community repost out of every academic audience"
+      ]
+    },
+    {
+      "name": "One plain repost per user and original",
+      "file": "tests/integration/reposts.test.ts",
+      "tests": [
+        "creates exactly one repost per user under concurrent requests and counts distinct users",
+        "undoes exactly once and is idempotent",
+        "reposting a repost targets the original",
+        "allows one quote per user/original and puts it in the feed",
+        "keeps plain reposts out of the feed and shows each original once",
+        "keeps the earliest duplicate, soft-deletes the rest and recomputes counters"
+      ]
+    },
+    {
+      "name": "Reposting cannot bypass visibility or blocks",
+      "file": "tests/integration/reposts.test.ts",
+      "tests": [
+        "cannot repost what the viewer cannot see",
+        "cannot reach another tenant's post through the repost endpoint",
+        "cannot repost a blocked author's post",
+        "refuses to repost your own post"
+      ]
+    },
+    {
+      "name": "Moderator removal keeps repost counters correct",
+      "file": "tests/integration/reposts.test.ts",
+      "tests": [
+        "decrements a plain repost counter without changing the community post count"
+      ]
+    },
+    {
+      "name": "Drafts are versioned, idempotent and private",
+      "file": "tests/integration/drafts.test.ts",
+      "tests": [
+        "is idempotent per client draft id and increments the version",
+        "rejects a stale version and accepts a newer one",
+        "returns null for another account's draft and keeps tenants apart",
+        "purges drafts older than 30 days",
+        "caps a student at 20 drafts"
+      ]
+    },
+    {
+      "name": "Draft writes collapse typing bursts and order by version",
+      "file": "tests/unit/drafts.test.ts",
+      "tests": [
+        "collapses a typing burst into one trailing write",
+        "rejects an older version",
+        "at the same version, the newer device time wins"
       ]
     },
     {
