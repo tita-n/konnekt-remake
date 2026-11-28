@@ -385,3 +385,72 @@ idempotency key, then reconciles with the server. A 4xx stays in the outbox with
 Retry; a successful send deletes its draft (idempotently) and the local copy.
 The previous direct-POST composer is gone, so there is one path for online,
 offline and retried posts.
+
+## Migration-safe deployments (November 2026)
+
+### The GitHub Deploy workflow is the only deploy path
+
+Vercel's Git integration is kept connected for repository metadata and PR
+comments, but automatic Git deployments are disabled with
+`"git": { "deploymentEnabled": false }` in `vercel.json`. Every deployment now
+goes through `.github/workflows/deploy.yml`, which runs automatically after a
+successful `CI` run on `main` and can still be dispatched manually for staging.
+The automatic path is guarded by `workflow_run` matching `CI`, `push`, `main`
+and a successful conclusion; it checks out the exact CI commit and refuses to
+deploy it if `main` has already moved on.
+
+The order is fixed and each stage depends on the previous one: validate the
+staging environment and the runtime/migration database agreement, run
+`prisma migrate deploy` against the unpooled URL, deploy to Vercel, then smoke
+the public staging domain. No stage uses `continue-on-error`, so a failed env
+check, migration, deploy or smoke fails the workflow loudly.
+
+This closes the race where Vercel could deploy a merge before its migration had
+been applied. The cost is that a Vercel dashboard Git push no longer deploys;
+maintainers must use the workflow, including for rollbacks that need a deploy.
+
+### Migrations expand first and contract in a later release
+
+A migration that ships with application code must be compatible with both the
+old and new application versions while the rollout is in progress. Additive
+changes (new nullable columns, new tables, new indexes, defaults, backfills)
+ship first. Destructive changes wait for a later release, after the previous
+application version no longer reads or writes the affected shape:
+
+- drops of tables, columns, indexes, types, constraints or other objects
+- renames of tables, columns, indexes or types
+- `NOT NULL` added without a default
+- `SET NOT NULL` on an existing column (a default does not backfill old rows)
+
+The contract migration is its own reviewed change. This costs an extra release
+for a rename or drop, but it prevents a deploy from breaking requests that are
+still served by the previous version.
+
+### Destructive DDL needs a reviewed annotation
+
+`npm run lint:migrations` runs in CI before `prisma migrate deploy`. It fails a
+migration that contains destructive DDL unless the migration carries:
+
+```sql
+-- migration-safety: destructive-approved: <why this is safe now, with review reference>
+```
+
+The annotation must include a reason; a bare marker is rejected. Adding it is a
+deliberate exception reviewed with the migration, not a way to silence the
+check. Migrations that predate this policy are frozen by SHA-256 in
+`scripts/migration-lint-baseline.json`; editing one fails the lint as well as
+Prisma's checksum, so history cannot be rewritten to evade the rule.
+
+The lint also verifies that `src/lib/db/migration-manifest.json` names the
+newest migration directory. That manifest is what the running build expects;
+`npm run db:manifest` updates it when a migration is added.
+
+### Health fails when the database is behind the code
+
+`/api/health` keeps its database reachability, required-table and adapter
+checks, and now compares the manifest's expected migration with the newest
+successfully applied row in `_prisma_migrations`. A mismatch returns `503` and
+reports `migrationReady: false` with the expected and applied names (never
+credentials). This makes the smoke test fail when `migrate deploy` did not run,
+ran against another database, or left the schema behind, instead of shipping a
+deployment that only fails on its first request.

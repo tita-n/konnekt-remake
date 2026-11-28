@@ -25,6 +25,10 @@ const health = await request("/api/health");
 const healthBody = await health.json().catch(() => ({}));
 check(health.status === 200 && healthBody.status === "ok", `health endpoint (${health.status})`);
 check(healthBody.schemaReady === true, "health reports the migrated schema");
+check(
+  healthBody.migrationReady === true,
+  `health reports the expected migration (${healthBody.expectedMigration ?? "unknown"}; applied ${healthBody.appliedMigration ?? "none"})`,
+);
 
 const home = await request("/");
 const csp = home.headers.get("content-security-policy") ?? "";

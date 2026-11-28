@@ -74,6 +74,9 @@ The e2e database is separate. For a Neon e2e branch, set `E2E_DATABASE_URL` to a
   to this project.
 - Put every variable above in the Vercel **Production** environment only. The
   Deploy workflow is staging-only and no longer deploys Preview.
+- Automatic Vercel **Git deployments are disabled** by
+  `"git": { "deploymentEnabled": false }` in `vercel.json`. Do not re-enable
+  them in the dashboard: the GitHub **Deploy** workflow is the only deploy path.
 - Set `APP_URL` to the staging origin with **no trailing slash and no quotes**.
 - Disable Vercel Authentication for the staging domain, or create an automation bypass secret and store it as `VERCEL_AUTOMATION_BYPASS_SECRET`.
 - Do not enable Vercel's own Cron or build cache overrides that skip `prisma generate`.
@@ -138,17 +141,17 @@ In Resend → Domains → your domain:
 
 ## 9. Deploy and verify
 
-1. Push the branch and wait for CI green.
-2. Run the **Deploy** workflow with `environment=staging`.
-3. The workflow validates env before touching Vercel, migrates the Neon branch, deploys, and runs:
+1. Merge to `main` and wait for **CI** to pass. The **Deploy** workflow starts automatically from that successful run; it can also be dispatched manually with `environment=staging`.
+2. The workflow checks out the exact CI commit and refuses to deploy if `main` has moved on. It validates env and the runtime/migration database agreement before touching Vercel, runs `prisma migrate deploy` against the unpooled Neon URL, deploys, then runs:
 
    ```bash
    npm run smoke:staging -- https://staging.example
    ```
 
-4. The smoke test checks health, headers, `/design` 404, PWA manifest/service worker, public-preview privacy and (when credentials are set) a real login with cookie flags.
-5. If smoke fails, do not promote. Fix the reported check and rerun the workflow.
-6. `APP_URL` with a trailing slash now fails before any deployment with the exact reason; remove the slash in the GitHub staging secret and in Vercel.
+3. The smoke test checks health (including `migrationReady`), headers, `/design` 404, PWA manifest/service worker, public-preview privacy and (when credentials are set) a real login with cookie flags.
+4. If any stage fails, the workflow fails loudly; do not promote. Fix the reported step and rerun the workflow.
+5. `APP_URL` with a trailing slash fails before any deployment with the exact reason; remove the slash in the GitHub staging secret and in Vercel.
+6. Migration changes must follow expand-and-contract: additive DDL first, destructive DDL only in a later release and only with a reviewed `-- migration-safety: destructive-approved: <reason>` annotation. `npm run lint:migrations` runs in CI.
 
 ## 10. Announcement scheduler
 
@@ -223,7 +226,7 @@ be completed by a bot; do one real-browser sign-up manually.
 1. Create the Vercel, Neon, Resend, Cloudinary, Upstash, Turnstile and Sentry accounts.
 2. Create the Neon production/staging/e2e branches and copy the six database URLs (pooled and unpooled for each branch).
 3. Verify the Resend domain and publish its SPF/DKIM/DMARC DNS records.
-4. Create the Vercel project, connect the repo, add the staging domain and set all environment variables in Vercel.
+4. Create the Vercel project, connect the repo, add the staging domain and set all environment variables in Vercel. Confirm automatic Git deployments are disabled by `vercel.json`.
 5. Add the GitHub environment secrets listed above.
 6. Create one real staging account for the smoke login (optional but recommended).
-7. Run the Deploy workflow once and confirm the smoke job is green.
+7. Merge a change to `main` and confirm CI triggers the Deploy workflow and the smoke job is green.

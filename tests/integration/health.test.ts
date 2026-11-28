@@ -8,6 +8,8 @@ describe("health readiness", () => {
     expect(response.status).toBe(200);
     expect(body.database).toBe(true);
     expect(body.schemaReady).toBe(true);
+    expect(body.migrationReady).toBe(true);
+    expect(body.appliedMigration).toBe(body.expectedMigration);
     expect(body.status).toBe("ok");
   });
 });
