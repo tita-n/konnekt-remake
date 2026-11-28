@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { requireStudent } from "@/lib/auth/guards";
 import { feedFiltersFor } from "@/lib/domain/posts";
-import { getFeed, getTrendingTags } from "@/lib/services/posts";
+import { getContinueDraft, getFeed, getTrendingTags } from "@/lib/services/posts";
 import { loadSocialViewer } from "@/lib/services/social";
 import { listEvents } from "@/lib/services/events";
 import { getAnnouncementBanners } from "@/lib/services/announcements";
@@ -17,11 +17,12 @@ export default async function PulsePage() {
   const viewer = await loadSocialViewer(user);
   if (!viewer) redirect("/onboarding");
 
-  const [feed, trending, events, banners] = await Promise.all([
+  const [feed, trending, events, banners, continueDraft] = await Promise.all([
     getFeed(viewer, "all"),
     getTrendingTags(viewer, "all"),
     listEvents(viewer, { tab: "for-you", limit: 4 }).catch(() => null),
     getAnnouncementBanners(viewer).catch(() => ({ critical: null, official: null })),
+    getContinueDraft(viewer).catch(() => null),
   ]);
   const upcoming = events?.events.find((event) => !event.ended && !event.live) ?? events?.events[0] ?? null;
 
@@ -44,6 +45,7 @@ export default async function PulsePage() {
         initialFeed={feed}
         initialTrending={trending}
         filters={filters}
+        continueDraft={continueDraft}
       />
     </>
   );

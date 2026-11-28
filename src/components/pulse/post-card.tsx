@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
@@ -71,8 +72,13 @@ export function PostCard({
   const [viewerIndex, setViewerIndex] = useState(0);
   const [viewerMenu, setViewerMenu] = useState(false);
   const [viewerZoomed, setViewerZoomed] = useState(false);
-  const [repostedByMe, setRepostedByMe] = useState(false);
+  const [quoteOpen, setQuoteOpen] = useState(false);
+  const [quoteBody, setQuoteBody] = useState("");
+  const [quoteSubmitting, setQuoteSubmitting] = useState(false);
+  const [repostBusy, setRepostBusy] = useState(false);
+  const repostBusyRef = useRef(false);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const router = useRouter();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -121,26 +127,63 @@ export function PostCard({
     }
   }
 
-  async function repost() {
+  const repostTargetId = isSimpleRepost && local.repostOf ? local.repostOf.id : local.id;
+  const reposted = isSimpleRepost ? true : local.viewer.reposted;
+  const isOwnOriginal = !isSimpleRepost && local.isOwner;
+
+  async function toggleRepost() {
+    if (isOwnOriginal || repostBusyRef.current) return;
+    repostBusyRef.current = true;
+    setRepostBusy(true);
+    const previous = local;
+    const next = !reposted;
+    setLocal((current) => ({
+      ...current,
+      repostCount: Math.max(0, current.repostCount + (next ? 1 : -1)),
+      viewer: { ...current.viewer, reposted: next },
+    }));
     try {
-      await apiPost("/api/posts", {
-        type: "REPOST",
-        body: "",
-        audienceId: "",
-        repostOfId: local.id,
-        idempotencyKey: crypto.randomUUID(),
-      });
-      setRepostedByMe(true);
-      setLocal((current) => ({ ...current, repostCount: current.repostCount + 1 }));
-      toast({ title: "Reposted", description: "It keeps the original audience." });
+      if (next) {
+        await apiPost(`/api/posts/${repostTargetId}/repost`, {}, { idempotencyKey: crypto.randomUUID() });
+        toast({ title: "Reposted", description: "It appears on your profile and keeps the original audience." });
+      } else {
+        await apiDelete(`/api/posts/${repostTargetId}/repost`);
+        toast({ title: "Repost removed" });
+      }
       onChanged?.();
     } catch (error) {
-      toast({ title: "Couldn't repost", description: error instanceof Error ? error.message : undefined, variant: "error" });
+      setLocal(previous);
+      toast({ title: next ? "Couldn't repost" : "Couldn't undo repost", description: error instanceof Error ? error.message : undefined, variant: "error" });
+    } finally {
+      repostBusyRef.current = false;
+      setRepostBusy(false);
+    }
+  }
+
+  async function submitQuote() {
+    const text = quoteBody.trim();
+    if (!text) return;
+    setQuoteSubmitting(true);
+    try {
+      await apiPost(
+        `/api/posts/${repostTargetId}/repost`,
+        { body: text },
+        { idempotencyKey: crypto.randomUUID() },
+      );
+      setQuoteOpen(false);
+      setQuoteBody("");
+      toast({ title: "Quote posted" });
+      onChanged?.();
+      router.refresh();
+    } catch (error) {
+      toast({ title: "Couldn't quote that post", description: error instanceof Error ? error.message : undefined, variant: "error" });
+    } finally {
+      setQuoteSubmitting(false);
     }
   }
 
   async function copyLink() {
-    const url = `${window.location.origin}/p/${local.id}`;
+    const url = `${window.location.origin}/p/${repostTargetId}`;
     try {
       await navigator.clipboard.writeText(url);
       toast({ title: "Link copied" });
@@ -424,20 +467,26 @@ export function PostCard({
 
             {local.type === "REPOST" && local.repostOf && local.body.trim() ? (
               <Link href={`/p/${local.repostOf.id}`} className="mt-3 block rounded-[14px] border border-border bg-surface-2 p-3.5 transition hover:border-border-strong">
-                <div className="flex items-center gap-2">
-                  <Avatar name={local.repostOf.author.fullName} seed={local.repostOf.author.username} src={local.repostOf.author.photoUrl} size="xs" />
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1">
-                      <span className="truncate text-small font-semibold text-fg">{local.repostOf.author.fullName}</span>
-                      <VerifiedTick className="size-3.5" />
+                {local.repostOf.unavailable ? null : (
+                  <div className="flex items-center gap-2">
+                    <Avatar name={local.repostOf.author.fullName} seed={local.repostOf.author.username} src={local.repostOf.author.photoUrl} size="xs" />
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1">
+                        <span className="truncate text-small font-semibold text-fg">{local.repostOf.author.fullName}</span>
+                        <VerifiedTick className="size-3.5" />
+                      </div>
+                      <p className="truncate text-tiny text-fg-subtle">
+                        @{local.repostOf.author.username} · {timeAgo(local.repostOf.createdAt)}
+                      </p>
                     </div>
-                    <p className="truncate text-tiny text-fg-subtle">
-                      @{local.repostOf.author.username} · {timeAgo(local.repostOf.createdAt)}
-                    </p>
                   </div>
-                </div>
+                )}
                 <p className="mt-2 line-clamp-4 whitespace-pre-line text-small text-fg">
-                  {local.repostOf.status !== "ACTIVE" ? "This post was removed by a moderator." : local.repostOf.body}
+                  {local.repostOf.unavailable
+                    ? "This post isn't available."
+                    : local.repostOf.status !== "ACTIVE"
+                      ? "This post was removed by a moderator."
+                      : local.repostOf.body}
                 </p>
               </Link>
             ) : null}
@@ -480,13 +529,14 @@ export function PostCard({
             />
             <button
               type="button"
-              onClick={() => void repost()}
-              aria-pressed={repostedByMe}
+              onClick={() => void toggleRepost()}
+              disabled={isOwnOriginal || repostBusy}
+              aria-pressed={reposted}
               className={cn(
-                "inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-[10px] text-small font-medium transition hover:bg-surface-2",
-                repostedByMe ? "text-success" : "text-fg-muted hover:text-fg",
+                "inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-[10px] text-small font-medium transition hover:bg-surface-2 disabled:opacity-40",
+                reposted ? "text-success" : "text-fg-muted hover:text-fg",
               )}
-              aria-label={`Repost (${local.repostCount})`}
+              aria-label={reposted ? `Undo repost (${local.repostCount})` : `Repost (${local.repostCount})`}
             >
               <Repeat2 aria-hidden="true" className="size-[18px]" />
               {local.repostCount > 0 ? <span className="tabular-nums">{formatCompactCount(local.repostCount)}</span> : null}
@@ -623,8 +673,48 @@ export function PostCard({
         <div className="divide-y divide-border/80 pb-3">
           <MenuItem icon={<Copy aria-hidden="true" className="size-5" />} onClick={() => void copyLink()}>Copy link</MenuItem>
           <MenuItem icon={<Share2 aria-hidden="true" className="size-5" />} onClick={() => void shareOutside()}>Share outside the app</MenuItem>
-          <MenuItem icon={<Repeat2 aria-hidden="true" className="size-5" />} onClick={() => { setShareOpen(false); void repost(); }}>Repost to my profile</MenuItem>
+          {isOwnOriginal ? null : (
+            <MenuItem icon={<Repeat2 aria-hidden="true" className="size-5" />} onClick={() => { setShareOpen(false); void toggleRepost(); }}>
+              {reposted ? "Undo repost" : "Repost to my profile"}
+            </MenuItem>
+          )}
+          {isOwnOriginal ? null : (
+            <MenuItem icon={<MessageCircle aria-hidden="true" className="size-5" />} onClick={() => { setShareOpen(false); setQuoteOpen(true); }}>
+              Quote post
+            </MenuItem>
+          )}
         </div>
+      </BottomSheet>
+
+      <BottomSheet
+        open={quoteOpen}
+        onClose={() => setQuoteOpen(false)}
+        title="Quote post"
+        description="Your comment and the original appear together. The audience stays the original's."
+        footer={
+          <Button
+            fullWidth
+            size="lg"
+            className="rounded-full"
+            loading={quoteSubmitting}
+            loadingLabel="Posting…"
+            disabled={!quoteBody.trim()}
+            onClick={() => void submitQuote()}
+          >
+            Post quote
+          </Button>
+        }
+      >
+        <label htmlFor={`quote-body-${local.id}`} className="sr-only">Quote comment</label>
+        <textarea
+          id={`quote-body-${local.id}`}
+          aria-label="Quote comment"
+          rows={4}
+          value={quoteBody}
+          onChange={(event) => setQuoteBody(event.target.value.slice(0, 2000))}
+          placeholder="Add your comment…"
+          className="w-full resize-none rounded-[12px] border border-border bg-surface p-3.5 text-[0.9375rem] leading-relaxed text-fg placeholder:text-fg-subtle focus:border-accent"
+        />
       </BottomSheet>
 
       <BottomSheet

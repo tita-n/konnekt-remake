@@ -114,7 +114,7 @@ const POSTS: PostView[] = [
     reactionCount: 128,
     repostCount: 32,
     bookmarkCount: 19,
-    viewer: { reacted: true, bookmarked: false, canInteract: true, isMember: false, role: null, muted: false },
+    viewer: { reacted: true, bookmarked: false, reposted: false, canInteract: true, isMember: false, role: null, muted: false },
     isOwner: true,
   },
   {
@@ -139,7 +139,7 @@ const POSTS: PostView[] = [
     reactionCount: 42,
     repostCount: 6,
     bookmarkCount: 11,
-    viewer: { reacted: false, bookmarked: true, canInteract: true, isMember: false, role: null, muted: false },
+    viewer: { reacted: false, bookmarked: true, reposted: false, canInteract: true, isMember: false, role: null, muted: false },
     isOwner: false,
   },
   {
@@ -177,7 +177,7 @@ const POSTS: PostView[] = [
     reactionCount: 65,
     repostCount: 14,
     bookmarkCount: 8,
-    viewer: { reacted: false, bookmarked: false, canInteract: true, isMember: false, role: null, muted: false },
+    viewer: { reacted: false, bookmarked: false, reposted: false, canInteract: true, isMember: false, role: null, muted: false },
     isOwner: false,
   },
   {
@@ -208,7 +208,7 @@ const POSTS: PostView[] = [
     reactionCount: 73,
     repostCount: 17,
     bookmarkCount: 5,
-    viewer: { reacted: true, bookmarked: false, canInteract: true, isMember: false, role: null, muted: false },
+    viewer: { reacted: true, bookmarked: false, reposted: false, canInteract: true, isMember: false, role: null, muted: false },
     isOwner: false,
   },
   {
@@ -238,7 +238,7 @@ const POSTS: PostView[] = [
     reactionCount: 1240,
     repostCount: 84,
     bookmarkCount: 52,
-    viewer: { reacted: false, bookmarked: true, canInteract: true, isMember: false, role: null, muted: false },
+    viewer: { reacted: false, bookmarked: true, reposted: false, canInteract: true, isMember: false, role: null, muted: false },
     isOwner: false,
   },
 ];
@@ -565,8 +565,8 @@ const COMMUNITY_ADMIN: CommunityAdminPayload = {
 };
 
 const DRAFTS: DraftView[] = [
-  { id: "d-1", type: "POST", payload: { body: "Here is our final year project sprint checklist for Software Engineering 400L.", media: [{ publicId: "demo", url: "/seed/campus-quad.svg", width: 800, height: 500, alt: "Campus quad" }] }, audience: { id: "dept", label: "My Department · Software Engineering", kind: "DEPARTMENT" }, updatedAt: HOUR_AGO },
-  { id: "d-2", type: "QUESTION", payload: { questionTitle: "Who supervises SWE 412 hardware presentations?", body: "Confirming whether team reports are due before Friday 4 PM.", topicTag: "SWE 412" }, audience: { id: "level", label: "My Level · 400L", kind: "LEVEL" }, updatedAt: FOUR_HOURS_AGO },
+  { id: "d-1", clientDraftId: "d-1", contextKey: "post", version: 1, type: "POST", payload: { body: "Here is our final year project sprint checklist for Software Engineering 400L.", media: [{ publicId: "demo", url: "/seed/campus-quad.svg", width: 800, height: 500, alt: "Campus quad" }] }, audience: { id: "dept", label: "My Department · Software Engineering", kind: "DEPARTMENT" }, updatedAt: HOUR_AGO },
+  { id: "d-2", clientDraftId: "d-2", contextKey: "question", version: 1, type: "QUESTION", payload: { questionTitle: "Who supervises SWE 412 hardware presentations?", body: "Confirming whether team reports are due before Friday 4 PM.", topicTag: "SWE 412" }, audience: { id: "level", label: "My Level · 400L", kind: "LEVEL" }, updatedAt: FOUR_HOURS_AGO },
 ];
 
 const RESTRICTED: RestrictedStudentView[] = [

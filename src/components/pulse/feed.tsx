@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowUp, Check, Clock, CloudOff, Loader2, Plus, RefreshCw, TrendingUp, WifiOff } from "lucide-react";
-import type { FeedFilter, FeedFilterOption, FeedPage, TrendingTag } from "@/lib/posts/types";
+import type { DraftView, FeedFilter, FeedFilterOption, FeedPage, TrendingTag } from "@/lib/posts/types";
 import { formatCompactCount } from "@/lib/domain/card-presentation";
 import { apiGet } from "@/lib/posts/client";
-import { cacheFeed, flushOutbox, listOutbox, readCachedFeed } from "@/lib/offline/store";
+import { cacheFeed, flushOutbox, listOutbox, readCachedFeed, type OutboxItem } from "@/lib/offline/store";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Chip } from "@/components/ui/form-controls";
 import { Skeleton, SkeletonText } from "@/components/ui/display";
@@ -14,6 +14,7 @@ import { EmptyState, ErrorState } from "@/components/ui/feedback";
 import { useToast } from "@/components/providers/toast-provider";
 import { cn } from "@/lib/utils";
 import { PostCard } from "./post-card";
+import { ContinueDraftCard } from "./continue-draft-card";
 
 const NEW_POST_POLL_MS = 45_000;
 
@@ -31,11 +32,13 @@ export function PulseFeed({
   initialFeed,
   initialTrending,
   filters,
+  continueDraft = null,
 }: {
   viewerId: string;
   initialFeed: FeedPage;
   initialTrending: TrendingTag[];
   filters: FeedFilterOption[];
+  continueDraft?: DraftView | null;
 }) {
   const [filter, setFilter] = useState<FeedFilter>("all");
   const [feed, setFeed] = useState<FeedPage>(initialFeed);
@@ -46,6 +49,7 @@ export function PulseFeed({
   const [online, setOnline] = useState(true);
   const [newCount, setNewCount] = useState(0);
   const [pending, setPending] = useState(0);
+  const [outboxItems, setOutboxItems] = useState<OutboxItem[]>([]);
   const [outboxFailed, setOutboxFailed] = useState(false);
   const [pull, setPull] = useState(0);
   const pullStart = useRef<number | null>(null);
@@ -107,11 +111,13 @@ export function PulseFeed({
 
   async function syncOutbox() {
     const items = await listOutbox(viewerId);
+    setOutboxItems(items);
     setPending(items.length);
     setOutboxFailed(items.some((item) => item.status === "failed"));
     if (items.length === 0) return;
     const result = await flushOutbox(viewerId);
     const remaining = await listOutbox(viewerId);
+    setOutboxItems(remaining);
     setPending(remaining.length);
     setOutboxFailed(remaining.some((item) => item.status === "failed"));
     if (result.sent > 0) {
@@ -274,6 +280,38 @@ export function PulseFeed({
       ) : null}
 
       <div className="space-y-3 px-3.5 pb-4 pt-2.5">
+        {continueDraft ? <ContinueDraftCard draft={continueDraft} /> : null}
+        {outboxItems.map((item) => {
+          const body = typeof item.payload.body === "string" ? item.payload.body : "";
+          const failed = item.status === "failed";
+          return (
+            <article
+              key={item.id}
+              data-testid="pending-post"
+              className={cn(
+                "rounded-[16px] border px-4 py-3.5",
+                failed ? "border-danger/30 bg-danger-soft" : "border-border bg-surface",
+              )}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-small font-semibold text-fg">{failed ? "Couldn't post" : "Posting…"}</p>
+                {failed ? (
+                  <button
+                    type="button"
+                    onClick={() => void syncOutbox()}
+                    className="rounded-full bg-danger px-3 py-1 text-tiny font-semibold text-white"
+                  >
+                    Retry
+                  </button>
+                ) : (
+                  <Loader2 aria-hidden="true" className="size-4 animate-spin text-fg-subtle" />
+                )}
+              </div>
+              {body ? <p className="mt-1.5 line-clamp-3 whitespace-pre-line text-small text-fg-muted">{body}</p> : null}
+              {failed && item.error ? <p className="mt-1 text-tiny text-danger">{item.error}</p> : null}
+            </article>
+          );
+        })}
         {loading ? (
           <FeedSkeleton />
         ) : error ? (
@@ -289,7 +327,7 @@ export function PulseFeed({
               action={<Button className="rounded-full px-6" onClick={() => void loadFirst(filter)} leftIcon={<RefreshCw aria-hidden="true" className="size-4" />}>Try again</Button>}
             />
           </div>
-        ) : feed.posts.length === 0 ? (
+        ) : feed.posts.length === 0 && outboxItems.length === 0 ? (
           <div className="rounded-card border border-border bg-surface">
             <EmptyState
               illustration="pulse"
