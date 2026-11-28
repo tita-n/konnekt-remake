@@ -24,7 +24,7 @@ export async function GET(): Promise<NextResponse> {
   }
 
   const db = tenantDb(user.universityId);
-  const [account, requests, sessions, audit, nodes] = await Promise.all([
+  const [account, requests, sessions, audit, nodes, drafts] = await Promise.all([
     db.user.findFirst({
       where: { id: user.id },
       select: {
@@ -74,6 +74,11 @@ export async function GET(): Promise<NextResponse> {
       take: 500,
     }),
     listAcademicNodes(user.universityId),
+    db.draft.findMany({
+      where: { userId: user.id },
+      select: { type: true, contextKey: true, payload: true, audience: true, updatedAt: true },
+      orderBy: { updatedAt: "desc" },
+    }),
   ]);
 
   const lineage = user.departmentNodeId ? lineageFor(nodes, user.departmentNodeId) : null;
@@ -97,6 +102,7 @@ export async function GET(): Promise<NextResponse> {
         }
       : null,
     verificationHistory: requests,
+    drafts,
     sessions,
     auditTrail: audit,
   };

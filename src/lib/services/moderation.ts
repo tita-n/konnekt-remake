@@ -697,11 +697,19 @@ export async function moderateReport(
   });
   if (!report) throw new SocialError("That report isn't available.");
 
-  let target: { id: string; authorId: string; status: string; communityId?: string | null; postId?: string } | null = null;
+  let target: {
+    id: string;
+    authorId: string;
+    status: string;
+    communityId?: string | null;
+    postId?: string;
+    repostKind?: "PLAIN" | "QUOTE" | null;
+    repostOfId?: string | null;
+  } | null = null;
   if (report.targetType === "POST") {
     const row = await db.post.findFirst({
       where: { id: report.targetId },
-      select: { id: true, authorId: true, status: true, communityId: true },
+      select: { id: true, authorId: true, status: true, communityId: true, repostKind: true, repostOfId: true },
     });
     if (row) target = row;
   } else if (report.targetType === "COMMENT") {
@@ -749,7 +757,14 @@ export async function moderateReport(
         if (authorId) {
           await tx.comment.updateMany({ where: { postId: target.id }, data: { status: "REMOVED", moderationReason: reason } });
         }
-        if ("communityId" in target && target.communityId) {
+        // A plain repost is not a community post and only contributes to the
+        // original's distinct-reposter count. A quote is a normal feed post.
+        if (target.repostKind === "PLAIN" && target.repostOfId) {
+          await tx.post.updateMany({
+            where: { id: target.repostOfId, repostCount: { gt: 0 } },
+            data: { repostCount: { decrement: 1 } },
+          });
+        } else if ("communityId" in target && target.communityId) {
           await tx.community.update({
             where: { id: target.communityId },
             data: { postCount: { decrement: 1 } },

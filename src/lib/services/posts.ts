@@ -44,7 +44,8 @@ import {
   encodeTimeCursor,
   encodeScoreCursor,
 } from "@/lib/posts/cursor";
-import { SocialError } from "@/lib/posts/errors";
+import { DraftConflict, SocialError } from "@/lib/posts/errors";
+import { isStaleDraftWrite, nextDraftVersion } from "@/lib/posts/draft-version";
 import type {
   BookmarkPage,
   CommentView,
@@ -114,15 +115,40 @@ function serializePost(
     viewerId: string;
     reacted: Set<string>;
     bookmarked: Set<string>;
+    reposted: Set<string>;
     votes: Map<string, string>;
     labels: SocialViewer["labels"];
     lineage: SocialViewer["lineage"];
     level: number;
+    viewerPath: SocialViewer["studentPath"];
+    relationships: RelationshipSets;
     access: CommunityAccess | null;
+    accessMap: Map<string, CommunityAccess>;
   },
 ): PostView {
   const isOwner = row.authorId === input.viewerId;
   const removed = row.status !== "ACTIVE";
+  const repostOf = row.repostOf;
+  // A quote inherits the original audience, but blocks, mutes and removals can
+  // still make the embedded original unreadable. Never leak its body or author.
+  const repostUnavailable = repostOf
+    ? repostOf.status === "DELETED" ||
+      !canSeePostInCommunity(
+        input.viewerPath,
+        repostOf,
+        repostOf.communityId ? (input.accessMap.get(repostOf.communityId) ?? null) : null,
+      ) ||
+      isHiddenAuthor(input.relationships, repostOf.authorId, input.viewerId)
+    : false;
+  const hiddenRepostAuthor = {
+    id: "",
+    username: "",
+    fullName: "Unavailable post",
+    photoUrl: null,
+    isOfficial: false,
+    level: null,
+    departmentName: null,
+  };
   const community = row.community;
   const audience =
     row.audienceKind === "COMMUNITY"
@@ -172,14 +198,15 @@ function serializePost(
           return url ? [{ id: media.id, url, width: media.width, height: media.height, alt: media.alt }] : [];
         }),
     poll: removed || !row.poll ? null : pollViewRow(row.poll, input.votes),
-    repostOf: removed || !row.repostOf
+    repostOf: removed || !repostOf
       ? null
       : {
-          id: row.repostOf.id,
-          body: row.repostOf.status === "ACTIVE" ? row.repostOf.body : "",
-          status: row.repostOf.status,
-          createdAt: row.repostOf.createdAt.toISOString(),
-          author: authorView(row.repostOf.author),
+          id: repostOf.id,
+          body: !repostUnavailable && repostOf.status === "ACTIVE" ? repostOf.body : "",
+          status: repostUnavailable ? "REMOVED" : repostOf.status,
+          unavailable: repostUnavailable,
+          createdAt: repostOf.createdAt.toISOString(),
+          author: repostUnavailable ? hiddenRepostAuthor : authorView(repostOf.author),
         },
     commentCount: row.commentCount,
     reactionCount: row.reactionCount,
@@ -188,6 +215,7 @@ function serializePost(
     viewer: {
       reacted: input.reacted.has(row.id),
       bookmarked: input.bookmarked.has(row.id),
+      reposted: input.reposted.has(row.id) || Boolean(row.repostOfId && input.reposted.has(row.repostOfId)),
       ...communityViewer,
     },
     isOwner,
@@ -198,9 +226,13 @@ async function serializeRows(
   db: TenantClient,
   viewer: SocialViewer,
   rows: PostRow[],
+  relationshipsInput?: RelationshipSets,
 ): Promise<PostView[]> {
-  const communityIds = rows.flatMap((row) => (row.communityId ? [row.communityId] : []));
-  const [state, pollVotes, access] = await Promise.all([
+  const communityIds = rows.flatMap((row) => [
+    ...(row.communityId ? [row.communityId] : []),
+    ...(row.repostOf?.communityId ? [row.repostOf.communityId] : []),
+  ]);
+  const [state, pollVotes, access, relationships] = await Promise.all([
     viewerPostState(
       db,
       viewer.userId,
@@ -213,6 +245,7 @@ async function serializeRows(
         })
       : Promise.resolve([]),
     loadCommunityAccessMap(db, viewer.userId, communityIds),
+    relationshipsInput ? Promise.resolve(relationshipsInput) : loadRelationships(db, viewer.userId),
   ]);
   const votes = new Map(pollVotes.map((vote) => [vote.pollId, vote.optionId]));
   return rows.map((row) =>
@@ -220,11 +253,15 @@ async function serializeRows(
       viewerId: viewer.userId,
       reacted: state.reacted,
       bookmarked: state.bookmarked,
+      reposted: state.reposted,
       votes,
       labels: viewer.labels,
       lineage: viewer.lineage,
       level: viewer.level,
+      viewerPath: viewer.studentPath,
+      relationships,
       access: row.communityId ? (access.get(row.communityId) ?? null) : null,
+      accessMap: access,
     }),
   );
 }
@@ -243,16 +280,25 @@ export function canSeePostRow(
  * with canSeePostInCommunity. Feed "All" deliberately uses a narrower set
  * (joined communities only).
  */
+const notPlainRepost: Prisma.PostWhereInput = {
+  OR: [{ repostKind: null }, { repostKind: { not: "PLAIN" } }],
+};
+
 function visiblePostsWhere(
   viewer: SocialViewer,
   readableIds: readonly string[],
 ): Prisma.PostWhereInput {
   const academic = { ...visibleAudienceFilter(viewer.studentPath) };
-  if (readableIds.length === 0) return academic;
+  if (readableIds.length === 0) return { AND: [academic, notPlainRepost] };
   return {
-    OR: [
-      academic,
-      { audienceKind: "COMMUNITY", communityId: { in: [...readableIds] } },
+    AND: [
+      notPlainRepost,
+      {
+        OR: [
+          academic,
+          { audienceKind: "COMMUNITY", communityId: { in: [...readableIds] } },
+        ],
+      },
     ],
   };
 }
@@ -263,6 +309,7 @@ function feedWhere(
   relationships: RelationshipSets,
   joinedCommunityIds: readonly string[],
   extra: Prisma.PostWhereInput = {},
+  options: { includePlainReposts?: boolean } = {},
 ): Prisma.PostWhereInput {
   const kind = filterKindForLabel(filter);
   const hidden = hiddenAuthorIds(relationships);
@@ -275,14 +322,18 @@ function feedWhere(
     ...(kind === "ALL" ? {} : { audienceKind: kind }),
   };
   return {
-    status: "ACTIVE",
-    ...(filter === "communities"
-      ? communityBranch ?? { audienceKind: "COMMUNITY" as const, communityId: { in: [] } }
-      : filterIncludesCommunityPosts(filter)
-        ? { OR: communityBranch ? [academicBranch, communityBranch] : [academicBranch] }
-        : academicBranch),
-    ...(hidden.length > 0 ? { authorId: { notIn: hidden } } : {}),
     ...extra,
+    status: "ACTIVE",
+    ...(options.includePlainReposts ? {} : notPlainRepost),
+    AND: [
+      filter === "communities"
+        ? (communityBranch ?? { audienceKind: "COMMUNITY" as const, communityId: { in: [] } })
+        : filterIncludesCommunityPosts(filter)
+          ? { OR: communityBranch ? [academicBranch, communityBranch] : [academicBranch] }
+          : academicBranch,
+      ...(extra.AND ? (Array.isArray(extra.AND) ? extra.AND : [extra.AND]) : []),
+    ],
+    ...(hidden.length > 0 ? { authorId: { notIn: hidden } } : {}),
   };
 }
 
@@ -308,6 +359,7 @@ export async function getCommunityFeed(
   const baseWhere: Prisma.PostWhereInput = {
     communityId,
     status: "ACTIVE",
+    ...notPlainRepost,
     ...(hidden.length > 0 ? { authorId: { notIn: hidden } } : {}),
   };
   const pins = await db.communityPin.findMany({
@@ -967,6 +1019,8 @@ export interface CreatePostInput {
   communityId?: string;
   media?: Array<{ publicId: string; url?: string; width: number; height: number; alt?: string }>;
   idempotencyKey?: string;
+  /** Deleted with the post so a successful publish cleans up its draft once. */
+  draftClientDraftId?: string;
 }
 
 async function resolveCommunityPost(
@@ -1156,6 +1210,9 @@ async function syncMentions(
 
 export async function createPost(input: CreatePostInput): Promise<{ id: string; flagged: boolean }> {
   const viewer = input.viewer;
+  if (input.type === "REPOST") {
+    return repostPost(viewer, input.repostOfId ?? "", input.body, input.idempotencyKey);
+  }
   const limit = await rateLimit(viewer.accountAgeHours < 24 ? "postCreateYoung" : "postCreate", viewer.userId);
   if (!limit.success) {
     throw new SocialError("You've reached the posting limit for now. Your next post can go out soon.", 429);
@@ -1174,7 +1231,6 @@ export async function createPost(input: CreatePostInput): Promise<{ id: string; 
 
   let audience: { audiencePath: string[]; audienceKind: PostAudienceKind };
   let communityId: string | null = null;
-  let repostOfId: string | null = null;
   let questionTitle: string | null = null;
   let topicTag: string | null = null;
   let poll:
@@ -1182,72 +1238,36 @@ export async function createPost(input: CreatePostInput): Promise<{ id: string; 
     | null = null;
   let media = normalizeMedia(input.media);
 
-  if (input.type === "REPOST") {
-    if (!input.repostOfId) throw new SocialError("Choose a post to repost.");
-    const original = await db.post.findFirst({
-      where: { id: input.repostOfId },
-      select: {
-        id: true,
-        status: true,
-        audiencePath: true,
-        audienceKind: true,
-        authorId: true,
-        type: true,
-        communityId: true,
-      },
-    });
-    const originalAccess = original?.communityId
-      ? (await loadCommunityAccessMap(db, viewer.userId, [original.communityId])).get(original.communityId) ?? null
-      : null;
-    if (
-      !original ||
-      original.status !== "ACTIVE" ||
-      !canSeePostInCommunity(viewer.studentPath, original, originalAccess) ||
-      (original.communityId && !assertCommunityAction(originalAccess, "CREATE_POST"))
-    ) {
-      throw new SocialError("This post isn't available.", 404);
-    }
-    const relationships = await loadRelationships(db, viewer.userId);
-    if (isHiddenAuthor(relationships, original.authorId, viewer.userId)) {
-      throw new SocialError("This post isn't available.", 404);
-    }
-    if (original.type === "REPOST") throw new SocialError("Choose the original post to repost.");
-    audience = inheritedRepostAudience(original);
-    communityId = original.communityId ?? null;
-    repostOfId = original.id;
-    media = [];
+  if (input.communityId) {
+    await resolveCommunityPost(viewer, input.communityId, "CREATE_POST");
+    audience = { audiencePath: [], audienceKind: "COMMUNITY" };
+    communityId = input.communityId;
   } else {
-    if (input.communityId) {
-      await resolveCommunityPost(viewer, input.communityId, "CREATE_POST");
-      audience = { audiencePath: [], audienceKind: "COMMUNITY" };
-      communityId = input.communityId;
-    } else {
-      audience = resolveAudience(viewer, input.audienceId);
-    }
-    if (input.type === "QUESTION") {
-      questionTitle = (input.questionTitle ?? "").trim();
-      if (questionTitle.length < 8) throw new SocialError("Give your question a clear title (at least 8 characters).");
-      if (questionTitle.length > 140) throw new SocialError("Question titles can be up to 140 characters.");
-      topicTag = input.topicTag ? normalizeTag(input.topicTag) : null;
-      if (input.topicTag && !topicTag) throw new SocialError("That topic tag isn't valid.");
-    }
-    if (input.type === "POLL") {
-      if (!body) throw new SocialError("Ask a poll question first.");
-      const optionError = validatePollOptions(input.pollOptions ?? []);
-      if (optionError) throw new SocialError(optionError);
-      const options = (input.pollOptions ?? []).map((option) => option.trim()).filter(Boolean);
-      poll = { endsAt: pollEndsAt(input.pollDurationDays ?? 1), options };
-      media = [];
-    }
-    if (input.type === "POST" && !body && media.length === 0) {
-      throw new SocialError("Write something or attach an image.");
-    }
-    if (input.type === "QUESTION" && !body) {
-      throw new SocialError("Add a little detail so people can help.");
-    }
+    audience = resolveAudience(viewer, input.audienceId);
+  }
+  if (input.type === "QUESTION") {
+    questionTitle = (input.questionTitle ?? "").trim();
+    if (questionTitle.length < 8) throw new SocialError("Give your question a clear title (at least 8 characters).");
+    if (questionTitle.length > 140) throw new SocialError("Question titles can be up to 140 characters.");
+    topicTag = input.topicTag ? normalizeTag(input.topicTag) : null;
+    if (input.topicTag && !topicTag) throw new SocialError("That topic tag isn't valid.");
+  }
+  if (input.type === "POLL") {
+    if (!body) throw new SocialError("Ask a poll question first.");
+    const optionError = validatePollOptions(input.pollOptions ?? []);
+    if (optionError) throw new SocialError(optionError);
+    const options = (input.pollOptions ?? []).map((option) => option.trim()).filter(Boolean);
+    poll = { endsAt: pollEndsAt(input.pollDurationDays ?? 1), options };
+    media = [];
+  }
+  if (input.type === "POST" && !body && media.length === 0) {
+    throw new SocialError("Write something or attach an image.");
+  }
+  if (input.type === "QUESTION" && !body) {
+    throw new SocialError("Add a little detail so people can help.");
   }
 
-  if (!poll && input.type !== "REPOST" && body.length === 0 && media.length === 0) {
+  if (!poll && body.length === 0 && media.length === 0) {
     throw new SocialError("Write something first.");
   }
 
@@ -1276,7 +1296,6 @@ export async function createPost(input: CreatePostInput): Promise<{ id: string; 
         ...(communityId ? { communityId } : {}),
         rankAt: now,
         ...(input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : {}),
-        ...(repostOfId ? { repostOfId } : {}),
         ...(questionTitle ? { questionTitle } : {}),
         ...(topicTag ? { topicTag } : {}),
         ...(media.length > 0
@@ -1317,10 +1336,12 @@ export async function createPost(input: CreatePostInput): Promise<{ id: string; 
 
     await syncHashtags(db, viewer.universityId, created.id, parseHashtags(body));
     await syncMentions(db, viewer.universityId, "POST", created.id, parseMentions(body), communityId);
-
-    if (repostOfId) {
-      await db.post.update({ where: { id: repostOfId }, data: { repostCount: { increment: 1 } } });
+    if (input.draftClientDraftId) {
+      await db.draft
+        .deleteMany({ where: { userId: viewer.userId, clientDraftId: input.draftClientDraftId } })
+        .catch(() => undefined);
     }
+
     if (communityId) {
       await db.community.update({
         where: { id: communityId },
@@ -1355,6 +1376,218 @@ export async function createPost(input: CreatePostInput): Promise<{ id: string; 
   }
 }
 
+/* ------------------------------- reposts ------------------------------- */
+
+interface RepostTarget {
+  id: string;
+  type: "POST" | "QUESTION" | "POLL" | "REPOST";
+  repostOfId: string | null;
+  status: "ACTIVE" | "REMOVED" | "DELETED";
+  audiencePath: string[];
+  audienceKind: PostAudienceKind;
+  authorId: string;
+  communityId: string | null;
+}
+
+/**
+ * Resolve the real original. Reposting a repost always targets the original,
+ * and every read/visibility check runs against that row, never the wrapper.
+ */
+async function resolveRepostTarget(
+  db: TenantClient,
+  viewer: SocialViewer,
+  targetId: string,
+): Promise<{ original: RepostTarget; access: CommunityAccess | null }> {
+  const select = {
+    id: true,
+    type: true,
+    repostOfId: true,
+    status: true,
+    audiencePath: true,
+    audienceKind: true,
+    authorId: true,
+    communityId: true,
+  } as const;
+  let original = await db.post.findFirst({ where: { id: targetId }, select });
+  if (!original) throw new SocialError("This post isn't available.", 404);
+  if (original.type === "REPOST" && original.repostOfId) {
+    original = await db.post.findFirst({ where: { id: original.repostOfId }, select });
+    if (!original) throw new SocialError("This post isn't available.", 404);
+  }
+  const access = original.communityId
+    ? (await loadCommunityAccessMap(db, viewer.userId, [original.communityId])).get(original.communityId) ?? null
+    : null;
+  if (original.status !== "ACTIVE" || !canSeePostInCommunity(viewer.studentPath, original, access)) {
+    throw new SocialError("This post isn't available.", 404);
+  }
+  const relationships = await loadRelationships(db, viewer.userId);
+  if (isHiddenAuthor(relationships, original.authorId, viewer.userId)) {
+    throw new SocialError("This post isn't available.", 404);
+  }
+  return { original, access };
+}
+
+/**
+ * One plain repost per user/original, one quote per user/original. A plain
+ * repost is profile-only; a quote is a feed post that embeds the original.
+ */
+export async function repostPost(
+  viewer: SocialViewer,
+  targetId: string,
+  bodyInput = "",
+  idempotencyKey?: string,
+): Promise<{ id: string; flagged: boolean }> {
+  const limit = await rateLimit("repost", viewer.userId);
+  if (!limit.success) {
+    throw new SocialError("You've reached the repost limit for this hour. Try again later.", 429);
+  }
+  const db = tenantDb(viewer.universityId);
+  if (idempotencyKey) {
+    const existing = await db.post.findFirst({
+      where: { idempotencyKey, authorId: viewer.userId },
+      select: { id: true },
+    });
+    if (existing) return { id: existing.id, flagged: false };
+  }
+
+  const { original, access } = await resolveRepostTarget(db, viewer, targetId);
+  if (original.authorId === viewer.userId) {
+    throw new SocialError("You can't repost your own post.");
+  }
+  const body = bodyInput.replace(/\r\n/g, "\n").trim();
+  if (body.length > MAX_POST_LENGTH) throw new SocialError("Posts can be up to 2,000 characters.");
+  const audience = inheritedRepostAudience(original);
+  const now = new Date();
+  const plain = body.length === 0;
+
+  if (!plain && original.communityId) {
+    if (!assertCommunityAction(access, "CREATE_POST")) {
+      throw new SocialError("You can't quote in this community right now.");
+    }
+  }
+
+  if (plain) {
+    const existing = await db.post.findFirst({
+      where: {
+        authorId: viewer.userId,
+        repostOfId: original.id,
+        type: "REPOST",
+        repostKind: "PLAIN",
+        status: "ACTIVE",
+      },
+      select: { id: true },
+    });
+    if (existing) return { id: existing.id, flagged: false };
+  } else {
+    const existing = await db.post.findFirst({
+      where: {
+        authorId: viewer.userId,
+        repostOfId: original.id,
+        type: "REPOST",
+        repostKind: "QUOTE",
+        status: { not: "DELETED" },
+      },
+      select: { id: true },
+    });
+    if (existing) throw new SocialError("You've already quoted this post.", 409);
+  }
+
+  try {
+    const created = await db.$transaction(async (tx) => {
+      const post = await tx.post.create({
+        data: {
+          universityId: viewer.universityId,
+          authorId: viewer.userId,
+          type: "REPOST",
+          repostKind: plain ? "PLAIN" : "QUOTE",
+          repostOfId: original.id,
+          body,
+          audiencePath: audience.audiencePath,
+          audienceKind: audience.audienceKind,
+          ...(original.communityId ? { communityId: original.communityId } : {}),
+          rankAt: now,
+          ...(idempotencyKey ? { idempotencyKey } : {}),
+        },
+        select: { id: true },
+      });
+      if (plain) {
+        await tx.post.update({ where: { id: original.id }, data: { repostCount: { increment: 1 } } });
+      } else if (original.communityId) {
+        await tx.community.update({
+          where: { id: original.communityId },
+          data: { postCount: { increment: 1 }, lastActivityAt: now },
+        });
+      }
+      return post;
+    });
+
+    if (!plain) {
+      await syncHashtags(db, viewer.universityId, created.id, parseHashtags(body));
+      await syncMentions(db, viewer.universityId, "POST", created.id, parseMentions(body), original.communityId);
+    }
+    return { id: created.id, flagged: false };
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      if (idempotencyKey) {
+        const existing = await db.post.findFirst({
+          where: { idempotencyKey, authorId: viewer.userId },
+          select: { id: true },
+        });
+        if (existing) return { id: existing.id, flagged: false };
+      }
+      if (plain) {
+        const existing = await db.post.findFirst({
+          where: {
+            authorId: viewer.userId,
+            repostOfId: original.id,
+            type: "REPOST",
+            repostKind: "PLAIN",
+            status: "ACTIVE",
+          },
+          select: { id: true },
+        });
+        if (existing) return { id: existing.id, flagged: false };
+      }
+      throw new SocialError("You've already quoted this post.", 409);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Undo is idempotent and does not need the original to still be visible: a
+ * student can always remove their own repost, even after the original was
+ * removed or deleted.
+ */
+export async function undoRepost(viewer: SocialViewer, targetId: string): Promise<{ undone: boolean }> {
+  const db = tenantDb(viewer.universityId);
+  const target = await db.post.findFirst({
+    where: { id: targetId },
+    select: { id: true, type: true, repostOfId: true },
+  });
+  if (!target) return { undone: false };
+  const originalId = target.type === "REPOST" && target.repostOfId ? target.repostOfId : target.id;
+  const repost = await db.post.findFirst({
+    where: {
+      authorId: viewer.userId,
+      repostOfId: originalId,
+      type: "REPOST",
+      repostKind: "PLAIN",
+      status: "ACTIVE",
+    },
+    select: { id: true },
+  });
+  if (!repost) return { undone: false };
+  await db.$transaction(async (tx) => {
+    await tx.post.update({ where: { id: repost.id }, data: { status: "DELETED", body: "" } });
+    await tx.post.updateMany({
+      where: { id: originalId, repostCount: { gt: 0 } },
+      data: { repostCount: { decrement: 1 } },
+    });
+  });
+  return { undone: true };
+}
+
 export async function updatePost(viewer: SocialViewer, postId: string, bodyInput: string): Promise<void> {
   const body = bodyInput.replace(/\r\n/g, "\n").trim();
   if (!body) throw new SocialError("Posts can't be empty.");
@@ -1381,15 +1614,18 @@ export async function deletePost(viewer: SocialViewer, postId: string): Promise<
   const db = tenantDb(viewer.universityId);
   const post = await db.post.findFirst({
     where: { id: postId },
-    select: { id: true, authorId: true, status: true, repostOfId: true, communityId: true },
+    select: { id: true, authorId: true, status: true, repostOfId: true, repostKind: true, communityId: true },
   });
   if (!post || post.authorId !== viewer.userId || post.status === "DELETED") {
     throw new SocialError("You can only delete your own post.");
   }
   await db.$transaction(async (tx) => {
     await tx.post.update({ where: { id: post.id }, data: { status: "DELETED", body: "" } });
-    if (post.repostOfId) {
-      await tx.post.updateMany({ where: { id: post.repostOfId }, data: { repostCount: { decrement: 1 } } });
+    if (post.repostOfId && post.repostKind === "PLAIN") {
+      await tx.post.updateMany({
+        where: { id: post.repostOfId, repostCount: { gt: 0 } },
+        data: { repostCount: { decrement: 1 } },
+      });
     }
     if (post.communityId) {
       await tx.community.update({
@@ -1663,7 +1899,7 @@ export async function getAuthorPosts(viewer: SocialViewer, authorId: string, lim
   ]);
   if (isHiddenAuthor(relationships, authorId, viewer.userId)) return [];
   const rows = await db.post.findMany({
-    where: feedWhere(viewer, "all", relationships, joinedIds, { authorId }),
+    where: feedWhere(viewer, "all", relationships, joinedIds, { authorId }, { includePlainReposts: true }),
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: Math.min(limit, 30),
     select: postSelect,
@@ -1719,47 +1955,108 @@ export async function getAuthorReplies(viewer: SocialViewer, authorId: string, l
 
 /* ------------------------------- drafts -------------------------------- */
 
+export const DRAFT_PURGE_DAYS = 30;
+const DRAFT_MAX = 20;
+const DRAFT_MAX_BYTES = 10_000;
+const DRAFT_RESTORE_DAYS = 7;
+
+const draftSelect = {
+  id: true,
+  clientDraftId: true,
+  type: true,
+  contextKey: true,
+  version: true,
+  payload: true,
+  audience: true,
+  updatedAt: true,
+} as const;
+
+function draftView(row: {
+  id: string;
+  clientDraftId: string;
+  type: string;
+  contextKey: string;
+  version: number;
+  payload: Prisma.JsonValue;
+  audience: Prisma.JsonValue;
+  updatedAt: Date;
+}): DraftView {
+  return {
+    id: row.id,
+    clientDraftId: row.clientDraftId,
+    type: row.type as DraftView["type"],
+    contextKey: row.contextKey,
+    version: row.version,
+    payload: (row.payload ?? {}) as DraftView["payload"],
+    audience: (row.audience ?? {}) as DraftView["audience"],
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+async function purgeExpiredDrafts(db: TenantClient, userId: string): Promise<void> {
+  await db.draft.deleteMany({
+    where: { userId, updatedAt: { lt: new Date(Date.now() - DRAFT_PURGE_DAYS * 24 * 60 * 60 * 1000) } },
+  });
+}
+
 export async function listDrafts(viewer: SocialViewer): Promise<DraftView[]> {
   const db = tenantDb(viewer.universityId);
+  await purgeExpiredDrafts(db, viewer.userId);
   const rows = await db.draft.findMany({
     where: { userId: viewer.userId },
     orderBy: { updatedAt: "desc" },
     take: 50,
-    select: { id: true, type: true, payload: true, audience: true, updatedAt: true },
+    select: draftSelect,
   });
-  return rows.map((row) => ({
-    id: row.id,
-    type: row.type as DraftView["type"],
-    payload: (row.payload ?? {}) as DraftView["payload"],
-    audience: (row.audience ?? {}) as DraftView["audience"],
-    updatedAt: row.updatedAt.toISOString(),
-  }));
+  return rows.map(draftView);
 }
 
-export async function saveDraft(
+/** Newest draft for one composer context, if it is still worth restoring. */
+export async function getDraftForContext(
   viewer: SocialViewer,
-  input: {
-    id?: string;
-    type: "POST" | "QUESTION" | "POLL";
-    payload: DraftView["payload"];
-    audience: DraftView["audience"];
-  },
-): Promise<string> {
-  if (!DRAFT_TYPES.has(input.type)) throw new SocialError("That draft type isn't supported.");
-  const body = input.payload.body?.slice(0, MAX_POST_LENGTH) ?? "";
-  const questionTitle = input.payload.questionTitle?.slice(0, 140) ?? "";
-  if (!body.trim() && !questionTitle.trim() && !(input.payload.media?.length ?? 0) && !(input.payload.pollOptions?.length ?? 0)) {
-    throw new SocialError("Nothing to save yet.");
-  }
+  contextKey: string,
+): Promise<DraftView | null> {
+  const db = tenantDb(viewer.universityId);
+  await purgeExpiredDrafts(db, viewer.userId);
+  const row = await db.draft.findFirst({
+    where: {
+      userId: viewer.userId,
+      contextKey,
+      updatedAt: { gte: new Date(Date.now() - DRAFT_RESTORE_DAYS * 24 * 60 * 60 * 1000) },
+    },
+    orderBy: { updatedAt: "desc" },
+    select: draftSelect,
+  });
+  return row ? draftView(row) : null;
+}
+
+/** Newest draft anywhere; used by Pulse's Continue your draft card. */
+export async function getContinueDraft(viewer: SocialViewer): Promise<DraftView | null> {
+  const db = tenantDb(viewer.universityId);
+  await purgeExpiredDrafts(db, viewer.userId);
+  const row = await db.draft.findFirst({
+    where: {
+      userId: viewer.userId,
+      updatedAt: { gte: new Date(Date.now() - DRAFT_RESTORE_DAYS * 24 * 60 * 60 * 1000) },
+    },
+    orderBy: { updatedAt: "desc" },
+    select: draftSelect,
+  });
+  return row ? draftView(row) : null;
+}
+
+function sanitizeDraftPayload(input: DraftView["payload"]): DraftView["payload"] {
+  const body = input.body?.slice(0, MAX_POST_LENGTH) ?? "";
+  const questionTitle = input.questionTitle?.slice(0, 140) ?? "";
   const payload: DraftView["payload"] = {
     body,
     ...(questionTitle ? { questionTitle } : {}),
-    ...(input.payload.topicTag ? { topicTag: input.payload.topicTag.slice(0, 50) } : {}),
-    ...(input.payload.pollOptions ? { pollOptions: input.payload.pollOptions.slice(0, 4).map((value) => value.slice(0, 80)) } : {}),
-    ...(input.payload.pollDurationDays ? { pollDurationDays: input.payload.pollDurationDays } : {}),
-    ...(input.payload.media
+    ...(input.topicTag ? { topicTag: input.topicTag.slice(0, 50) } : {}),
+    ...(input.pollOptions ? { pollOptions: input.pollOptions.slice(0, 4).map((value) => value.slice(0, 80)) } : {}),
+    ...(input.pollDurationDays ? { pollDurationDays: input.pollDurationDays } : {}),
+    ...(input.media
       ? {
-          media: input.payload.media
+          media: input.media
             .filter((item) => isAllowedPostPublicId(item.publicId))
             .slice(0, 4)
             .map((item) => ({
@@ -1772,34 +2069,128 @@ export async function saveDraft(
         }
       : {}),
   };
-  const db = tenantDb(viewer.universityId);
-  if (input.id) {
-    const existing = await db.draft.findFirst({ where: { id: input.id, userId: viewer.userId }, select: { id: true } });
-    if (!existing) throw new SocialError("That draft isn't available.");
-    await db.draft.update({
-      where: { id: existing.id },
-      data: { type: input.type, payload: payload as Prisma.InputJsonValue, audience: input.audience as Prisma.InputJsonValue },
-    });
-    return existing.id;
+  if (JSON.stringify(payload).length > DRAFT_MAX_BYTES) {
+    throw new SocialError("That draft is too large to save.");
   }
-  const created = await db.draft.create({
-    data: {
-      universityId: viewer.universityId,
-      userId: viewer.userId,
-      type: input.type,
-      payload: payload as Prisma.InputJsonValue,
-      audience: input.audience as Prisma.InputJsonValue,
-    },
-    select: { id: true },
-  });
-  return created.id;
+  return payload;
 }
 
-export async function deleteDraft(viewer: SocialViewer, draftId: string): Promise<void> {
+/**
+ * Idempotent upsert by the device-generated `clientDraftId`. A stale writer
+ * (older version, or the same version with an older device time) is rejected
+ * with 409 instead of overwriting a newer tab's content.
+ */
+export async function saveDraft(
+  viewer: SocialViewer,
+  input: {
+    clientDraftId: string;
+    type: "POST" | "QUESTION" | "POLL";
+    contextKey?: string;
+    version?: number;
+    clientUpdatedAt?: string;
+    payload: DraftView["payload"];
+    audience: DraftView["audience"];
+  },
+): Promise<DraftView> {
+  if (!DRAFT_TYPES.has(input.type)) throw new SocialError("That draft type isn't supported.");
+  const clientDraftId = input.clientDraftId.trim().slice(0, 80);
+  if (!clientDraftId) throw new SocialError("That draft id isn't valid.");
+  const limit = await rateLimit("draftSave", viewer.userId);
+  if (!limit.success) throw new SocialError("You're saving drafts too quickly. Try again soon.", 429);
+
+  const payload = sanitizeDraftPayload(input.payload);
+  if (
+    !payload.body?.trim() &&
+    !payload.questionTitle?.trim() &&
+    !(payload.media?.length ?? 0) &&
+    !(payload.pollOptions?.length ?? 0)
+  ) {
+    throw new SocialError("Nothing to save yet.");
+  }
+  const contextKey = (input.contextKey ?? input.type.toLowerCase()).slice(0, 80);
+  const incomingVersion = Number.isInteger(input.version) && input.version! > 0 ? input.version! : undefined;
+  const incomingClientTime = input.clientUpdatedAt ? new Date(input.clientUpdatedAt) : null;
   const db = tenantDb(viewer.universityId);
-  const draft = await db.draft.findFirst({ where: { id: draftId, userId: viewer.userId }, select: { id: true } });
-  if (!draft) throw new SocialError("That draft isn't available.");
+  await purgeExpiredDrafts(db, viewer.userId);
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const existing = await db.draft.findFirst({
+      where: { userId: viewer.userId, clientDraftId },
+      select: { id: true, version: true, clientUpdatedAt: true, updatedAt: true },
+    });
+
+    if (!existing) {
+      const count = await db.draft.count({ where: { userId: viewer.userId } });
+      if (count >= DRAFT_MAX) {
+        throw new SocialError("You have 20 saved drafts. Delete one to save another.", 409);
+      }
+      try {
+        const created = await db.draft.create({
+          data: {
+            universityId: viewer.universityId,
+            userId: viewer.userId,
+            clientDraftId,
+            type: input.type,
+            contextKey,
+            version: incomingVersion ?? 1,
+            clientUpdatedAt: incomingClientTime ?? new Date(),
+            payload: payload as Prisma.InputJsonValue,
+            audience: input.audience as Prisma.InputJsonValue,
+          },
+          select: draftSelect,
+        });
+        return draftView(created);
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002" && attempt === 0) {
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    if (
+      isStaleDraftWrite(
+        { version: incomingVersion, clientTime: incomingClientTime },
+        { version: existing.version, clientTime: existing.clientUpdatedAt },
+      )
+    ) {
+      const current = await db.draft.findFirst({ where: { id: existing.id }, select: draftSelect });
+      throw new DraftConflict(current ? draftView(current) : null);
+    }
+
+    const claimed = await db.draft.updateMany({
+      where: { id: existing.id, version: existing.version },
+      data: {
+        type: input.type,
+        contextKey,
+        version: nextDraftVersion(incomingVersion, existing.version),
+        clientUpdatedAt: incomingClientTime ?? new Date(),
+        payload: payload as Prisma.InputJsonValue,
+        audience: input.audience as Prisma.InputJsonValue,
+      },
+    });
+    if (claimed.count === 0) {
+      if (attempt === 0) continue;
+      const current = await db.draft.findFirst({ where: { id: existing.id }, select: draftSelect });
+      throw new DraftConflict(current ? draftView(current) : null);
+    }
+    const saved = await db.draft.findFirst({ where: { id: existing.id }, select: draftSelect });
+    if (!saved) throw new SocialError("That draft isn't available.");
+    return draftView(saved);
+  }
+  throw new SocialError("That draft changed in another tab. Reopen it and try again.", 409);
+}
+
+/** Idempotent: deleting a draft that is already gone is success. */
+export async function deleteDraft(viewer: SocialViewer, draftId: string): Promise<{ deleted: boolean }> {
+  const db = tenantDb(viewer.universityId);
+  const draft = await db.draft.findFirst({
+    where: { userId: viewer.userId, OR: [{ id: draftId }, { clientDraftId: draftId }] },
+    select: { id: true },
+  });
+  if (!draft) return { deleted: false };
   await db.draft.delete({ where: { id: draft.id } });
+  return { deleted: true };
 }
 
 /* ----------------------------- discovery ------------------------------ */

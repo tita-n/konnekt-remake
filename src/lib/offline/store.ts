@@ -1,6 +1,7 @@
 "use client";
 
 import type { PostView } from "@/lib/posts/types";
+import { csrfToken } from "@/lib/posts/client";
 
 /**
  * Per-account offline storage. Every key is namespaced by user id, the whole
@@ -9,16 +10,35 @@ import type { PostView } from "@/lib/posts/types";
  * leaking one student's feed to the next.
  */
 const DB_NAME = "konnekt-offline";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const FEED_STORE = "feeds";
 const OUTBOX_STORE = "outbox";
 const CHECKIN_STORE = "checkins";
+const DRAFT_STORE = "drafts";
 
 export interface CachedFeed {
   userId: string;
   filter: string;
   savedAt: string;
   posts: PostView[];
+}
+
+/**
+ * A local-first composer snapshot. Namespaced by user id and never sent whole
+ * to the server (blobs stay on the device).
+ */
+export interface LocalDraft {
+  key: string;
+  userId: string;
+  clientDraftId: string;
+  contextKey: string;
+  type: "POST" | "QUESTION" | "POLL";
+  version: number;
+  clientUpdatedAt: string;
+  payload: Record<string, unknown>;
+  audience: Record<string, unknown>;
+  /** Selected images that have not finished uploading yet. */
+  blobs?: Blob[];
 }
 
 export interface OutboxItem {
@@ -57,6 +77,7 @@ function openDb(): Promise<IDBDatabase | null> {
       if (!db.objectStoreNames.contains(FEED_STORE)) db.createObjectStore(FEED_STORE, { keyPath: "userId" });
       if (!db.objectStoreNames.contains(OUTBOX_STORE)) db.createObjectStore(OUTBOX_STORE, { keyPath: "id" });
       if (!db.objectStoreNames.contains(CHECKIN_STORE)) db.createObjectStore(CHECKIN_STORE, { keyPath: "id" });
+      if (!db.objectStoreNames.contains(DRAFT_STORE)) db.createObjectStore(DRAFT_STORE, { keyPath: "key" });
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => resolve(null);
@@ -93,6 +114,37 @@ export async function readCachedFeed(userId: string): Promise<CachedFeed | null>
 export async function readLatestCachedFeed(): Promise<CachedFeed | null> {
   const rows = await withStore<CachedFeed[]>(FEED_STORE, "readonly", (store) => store.getAll());
   return (rows ?? []).sort((a, b) => b.savedAt.localeCompare(a.savedAt))[0] ?? null;
+}
+
+function draftKey(userId: string, clientDraftId: string): string {
+  return `${userId}:${clientDraftId}`;
+}
+
+export async function saveLocalDraft(draft: LocalDraft): Promise<void> {
+  await withStore<IDBValidKey>(DRAFT_STORE, "readwrite", (store) =>
+    store.put({ ...draft, key: draftKey(draft.userId, draft.clientDraftId) }),
+  );
+}
+
+export async function listLocalDrafts(userId: string): Promise<LocalDraft[]> {
+  const rows = await withStore<LocalDraft[]>(DRAFT_STORE, "readonly", (store) => store.getAll());
+  return (rows ?? [])
+    .filter((draft) => draft.userId === userId)
+    .sort((a, b) => b.clientUpdatedAt.localeCompare(a.clientUpdatedAt));
+}
+
+export async function readLocalDraft(userId: string, contextKey: string): Promise<LocalDraft | null> {
+  const drafts = await listLocalDrafts(userId);
+  return drafts.find((draft) => draft.contextKey === contextKey) ?? null;
+}
+
+export async function readLocalDraftById(userId: string, clientDraftId: string): Promise<LocalDraft | null> {
+  const rows = await withStore<LocalDraft[]>(DRAFT_STORE, "readonly", (store) => store.getAll());
+  return (rows ?? []).find((draft) => draft.userId === userId && draft.clientDraftId === clientDraftId) ?? null;
+}
+
+export async function deleteLocalDraft(userId: string, clientDraftId: string): Promise<void> {
+  await withStore<undefined>(DRAFT_STORE, "readwrite", (store) => store.delete(draftKey(userId, clientDraftId)));
 }
 
 export async function enqueueOutbox(item: OutboxItem): Promise<void> {
@@ -191,6 +243,15 @@ export async function flushOutbox(userId: string): Promise<{ sent: number; faile
       });
       if (response.ok) {
         await removeOutbox(item.id);
+        const draftId = item.payload._draftClientDraftId;
+        if (typeof draftId === "string") {
+          await fetch(`/api/drafts/${encodeURIComponent(draftId)}`, {
+            method: "DELETE",
+            headers: { "x-konnekt-csrf": csrfToken() },
+            keepalive: true,
+          }).catch(() => undefined);
+          await deleteLocalDraft(item.userId, draftId).catch(() => undefined);
+        }
         sent += 1;
         continue;
       }

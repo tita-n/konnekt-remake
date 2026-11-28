@@ -11,6 +11,7 @@ export class ApiError extends Error {
     message: string,
     public readonly status: number,
     public readonly code?: string,
+    public readonly details?: unknown,
   ) {
     super(message);
     this.name = "ApiError";
@@ -19,7 +20,9 @@ export class ApiError extends Error {
 
 async function parse<T>(response: Response): Promise<T> {
   const data = (await response.json().catch(() => ({}))) as { error?: string; code?: string } & T;
-  if (!response.ok) throw new ApiError(data.error ?? "Something went wrong.", response.status, data.code);
+  if (!response.ok) {
+    throw new ApiError(data.error ?? "Something went wrong.", response.status, data.code, data);
+  }
   return data;
 }
 
@@ -32,6 +35,20 @@ export async function apiPost<T>(url: string, body?: unknown, options?: { idempo
       ...(options?.idempotencyKey ? { "idempotency-key": options.idempotencyKey } : {}),
     },
     body: JSON.stringify(body ?? {}),
+  });
+  return parse<T>(response);
+}
+
+export async function apiPut<T>(
+  url: string,
+  body?: unknown,
+  options?: { keepalive?: boolean },
+): Promise<T> {
+  const response = await fetch(url, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", "x-konnekt-csrf": csrfToken() },
+    body: JSON.stringify(body ?? {}),
+    keepalive: options?.keepalive,
   });
   return parse<T>(response);
 }

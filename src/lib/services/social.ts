@@ -158,6 +158,8 @@ export const postSelect = {
   communityPin: { select: { position: true } },
   createdAt: true,
   rankAt: true,
+  repostKind: true,
+  repostOfId: true,
   editedAt: true,
   questionTitle: true,
   topicTag: true,
@@ -196,6 +198,10 @@ export const postSelect = {
       body: true,
       status: true,
       createdAt: true,
+      authorId: true,
+      audiencePath: true,
+      audienceKind: true,
+      communityId: true,
       author: {
         select: {
           id: true,
@@ -223,17 +229,33 @@ export async function viewerPostState(
   db: TenantClient,
   viewerId: string,
   postIds: string[],
-): Promise<{ reacted: Set<string>; bookmarked: Set<string> }> {
-  if (postIds.length === 0) return { reacted: new Set(), bookmarked: new Set() };
-  const [reactions, bookmarks] = await Promise.all([
+): Promise<{ reacted: Set<string>; bookmarked: Set<string>; reposted: Set<string> }> {
+  if (postIds.length === 0) return { reacted: new Set(), bookmarked: new Set(), reposted: new Set() };
+  const [reactions, bookmarks, reposts] = await Promise.all([
     db.reaction.findMany({
       where: { userId: viewerId, targetType: "POST", targetId: { in: postIds } },
       select: { targetId: true },
     }),
     db.bookmark.findMany({ where: { userId: viewerId, postId: { in: postIds } }, select: { postId: true } }),
+    db.post.findMany({
+      where: {
+        authorId: viewerId,
+        type: "REPOST",
+        repostKind: "PLAIN",
+        status: "ACTIVE",
+        OR: [{ repostOfId: { in: postIds } }, { id: { in: postIds } }],
+      },
+      select: { id: true, repostOfId: true },
+    }),
   ]);
+  const reposted = new Set<string>();
+  for (const row of reposts) {
+    reposted.add(row.id);
+    if (row.repostOfId) reposted.add(row.repostOfId);
+  }
   return {
     reacted: new Set(reactions.map((row) => row.targetId)),
     bookmarked: new Set(bookmarks.map((row) => row.postId)),
+    reposted,
   };
 }
