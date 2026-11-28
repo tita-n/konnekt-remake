@@ -1,0 +1,82 @@
+/*
+ * Presentation-only tweaks scoped to the /design auth direction previews.
+ * Nothing here reaches the live routes: every rule is namespaced under
+ * `.auth-dir`, which only the direction harness renders.
+ *
+ * The auth forms are the shared components, and those still ship a few
+ * controls below the 44px target the responsive pass is standardising on
+ * (size-sm buttons, the resend-code button, chips, the password toggle).
+ * Rather than restyle a shared component from a preview, the directions hold
+ * the target rule locally so the flow can be reviewed at its intended size.
+ * PR 1 replaces this list by changing the primitives themselves.
+ */
+
+.auth-dir :is(button, a[role="button"], [role="switch"]) {
+  min-height: 2.75rem;
+}
+
+/* The password toggle is an absolutely positioned icon button; give it a real
+   square hit area instead of a min-height that would stretch the input. */
+.auth-dir :is([aria-label="Show password"], [aria-label="Hide password"]) {
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
+}
+
+/* Native checkbox / radio inputs stay small, but their whole label row is the
+   target, so the row gets the minimum height. */
+.auth-dir label:has(:is(input[type="checkbox"], input[type="radio"])) {
+  min-height: 2.75rem;
+  align-items: center;
+}
+
+/* Inline links in sentences and error rows: padding extends the hit area
+   without changing where the text sits. */
+.auth-dir :is(p, li, dd, span) > a:not([role="button"]) {
+  padding-block: 0.8125rem;
+  margin-block: -0.8125rem;
+}
+
+/* A link that is alone in its row ("Forgot password?") is a control, so it gets
+   a control-sized box. */
+.auth-dir main a:only-child:not([role="button"]):not([class*="rounded-button"]) {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+}
+
+.auth-dir [data-action-row] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.auth-dir [data-action-row] > * {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+}
+
+.auth-dir [data-action-bar] {
+  padding-bottom: calc(0.875rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* Reused components (the university picker, the ID upload dropzone) contain
+   long campus names and wide inputs. Inside a preview they must never be the
+   thing that decides the column width. */
+.auth-dir :is(main, section) :is(input, select, textarea) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.auth-dir [class*="truncate"],
+.auth-dir [class*="line-clamp"] {
+  min-width: 0;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .auth-dir :is(button, a, input, select, textarea, label) {
+    touch-action: manipulation;
+  }
+}
