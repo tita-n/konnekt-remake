@@ -125,11 +125,11 @@ export function PlacesConsole({ initialPlaces }: { initialPlaces: CampusPlaceVie
         ) : (
           places.map((place) => (
             <li key={place.id} className="flex flex-wrap items-center gap-3 p-3">
-              <span className="flex size-9 items-center justify-center rounded-[11px] bg-accent-soft text-accent-ink">
+              <span className="flex size-11 items-center justify-center rounded-[11px] bg-accent-soft text-accent-ink">
                 <MapPin aria-hidden="true" className="size-4" />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-small font-semibold text-fg">{place.name}</p>
+                <p className="line-clamp-2 text-small font-semibold text-fg">{place.name}</p>
                 <p className="text-tiny text-fg-muted">
                   {place.eventCount} event{place.eventCount === 1 ? "" : "s"}
                   {place.latitude && place.longitude ? " · has coordinates" : ""}

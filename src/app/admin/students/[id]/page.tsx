@@ -23,7 +23,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div className="space-y-5">
-      <Link href="/admin/students" className="inline-flex items-center gap-1.5 text-small font-semibold text-fg-muted hover:text-fg">
+      <Link href="/admin/students" className="inline-flex min-h-11 items-center gap-1.5 text-small font-semibold text-fg-muted hover:text-fg">
         <ArrowLeft aria-hidden="true" className="size-4" /> Students
       </Link>
 
@@ -45,7 +45,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
         <UserStatusBadge status={student.status} />
       </header>
 
-      <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[1.2fr_1fr]">
         <Card className="p-4">
           <h2 className="text-h3 text-fg">Student record</h2>
           <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-small">

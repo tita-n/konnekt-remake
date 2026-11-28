@@ -104,7 +104,7 @@ export function OfflineBanner() {
   return (
     <div
       role="status"
-      className="sticky top-0 z-40 flex h-9 items-center justify-center gap-2 border-b border-highlight/25 bg-highlight-soft px-4 text-tiny font-semibold text-highlight-fg"
+      className="sticky top-0 z-40 flex h-9 items-center justify-center gap-2 border-b border-highlight/25 bg-highlight-soft px-4 text-tiny font-semibold highlight-ink"
     >
       <WifiOff aria-hidden="true" className="size-4 shrink-0" />
       <span className="truncate">You&apos;re offline. Some things won&apos;t refresh until you reconnect.</span>

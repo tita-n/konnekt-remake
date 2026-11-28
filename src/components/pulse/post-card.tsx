@@ -285,7 +285,7 @@ export function PostCard({
               {local.isOwner && local.moderationReason && local.moderationReason !== "This post was removed by a moderator." ? (
                 <p className="mt-1 text-small text-fg-muted">Reason: {local.moderationReason}</p>
               ) : null}
-              <Link href="/legal/community-rules" className="mt-1 inline-block text-small font-semibold text-accent-ink underline underline-offset-2 hover:opacity-80">
+              <Link href="/legal/community-rules" className="mt-1 inline-flex min-h-11 min-w-11 items-center px-1 text-small font-semibold text-accent-ink underline underline-offset-2 hover:opacity-80">
                 Learn more
               </Link>
             </div>
@@ -319,7 +319,7 @@ export function PostCard({
             </Link>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                <Link href={`/profile/${displayAuthor.username}`} className="truncate font-display text-[0.9375rem] font-bold text-fg hover:underline">
+                <Link href={`/profile/${displayAuthor.username}`} className="-my-2 flex min-h-11 items-center truncate font-display text-[0.9375rem] font-bold text-fg hover:underline">
                   {displayAuthor.fullName}
                 </Link>
                 <VerifiedTick />
@@ -410,7 +410,7 @@ export function PostCard({
                     <>
                       <RichText body={body} className="mt-1 whitespace-pre-line break-words text-[0.9375rem] leading-relaxed text-fg" />
                       {isLong ? (
-                        <button type="button" onClick={() => setShowFull((value) => !value)} className="mt-1 text-small font-semibold text-accent-ink hover:underline">
+                        <button type="button" onClick={() => setShowFull((value) => !value)} className="mt-1 inline-flex min-h-11 items-center text-small font-semibold text-accent-ink hover:underline">
                           {showFull ? "Show less" : "Read more"}
                         </button>
                       ) : null}
@@ -420,7 +420,7 @@ export function PostCard({
                 {showQuestionInlineCta ? (
                   <Link
                     href={`/p/${local.id}#comments`}
-                    className="mt-0.5 inline-flex h-8 shrink-0 items-center rounded-full border border-accent bg-surface px-3.5 text-small font-semibold text-accent-ink transition hover:bg-accent-soft"
+                    className="mt-0.5 inline-flex -my-1.5 min-h-11 min-w-11 shrink-0 items-center rounded-full border border-accent bg-surface px-3.5 text-small font-semibold text-accent-ink transition hover:bg-accent-soft"
                   >
                     I can help
                   </Link>
@@ -431,7 +431,7 @@ export function PostCard({
                 <div className="min-w-0 flex-1">
                   <RichText body={body} className="whitespace-pre-line break-words text-[0.9375rem] leading-relaxed text-fg" />
                   {isLong ? (
-                    <button type="button" onClick={() => setShowFull((value) => !value)} className="mt-1 text-small font-semibold text-accent-ink hover:underline">
+                    <button type="button" onClick={() => setShowFull((value) => !value)} className="mt-1 inline-flex min-h-11 items-center text-small font-semibold text-accent-ink hover:underline">
                       {showFull ? "Show less" : "Read more"}
                     </button>
                   ) : null}
@@ -439,7 +439,7 @@ export function PostCard({
                 {showQuestionInlineCta ? (
                   <Link
                     href={`/p/${local.id}#comments`}
-                    className="inline-flex h-8 shrink-0 items-center rounded-full border border-accent bg-surface px-3.5 text-small font-semibold text-accent-ink transition hover:bg-accent-soft"
+                    className="inline-flex -my-1.5 min-h-11 min-w-11 shrink-0 items-center rounded-full border border-accent bg-surface px-3.5 text-small font-semibold text-accent-ink transition hover:bg-accent-soft"
                   >
                     I can help
                   </Link>
@@ -514,7 +514,7 @@ export function PostCard({
                 <span aria-hidden="true">·</span>
                 <span><span className="font-semibold text-fg">{formatCount(local.repostCount)}</span> reposts</span>
               </p>
-              <button type="button" onClick={() => void openReactions()} className="inline-flex shrink-0 items-center gap-0.5 font-semibold text-accent-ink hover:underline">
+              <button type="button" onClick={() => void openReactions()} className="inline-flex min-h-11 min-w-11 shrink-0 items-center gap-0.5 px-1 font-semibold text-accent-ink hover:underline">
                 Who reacted <ChevronRight aria-hidden="true" className="size-4" />
               </button>
             </div>

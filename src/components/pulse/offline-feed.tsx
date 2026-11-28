@@ -26,7 +26,7 @@ export function OfflineFeed() {
   return (
     <main id="main" className="mx-auto min-h-dvh w-full max-w-2xl px-4 pb-10 pt-4">
       <div
-        className="flex min-h-9 items-center gap-2.5 rounded-[12px] border border-warning/30 bg-highlight-soft px-3.5 py-2 text-small font-medium text-highlight-fg"
+        className="flex min-h-11 items-center gap-2.5 rounded-[12px] border border-warning/30 bg-highlight-soft px-3.5 py-2 text-small font-medium highlight-ink"
         role="status"
       >
         <CloudOff aria-hidden="true" className="size-4 shrink-0" />

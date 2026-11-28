@@ -289,6 +289,13 @@ dialog.modal::backdrop {
     background-color: var(--surface-2);
     color: var(--fg-muted);
   }
+
+  /* Amber notice surfaces (offline banners, Live chips, pending badges). Pair with
+     bg-highlight-soft; the ink flips with the theme instead of inheriting the
+     bright-surface ink. */
+  .highlight-ink {
+    color: var(--highlight-soft-fg);
+  }
 }
 
 /* --------------------------------------------------------------------------

@@ -94,7 +94,7 @@ function MenuLink({
       href={href}
       role="menuitem"
       onClick={onClick}
-      className="flex items-center gap-2.5 rounded-button px-3 py-2.5 text-[0.9375rem] text-fg transition hover:bg-surface-2"
+      className="flex min-h-11 items-center gap-2.5 rounded-button px-3 py-2.5 text-[0.9375rem] text-fg transition hover:bg-surface-2"
     >
       {icon}
       {children}

@@ -19,7 +19,7 @@ export default async function PlatformUniversityPage({ params }: { params: Promi
 
   return (
     <div className="space-y-5">
-      <Link href="/platform/universities" className="inline-flex items-center gap-1.5 text-small font-semibold text-fg-muted hover:text-fg">
+      <Link href="/platform/universities" className="inline-flex min-h-11 items-center gap-1.5 text-small font-semibold text-fg-muted hover:text-fg">
         <ArrowLeft aria-hidden="true" className="size-4" /> Universities
       </Link>
 
@@ -44,7 +44,7 @@ export default async function PlatformUniversityPage({ params }: { params: Promi
         </div>
       </header>
 
-      <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[1.4fr_1fr]">
         <div className="space-y-4">
           <Card className="p-4">
             <h2 className="text-h3 text-fg">Space</h2>

@@ -15,7 +15,7 @@ function RoleRemoveForm({ assignmentId, name }: { assignmentId: string; name: st
       <button
         type="submit"
         disabled={pending}
-        className="text-[0.75rem] font-semibold text-danger hover:underline disabled:opacity-50"
+        className="inline-flex min-h-11 min-w-11 items-center px-1 text-[0.75rem] font-semibold text-danger hover:underline disabled:opacity-50"
         aria-label={`Remove role from ${name}`}
       >
         Remove
@@ -53,7 +53,7 @@ export function TeamManager({
   const [state, action, pending] = useActionState(inviteTeamAction, emptyFormState);
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[1.4fr_1fr]">
       <div className="space-y-4">
         <section className="rounded-card border border-border bg-surface">
           <div className="border-b border-border px-4 py-3">
@@ -70,8 +70,8 @@ export function TeamManager({
                     {member.user.fullName.slice(0, 1)}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-small font-semibold text-fg">{member.user.fullName}</span>
-                    <span className="block truncate text-[0.75rem] text-fg-subtle">{member.user.email}</span>
+                    <span className="block line-clamp-2 text-small font-semibold text-fg">{member.user.fullName}</span>
+                    <span className="block line-clamp-2 text-[0.75rem] text-fg-subtle">{member.user.email}</span>
                   </span>
                   <Badge tone={member.role === "UNIVERSITY_ADMIN" ? "accent" : "neutral"}>
                     {member.role.replaceAll("_", " ").toLowerCase()}
@@ -96,7 +96,7 @@ export function TeamManager({
                 <li key={invite.id} className="flex items-center gap-3 px-4 py-3">
                   <MailPlus aria-hidden="true" className="size-4 shrink-0 text-fg-subtle" />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-small font-semibold text-fg">{invite.email}</span>
+                    <span className="block line-clamp-2 text-small font-semibold text-fg">{invite.email}</span>
                     <span className="block text-[0.75rem] text-fg-subtle">
                       {invite.role.replaceAll("_", " ").toLowerCase()} · expires{" "}
                       {new Intl.DateTimeFormat("en-NG", { dateStyle: "medium" }).format(invite.expiresAt)}
@@ -124,12 +124,12 @@ export function TeamManager({
               type="email"
               required
               placeholder="reviewer@university.edu.ng"
-              className="h-10 w-full rounded-input border border-border bg-surface px-3 text-small"
+              className="h-11 w-full rounded-input border border-border bg-surface px-3 text-small"
             />
           </div>
           <div>
             <label htmlFor="invite-role" className="mb-1 block text-small font-semibold text-fg">Role</label>
-            <select id="invite-role" name="role" defaultValue="REVIEWER" className="h-10 w-full rounded-input border border-border bg-surface px-3 text-small">
+            <select id="invite-role" name="role" defaultValue="REVIEWER" className="h-11 w-full rounded-input border border-border bg-surface px-3 text-small">
               <option value="REVIEWER">Reviewer — verification queue only</option>
               <option value="UNIVERSITY_ADMIN">University admin — full console</option>
               <option value="MODERATOR">Moderator — later phases</option>

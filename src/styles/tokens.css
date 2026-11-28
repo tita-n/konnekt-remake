@@ -26,6 +26,10 @@
   --highlight: #f5a524;
   --highlight-soft: #fff4dc;
   --highlight-fg: #4a2a00;
+  /* --highlight-fg is tuned for the bright amber Live badge. A *tinted* amber block
+     needs its own ink, because in dark mode --highlight-soft is a deep amber and
+     #1a1a1a on it measured 1.14:1. */
+  --highlight-soft-fg: #4a2a00;
 
   --danger: #b91c1c;
   --danger-btn: #dc2626;
@@ -83,6 +87,7 @@
   --highlight: #f5a524;
   --highlight-soft: #2e2413;
   --highlight-fg: #1a1a1a;
+  --highlight-soft-fg: #f8c96a;
 
   --danger: #f87171;
   --danger-btn: #dc2626;

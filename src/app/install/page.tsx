@@ -8,7 +8,7 @@ export default function InstallPage() {
   return (
     <main className="mx-auto min-h-dvh w-full max-w-lg bg-surface px-5 pb-10 pt-6 text-fg">
       <Link href="/" className="inline-flex items-center gap-2" aria-label="Konnekt home">
-        <span className="flex size-9 items-center justify-center rounded-[10px] bg-accent text-base font-bold text-accent-fg">K</span>
+        <span className="flex size-11 items-center justify-center rounded-[10px] bg-accent text-base font-bold text-accent-fg">K</span>
         <span className="font-display text-xl font-bold tracking-tight">Konnekt</span>
       </Link>
       <h1 className="mt-8 text-h1">Keep your campus in your pocket</h1>

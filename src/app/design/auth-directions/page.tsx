@@ -66,7 +66,7 @@ export default function AuthDirectionsIndexPage() {
               <Link
                 key={direction.key}
                 href={`/design/auth-${direction.key}?chrome=0`}
-                className="inline-flex min-h-11 items-center rounded-button px-2.5 text-small font-semibold text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg"
+                className="inline-flex min-h-11 min-w-11 items-center rounded-button px-2.5 text-small font-semibold text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg"
               >
                 {direction.key.toUpperCase()}
               </Link>
@@ -124,7 +124,7 @@ export default function AuthDirectionsIndexPage() {
                     key={step}
                     href={`/design/auth-${direction.key}?chrome=0&step=${step}`}
                     className={cn(
-                      "inline-flex min-h-11 items-center rounded-chip border border-border px-2.5 text-tiny font-medium text-fg-muted",
+                      "inline-flex min-h-11 min-w-11 items-center rounded-chip border border-border px-2.5 text-tiny font-medium text-fg-muted",
                       "transition-colors hover:border-border-strong hover:bg-surface-2 hover:text-fg",
                     )}
                   >

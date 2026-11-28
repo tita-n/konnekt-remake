@@ -19,10 +19,16 @@ export const buttonVariants: Record<ButtonVariant, string> = {
   create: "bg-accent text-accent-fg shadow-create active:translate-y-[2px] active:shadow-none",
 };
 
+/**
+ * 44px is the floor for every size, including `sm`: density in toolbars and admin
+ * rows comes from padding and type scale, not from a shorter box. The CI audit
+ * reports any interactive box under 44×44, so this is the whole app's fix rather
+ * than per-page `min-h-11` patches.
+ */
 export const buttonSizes: Record<ButtonSize, string> = {
-  sm: "h-8 rounded-button px-3 text-small",
-  md: "h-10 rounded-button px-4 text-[0.9375rem]",
-  lg: "h-12 rounded-button px-5 text-[0.9375rem]",
+  sm: "h-11 min-h-11 rounded-button px-3 text-small",
+  md: "h-11 min-h-11 rounded-button px-4 text-[0.9375rem]",
+  lg: "h-12 min-h-12 rounded-button px-5 text-[0.9375rem]",
 };
 
 export interface ButtonStyleOptions {

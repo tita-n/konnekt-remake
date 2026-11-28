@@ -23,7 +23,7 @@ function tableStatusBadge(status: UserStatus) {
     case "SUSPENDED":
       return { label: "Suspended", badge: "bg-danger-soft text-danger", dot: "bg-danger" };
     case "PENDING":
-      return { label: "Pending", badge: "bg-highlight-soft text-highlight-fg", dot: "bg-highlight" };
+      return { label: "Pending", badge: "bg-highlight-soft highlight-ink", dot: "bg-highlight" };
     case "ALUMNI":
       return { label: "Alumni", badge: "bg-accent-soft text-accent-ink", dot: "bg-accent" };
     default:
@@ -120,7 +120,7 @@ export default async function StudentsPage({
               key={pill.key}
               href={buildHref({ nextStatus: pill.key, nextPage: 1, nextSelected: null })}
               className={cn(
-                "inline-flex h-9 items-center rounded-full px-3.5 text-small font-semibold transition",
+                "inline-flex -my-1 min-h-11 items-center rounded-full px-3.5 text-small font-semibold transition",
                 active
                   ? "bg-accent text-accent-fg shadow-sm"
                   : "border border-border bg-surface text-fg-muted hover:bg-surface-2 hover:text-fg",
@@ -171,7 +171,7 @@ export default async function StudentsPage({
                           href={buildHref({ nextSelected: isSelected ? null : student.id })}
                           aria-label={isSelected ? `Deselect ${student.fullName}` : `Select ${student.fullName}`}
                           className={cn(
-                            "flex size-4 items-center justify-center rounded border transition",
+                            "flex size-11 -m-3.5 items-center justify-center rounded border transition",
                             isSelected ? "border-accent bg-accent" : "border-border bg-surface",
                           )}
                         >
@@ -181,7 +181,7 @@ export default async function StudentsPage({
                       <td className="px-3 py-3.5">
                         <Link
                           href={buildHref({ nextSelected: student.id })}
-                          className="flex items-center gap-3 focus:outline-none"
+                          className="flex min-h-11 items-center gap-3 focus:outline-none"
                         >
                           <Avatar name={student.fullName} seed={student.username} src={student.photoUrl} size="sm" />
                           <span className="min-w-0">
@@ -228,7 +228,7 @@ export default async function StudentsPage({
               <Link
                 href={buildHref({ nextPage: result.page - 1, nextSelected: null })}
                 aria-label="Previous page"
-                className={cn(buttonStyles({ variant: "secondary", size: "sm" }), "size-9 rounded-lg px-0")}
+                className={cn(buttonStyles({ variant: "secondary", size: "sm" }), "size-11 rounded-lg px-0")}
               >
                 <ChevronLeft aria-hidden="true" className="size-4" />
               </Link>
@@ -239,7 +239,7 @@ export default async function StudentsPage({
                 href={buildHref({ nextPage: pageNum, nextSelected: null })}
                 aria-current={result.page === pageNum ? "page" : undefined}
                 className={cn(
-                  "flex size-9 items-center justify-center rounded-lg text-small font-semibold transition",
+                  "flex size-11 items-center justify-center rounded-lg text-small font-semibold transition",
                   result.page === pageNum
                     ? "bg-accent text-accent-fg"
                     : "border border-border bg-surface text-fg-muted hover:bg-surface-2",
@@ -254,7 +254,7 @@ export default async function StudentsPage({
                 <Link
                   href={buildHref({ nextPage: result.pageCount, nextSelected: null })}
                   className={cn(
-                    "flex size-9 items-center justify-center rounded-lg text-small font-semibold transition",
+                    "flex size-11 items-center justify-center rounded-lg text-small font-semibold transition",
                     result.page === result.pageCount
                       ? "bg-accent text-accent-fg"
                       : "border border-border bg-surface text-fg-muted hover:bg-surface-2",
@@ -268,7 +268,7 @@ export default async function StudentsPage({
               <Link
                 href={buildHref({ nextPage: result.page + 1, nextSelected: null })}
                 aria-label="Next page"
-                className={cn(buttonStyles({ variant: "secondary", size: "sm" }), "size-9 rounded-lg px-0")}
+                className={cn(buttonStyles({ variant: "secondary", size: "sm" }), "size-11 rounded-lg px-0")}
               >
                 <ChevronRight aria-hidden="true" className="size-4" />
               </Link>

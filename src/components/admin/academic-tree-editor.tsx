@@ -82,21 +82,21 @@ function TreeRows({
                 <form action={moveNodeAction}>
                   <input type="hidden" name="nodeId" value={node.id} />
                   <input type="hidden" name="direction" value="up" />
-                  <button type="submit" className="flex size-7 items-center justify-center rounded hover:bg-surface-2" aria-label={`Move ${node.name} up`}>
+                  <button type="submit" className="flex -m-2 size-11 items-center justify-center rounded hover:bg-surface-2" aria-label={`Move ${node.name} up`}>
                     <ArrowUp aria-hidden="true" className="size-3.5" />
                   </button>
                 </form>
                 <form action={moveNodeAction}>
                   <input type="hidden" name="nodeId" value={node.id} />
                   <input type="hidden" name="direction" value="down" />
-                  <button type="submit" className="flex size-7 items-center justify-center rounded hover:bg-surface-2" aria-label={`Move ${node.name} down`}>
+                  <button type="submit" className="flex -m-2 size-11 items-center justify-center rounded hover:bg-surface-2" aria-label={`Move ${node.name} down`}>
                     <ArrowDown aria-hidden="true" className="size-3.5" />
                   </button>
                 </form>
-                <button type="button" onClick={() => onEdit(node)} className="flex size-7 items-center justify-center rounded hover:bg-surface-2" aria-label={`Edit ${node.name}`}>
+                <button type="button" onClick={() => onEdit(node)} className="flex -m-2 size-11 items-center justify-center rounded hover:bg-surface-2" aria-label={`Edit ${node.name}`}>
                   <Pencil aria-hidden="true" className="size-3.5" />
                 </button>
-                <button type="button" onClick={() => onDelete(node)} className="flex size-7 items-center justify-center rounded text-danger hover:bg-danger-soft" aria-label={`Delete ${node.name}`}>
+                <button type="button" onClick={() => onDelete(node)} className="flex -m-2 size-11 items-center justify-center rounded text-danger hover:bg-danger-soft" aria-label={`Delete ${node.name}`}>
                   <Trash2 aria-hidden="true" className="size-3.5" />
                 </button>
               </span>
@@ -152,7 +152,7 @@ export function AcademicTreeEditor({ nodes, labels }: { nodes: EditorNode[]; lab
 
   return (
     <div className="space-y-5">
-      <div className="grid gap-4 lg:grid-cols-[1.25fr_1fr]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[1.25fr_1fr]">
         <div className="rounded-card border border-border bg-surface">
           <div className="border-b border-border px-4 py-3">
             <h2 className="text-h3 text-fg">Structure</h2>
@@ -183,7 +183,7 @@ export function AcademicTreeEditor({ nodes, labels }: { nodes: EditorNode[]; lab
                   name="type"
                   value={type}
                   onChange={(event) => setType(event.target.value as AcademicNodeType)}
-                  className="h-10 w-full rounded-input border border-border bg-surface px-3 text-small"
+                  className="h-11 w-full rounded-input border border-border bg-surface px-3 text-small"
                 >
                   <option value="COLLEGE">{labels.college}</option>
                   <option value="FACULTY">{labels.faculty}</option>
@@ -198,7 +198,7 @@ export function AcademicTreeEditor({ nodes, labels }: { nodes: EditorNode[]; lab
                   required
                   maxLength={80}
                   placeholder={type === "DEPARTMENT" ? "Computer Science" : type === "FACULTY" ? "Faculty of Science" : "College of Health Sciences"}
-                  className="h-10 w-full rounded-input border border-border bg-surface px-3 text-small"
+                  className="h-11 w-full rounded-input border border-border bg-surface px-3 text-small"
                 />
               </div>
               {type !== "COLLEGE" ? (
@@ -206,7 +206,7 @@ export function AcademicTreeEditor({ nodes, labels }: { nodes: EditorNode[]; lab
                   <label htmlFor="node-parent" className="mb-1 block text-small font-semibold text-fg">
                     Parent {type === "DEPARTMENT" ? labels.faculty : labels.college}
                   </label>
-                  <select id="node-parent" name="parentId" className="h-10 w-full rounded-input border border-border bg-surface px-3 text-small">
+                  <select id="node-parent" name="parentId" className="h-11 w-full rounded-input border border-border bg-surface px-3 text-small">
                     <option value="">{type === "DEPARTMENT" ? "Choose a faculty…" : "None (top level)"}</option>
                     {parents.map((parent) => (
                       <option key={parent.id} value={parent.id}>{parent.name}</option>
@@ -222,7 +222,7 @@ export function AcademicTreeEditor({ nodes, labels }: { nodes: EditorNode[]; lab
                   <legend className="mb-1.5 text-small font-semibold text-fg">Levels offered</legend>
                   <div className="flex flex-wrap gap-2">
                     {LEVEL_OPTIONS.map((level) => (
-                      <label key={level} className="inline-flex items-center gap-1.5 rounded-chip border border-border px-2.5 py-1 text-[0.75rem] font-semibold has-[:checked]:border-accent has-[:checked]:bg-accent-soft has-[:checked]:text-accent-soft-fg">
+                      <label key={level} className="inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-chip border border-border px-2.5 py-1 text-[0.75rem] font-semibold has-[:checked]:border-accent has-[:checked]:bg-accent-soft has-[:checked]:text-accent-soft-fg">
                         <input type="checkbox" name="levels" value={level} defaultChecked={[100, 200, 300, 400].includes(level)} className="size-3 accent-[var(--accent)]" />
                         {level}
                       </label>
@@ -251,7 +251,7 @@ export function AcademicTreeEditor({ nodes, labels }: { nodes: EditorNode[]; lab
             <p className="mt-1 text-small text-fg-muted">
               Columns: college, faculty, department, levels (semicolon separated). Header optional.
             </p>
-            <label className="mt-3 flex cursor-pointer items-center justify-center gap-2 rounded-button border border-dashed border-border-strong px-3 py-2.5 text-small font-semibold text-fg-muted hover:bg-surface-2">
+            <label className="mt-3 flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-button border border-dashed border-border-strong px-3 py-2.5 text-small font-semibold text-fg-muted hover:bg-surface-2">
               <FileUp aria-hidden="true" className="size-4" />
               {fileName ?? "Choose a CSV file"}
               <input
@@ -342,14 +342,14 @@ export function AcademicTreeEditor({ nodes, labels }: { nodes: EditorNode[]; lab
             <input type="hidden" name="nodeId" value={editing.id} />
             <div>
               <label htmlFor="edit-name" className="mb-1 block text-small font-semibold text-fg">Name</label>
-              <input id="edit-name" name="name" defaultValue={editing.name} required maxLength={80} className="h-10 w-full rounded-input border border-border bg-surface px-3 text-small" />
+              <input id="edit-name" name="name" defaultValue={editing.name} required maxLength={80} className="h-11 w-full rounded-input border border-border bg-surface px-3 text-small" />
             </div>
             {editing.type === "DEPARTMENT" ? (
               <fieldset>
                 <legend className="mb-1.5 text-small font-semibold text-fg">Levels</legend>
                 <div className="flex flex-wrap gap-2">
                   {LEVEL_OPTIONS.map((level) => (
-                    <label key={level} className="inline-flex items-center gap-1.5 rounded-chip border border-border px-2.5 py-1 text-[0.75rem] font-semibold has-[:checked]:border-accent has-[:checked]:bg-accent-soft">
+                    <label key={level} className="inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-chip border border-border px-2.5 py-1 text-[0.75rem] font-semibold has-[:checked]:border-accent has-[:checked]:bg-accent-soft">
                       <input type="checkbox" name="levels" value={level} defaultChecked={editing.levels.includes(level)} className="size-3 accent-[var(--accent)]" />
                       {level}
                     </label>

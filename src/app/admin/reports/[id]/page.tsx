@@ -17,7 +17,7 @@ export default async function AdminReportDetailPage({ params }: { params: Promis
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
-      <Link href="/admin/reports" className="inline-flex items-center gap-1.5 text-small font-semibold text-fg-muted hover:text-fg">
+      <Link href="/admin/reports" className="inline-flex min-h-11 items-center gap-1.5 text-small font-semibold text-fg-muted hover:text-fg">
         <ArrowLeft aria-hidden="true" className="size-4" /> Reports
       </Link>
       <ReportDetailPane report={report} />

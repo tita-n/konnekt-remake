@@ -260,7 +260,7 @@ export function PulseFeed({
       </div>
 
       {!online ? (
-        <div className="mx-3.5 mt-2 flex items-center gap-2.5 rounded-button border border-warning/30 bg-highlight-soft px-3.5 py-2 text-small font-medium text-highlight-fg" role="status">
+        <div className="mx-3.5 mt-2 flex items-center gap-2.5 rounded-button border border-warning/30 bg-highlight-soft px-3.5 py-2 text-small font-medium highlight-ink" role="status">
           <WifiOff aria-hidden="true" className="size-4 shrink-0" />
           <span>You&apos;re offline. Showing saved posts.</span>
         </div>
@@ -271,7 +271,7 @@ export function PulseFeed({
           <button
             type="button"
             onClick={() => void loadFirst(filter)}
-            className="inline-flex h-9 items-center gap-1.5 rounded-full bg-accent px-4 text-small font-semibold text-accent-fg shadow-pill"
+            className="inline-flex -my-1 min-h-11 items-center gap-1.5 rounded-full bg-accent px-4 text-small font-semibold text-accent-fg shadow-pill"
           >
             <ArrowUp aria-hidden="true" className="size-4" />
             {newCount} new {newCount === 1 ? "post" : "posts"}
@@ -362,7 +362,7 @@ export function PulseFeed({
                     <li key={tag.tag} className="shrink-0">
                       <Link
                         href={`/hashtag/${tag.tag}`}
-                        className="inline-flex h-8 items-center gap-1.5 rounded-full border border-border bg-surface px-3 text-small font-medium text-accent-ink transition hover:border-accent"
+                        className="inline-flex -my-1.5 min-h-11 items-center gap-1.5 rounded-full border border-border bg-surface px-3 text-small font-medium text-accent-ink transition hover:border-accent"
                       >
                         <span>#{tag.tag}</span>
                         {tag.postCount > 0 ? <span className="text-tiny tabular-nums text-fg-subtle">{formatCompactCount(tag.postCount)}</span> : null}

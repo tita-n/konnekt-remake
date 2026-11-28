@@ -190,7 +190,7 @@ export function DesktopTrendingRail({
                   <li key={item.tag}>
                     <Link
                       href={`/hashtag/${encodeURIComponent(item.tag)}`}
-                      className="flex min-h-10 items-center justify-between gap-2 rounded-button bg-surface px-3 py-2 text-small transition hover:border-border-strong"
+                      className="flex min-h-11 items-center justify-between gap-2 rounded-button bg-surface px-3 py-2 text-small transition hover:border-border-strong"
                     >
                       <span className="truncate font-semibold text-accent-ink">#{item.tag}</span>
                       {n > 0 ? <span className="shrink-0 text-tiny tabular-nums text-fg-muted">{n}</span> : null}

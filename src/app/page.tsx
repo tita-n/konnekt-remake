@@ -94,13 +94,13 @@ export default async function WelcomePage() {
           <footer className="mt-auto flex flex-col items-center justify-between gap-2 border-t border-border pt-5 text-tiny text-fg-muted sm:flex-row">
             <p>© {new Date().getFullYear()} Konnekt. Made for Nigerian campuses.</p>
             <nav aria-label="Legal" className="flex flex-wrap items-center gap-4">
-              <Link href="/legal/terms" className="inline-flex min-h-11 items-center hover:text-fg hover:underline">
+              <Link href="/legal/terms" className="inline-flex min-h-11 min-w-11 items-center px-1.5 hover:text-fg hover:underline">
                 Terms
               </Link>
-              <Link href="/legal/privacy" className="inline-flex min-h-11 items-center hover:text-fg hover:underline">
+              <Link href="/legal/privacy" className="inline-flex min-h-11 min-w-11 items-center px-1.5 hover:text-fg hover:underline">
                 Privacy
               </Link>
-              <Link href="/legal/community-rules" className="inline-flex min-h-11 items-center hover:text-fg hover:underline">
+              <Link href="/legal/community-rules" className="inline-flex min-h-11 min-w-11 items-center px-1.5 hover:text-fg hover:underline">
                 Community Rules
               </Link>
             </nav>

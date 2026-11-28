@@ -239,7 +239,9 @@ export function CommunitySettings({
           <Link href={`/c/${community.slug}`} aria-label="Back" className="flex size-11 items-center justify-center rounded-full hover:bg-surface-2">
             <ArrowLeft aria-hidden="true" className="size-5" />
           </Link>
-          <h1 className="flex-1 truncate text-center font-display text-[1.0625rem] font-bold">
+          {/* Two short lines fit inside the 56px bar at 320px; one truncated line loses the
+            word that says which page this is. */}
+          <h1 className="line-clamp-2 flex-1 text-center font-display text-[0.9375rem] font-bold leading-[1.15] sm:text-[1.0625rem]">
             {community.name} settings
           </h1>
           <span className="size-11" aria-hidden="true" />
@@ -322,13 +324,13 @@ export function CommunitySettings({
                     setRules((current) => current.map((item, i) => (i === index ? { ...item, title: event.target.value.slice(0, 60) } : item)))
                   }
                   aria-label={`Rule ${index + 1} title`}
-                  className="min-w-0 flex-1 bg-transparent text-small font-semibold text-fg outline-none"
+                  className="min-h-11 -my-2 min-w-0 flex-1 bg-transparent text-small font-semibold text-fg outline-none"
                 />
                 <button
                   type="button"
                   aria-label={`Remove rule ${index + 1}`}
                   onClick={() => setRules((current) => current.filter((_, i) => i !== index))}
-                  className="flex size-8 items-center justify-center rounded-full text-fg-subtle hover:bg-surface-2 hover:text-danger"
+                  className="flex -m-1.5 size-11 items-center justify-center rounded-full text-fg-subtle hover:bg-surface-2 hover:text-danger"
                 >
                   <Trash2 aria-hidden="true" className="size-4" />
                 </button>
@@ -340,7 +342,7 @@ export function CommunitySettings({
                 }
                 aria-label={`Rule ${index + 1} description`}
                 rows={2}
-                className="mt-1 w-full resize-none bg-transparent text-small text-fg-muted outline-none"
+                className="mt-1 w-full min-h-11 resize-none bg-transparent text-small text-fg-muted outline-none"
               />
             </div>
           ))}
@@ -427,7 +429,7 @@ export function CommunitySettings({
                 />
               </div>
             ) : (
-              <div className="mt-3 grid grid-cols-2 gap-2">
+              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <SelectField
                   label="Expires"
                   value={String(inviteDays)}
@@ -451,7 +453,7 @@ export function CommunitySettings({
                 <button
                   type="button"
                   onClick={() => void navigator.clipboard?.writeText(newLink)}
-                  className="flex size-9 items-center justify-center rounded-full text-accent-ink hover:bg-surface"
+                  className="flex size-11 items-center justify-center rounded-full text-accent-ink hover:bg-surface"
                   aria-label="Copy invite link"
                 >
                   <Copy aria-hidden="true" className="size-4" />

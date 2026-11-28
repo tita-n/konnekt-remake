@@ -201,7 +201,7 @@ export function OrganiserDashboard({
               type="button"
               onClick={() => setStatus(filter.value)}
               aria-pressed={status === filter.value}
-              className={`min-h-9 shrink-0 rounded-chip border px-3 text-tiny font-semibold ${
+              className={`min-h-11 min-w-11 shrink-0 rounded-chip border px-3 text-tiny font-semibold ${
                 status === filter.value ? "border-accent bg-accent-soft text-accent-soft-fg" : "border-border text-fg-muted"
               }`}
             >

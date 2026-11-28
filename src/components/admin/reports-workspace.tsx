@@ -18,7 +18,7 @@ import { cn, timeAgo } from "@/lib/utils";
 
 const SEVERITY_STYLE = {
   high: "bg-danger-soft text-danger",
-  medium: "bg-highlight-soft text-highlight-fg",
+  medium: "bg-highlight-soft highlight-ink",
   low: "bg-success-soft text-success",
 } as const;
 
@@ -72,7 +72,7 @@ export function ReportDetailPane({
             <Link
               href={`/admin/students/${report.target.authorId}/moderation`}
               aria-label={`View ${report.target.authorName} moderation history`}
-              className="flex size-10 items-center justify-center rounded-full text-fg-subtle hover:bg-surface-2"
+              className="flex size-11 items-center justify-center rounded-full text-fg-subtle hover:bg-surface-2"
             >
               <MoreHorizontal aria-hidden="true" className="size-4" />
             </Link>
@@ -112,7 +112,7 @@ export function ReportDetailPane({
         </div>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-2">
         <section className="rounded-[14px] border border-border bg-surface p-3.5">
           <h3 className="text-small font-bold text-fg">Reports</h3>
           <div className="mt-2.5 flex items-center justify-between gap-2 text-small">
@@ -135,7 +135,7 @@ export function ReportDetailPane({
             {report.target ? (
               <Link
                 href={`/admin/students/${report.target.authorId}/moderation`}
-                className="text-tiny font-semibold text-accent-ink hover:underline"
+                className="inline-flex min-h-11 min-w-11 items-center px-1 text-tiny font-semibold text-accent-ink hover:underline"
               >
                 History
               </Link>
@@ -212,7 +212,7 @@ export function ReportsWorkspace({
   const selectedId = selectedDetail?.id ?? reports[0]?.id ?? null;
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[360px_minmax(0,1fr)] lg:items-start">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[360px_minmax(0,1fr)] lg:items-start">
       <div className="space-y-3.5">
         <header>
           <h1 className="font-display text-h1 text-fg">Reports</h1>
@@ -257,7 +257,7 @@ export function ReportsWorkspace({
                 href={`/admin/reports?status=${status}&type=${item.value}`}
                 aria-current={type === item.value ? "page" : undefined}
                 className={cn(
-                  "inline-flex h-8 items-center rounded-chip px-3 text-tiny font-semibold transition",
+                  "inline-flex -my-1.5 min-h-11 items-center rounded-chip px-3 text-tiny font-semibold transition",
                   type === item.value
                     ? "bg-accent text-accent-fg"
                     : "border border-border bg-surface text-fg-muted hover:text-fg",

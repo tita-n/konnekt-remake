@@ -213,11 +213,11 @@ export function CommunityConsole({ initial, isAdmin }: { initial: CommunityAdmin
                   <Link href={`/c/${row.slug}`} className="truncate text-small font-bold text-fg hover:text-accent-ink">
                     {row.name}
                   </Link>
-                  <p className="truncate text-tiny text-fg-muted">
+                  <p className="line-clamp-2 text-tiny text-fg-muted">
                     {COMMUNITY_PRIVACY_LABELS[row.privacy]} · {CATEGORY_LABELS.get(row.category) ?? row.category}
                     {row.isOfficial ? " · official" : ""}
                   </p>
-                  <div className="mt-1 flex flex-wrap gap-1 md:hidden">
+                  <div className="mt-1 flex flex-wrap gap-2 md:hidden">
                     <StatusPill status={row.status} />
                     <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[0.625rem] text-fg-muted">{row.memberCount} members</span>
                     {row.reportCount > 0 ? (
@@ -235,14 +235,14 @@ export function CommunityConsole({ initial, isAdmin }: { initial: CommunityAdmin
                 <span className={row.reportCount > 0 ? "hidden text-small font-semibold text-danger md:block" : "hidden text-small text-fg-muted md:block"}>
                   {row.reportCount}
                 </span>
-                <span className="hidden truncate text-tiny text-fg-muted md:block">
+                <span className="hidden text-tiny text-fg-muted md:block">
                   {row.owner ? `@${row.owner.username}` : "No owner"}
                 </span>
                 <div className="flex shrink-0 items-center gap-1">
                   <Link
                     href={`/c/${row.slug}`}
                     aria-label={`Open ${row.name}`}
-                    className="flex size-9 items-center justify-center rounded-full text-fg-subtle hover:bg-surface-2 hover:text-fg"
+                    className="flex size-11 items-center justify-center rounded-full text-fg-subtle hover:bg-surface-2 hover:text-fg"
                   >
                     <ArrowUpRight aria-hidden="true" className="size-4" />
                   </Link>

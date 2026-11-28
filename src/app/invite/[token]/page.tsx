@@ -29,7 +29,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
     <main id="main" className="flex min-h-dvh items-center justify-center bg-bg px-4 py-10">
       <div className="w-full max-w-md">
         <div className="mb-5 flex items-center gap-2 text-fg">
-          <span className="flex size-9 items-center justify-center rounded-[10px] bg-accent text-accent-fg">
+          <span className="flex size-11 items-center justify-center rounded-[10px] bg-accent text-accent-fg">
             <ShieldCheck aria-hidden="true" className="size-5" />
           </span>
           <span className="text-h3 font-bold">Konnekt staff</span>

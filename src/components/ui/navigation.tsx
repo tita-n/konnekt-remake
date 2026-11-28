@@ -33,7 +33,7 @@ export function Tabs({
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "relative inline-flex h-9 items-center gap-1.5 rounded-chip px-3 text-small font-semibold transition-colors",
+                  "relative inline-flex -my-1 min-h-11 items-center gap-1.5 rounded-chip px-3 text-small font-semibold transition-colors",
                   active ? "bg-accent-soft text-accent-soft-fg" : "text-fg-muted hover:bg-surface-2 hover:text-fg",
                 )}
               >
@@ -82,7 +82,7 @@ export function SegmentedControl<T extends string>({
             aria-checked={selected}
             onClick={() => onChange(option.value)}
             className={cn(
-              "flex h-10 min-w-0 flex-1 items-center justify-center gap-1.5 truncate rounded-[9px] px-2 text-small font-semibold transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
+              "flex h-11 min-h-11 min-w-0 flex-1 items-center justify-center gap-1.5 truncate rounded-[9px] px-2 text-small font-semibold transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
               selected
                 ? "border border-border-strong bg-surface-2 text-fg"
                 : "border border-transparent text-fg-muted hover:bg-surface-2 hover:text-fg",

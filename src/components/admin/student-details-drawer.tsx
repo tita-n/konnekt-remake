@@ -34,7 +34,7 @@ function statusPillStyle(status: string): { label: string; badge: string; dot: s
     case "SUSPENDED":
       return { label: "Suspended", badge: "bg-danger-soft text-danger", dot: "bg-danger" };
     case "PENDING":
-      return { label: "Pending", badge: "bg-highlight-soft text-highlight-fg", dot: "bg-highlight" };
+      return { label: "Pending", badge: "bg-highlight-soft highlight-ink", dot: "bg-highlight" };
     case "ALUMNI":
       return { label: "Alumni", badge: "bg-accent-soft text-accent-ink", dot: "bg-accent" };
     default:
@@ -45,7 +45,7 @@ function statusPillStyle(status: string): { label: string; badge: string; dot: s
 function historyReasonPill(reasonLabel: string): string {
   const lower = reasonLabel.toLowerCase();
   if (lower.includes("harass") || lower.includes("violen")) return "bg-danger-soft text-danger";
-  if (lower.includes("hate") || lower.includes("abuse")) return "bg-highlight-soft text-highlight-fg";
+  if (lower.includes("hate") || lower.includes("abuse")) return "bg-highlight-soft highlight-ink";
   return "bg-accent-soft text-accent-ink";
 }
 
@@ -128,7 +128,7 @@ export function StudentDetailsDrawer({
             type="button"
             onClick={onClose}
             aria-label="Close student details"
-            className="flex size-10 items-center justify-center rounded-full text-fg-muted hover:bg-surface-2 hover:text-fg"
+            className="flex size-11 items-center justify-center rounded-full text-fg-muted hover:bg-surface-2 hover:text-fg"
           >
             <X aria-hidden="true" className="size-5" />
           </button>
@@ -136,7 +136,7 @@ export function StudentDetailsDrawer({
           <Link
             href={closeHref}
             aria-label="Close student details"
-            className="flex size-10 items-center justify-center rounded-full text-fg-muted hover:bg-surface-2 hover:text-fg"
+            className="flex size-11 items-center justify-center rounded-full text-fg-muted hover:bg-surface-2 hover:text-fg"
           >
             <X aria-hidden="true" className="size-5" />
           </Link>

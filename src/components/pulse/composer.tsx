@@ -595,7 +595,7 @@ export function Composer({
               <button
                 type="button"
                 onClick={() => { setAudienceDraft(audienceId); setAudienceOpen(true); }}
-                className="mt-2.5 inline-flex h-8 items-center gap-1.5 rounded-full bg-accent-soft px-3.5 text-small font-semibold text-accent-soft-fg transition hover:bg-accent-soft/80"
+                className="mt-2.5 inline-flex -my-1.5 min-h-11 items-center gap-1.5 rounded-full bg-accent-soft px-3.5 text-small font-semibold text-accent-soft-fg transition hover:bg-accent-soft/80"
               >
                 <Users aria-hidden="true" className="size-3.5 text-accent-ink" />
                 <span>Posting to: {audience?.label ?? "your audience"}</span>
@@ -622,7 +622,7 @@ export function Composer({
                 <label htmlFor="topic-tag" className="block text-small font-medium text-fg-muted">Topic (optional)</label>
                 <div className="mt-1.5 flex flex-wrap items-center gap-2">
                   {topicTag && !editingTopic ? (
-                    <span className="inline-flex h-9 items-center gap-1.5 rounded-full bg-accent-soft px-3.5 text-small font-semibold text-accent-soft-fg">
+                    <span className="inline-flex -my-1 min-h-11 items-center gap-1.5 rounded-full bg-accent-soft px-3.5 text-small font-semibold text-accent-soft-fg">
                       <span>{topicTag}</span>
                       <button
                         type="button"
@@ -714,7 +714,7 @@ export function Composer({
                                 return copy;
                               })
                             }
-                            className="flex size-8 items-center justify-center rounded-full text-fg-subtle hover:bg-surface-2 hover:text-fg"
+                            className="flex -m-1.5 size-11 items-center justify-center rounded-full text-fg-subtle hover:bg-surface-2 hover:text-fg"
                           >
                             <ChevronUp aria-hidden="true" className="size-3.5" />
                           </button>
@@ -729,7 +729,7 @@ export function Composer({
                               setPollOptions((current) => current.map((value, position) => (position === index ? "" : value)));
                             }
                           }}
-                          className="flex size-8 items-center justify-center rounded-full text-fg-subtle hover:bg-surface-2 hover:text-fg"
+                          className="flex -m-1.5 size-11 items-center justify-center rounded-full text-fg-subtle hover:bg-surface-2 hover:text-fg"
                         >
                           <X aria-hidden="true" className="size-4" />
                         </button>
@@ -850,6 +850,7 @@ export function Composer({
             multiple
             className="sr-only"
             id="composer-images"
+            aria-label="Attach images to this post"
             onChange={(event) => void addFiles(event.target.files)}
             disabled={mode === "POLL"}
           />
@@ -860,6 +861,7 @@ export function Composer({
             capture="environment"
             className="sr-only"
             id="composer-camera"
+            aria-label="Take a photo for this post"
             onChange={(event) => void addFiles(event.target.files)}
             disabled={mode === "POLL"}
           />

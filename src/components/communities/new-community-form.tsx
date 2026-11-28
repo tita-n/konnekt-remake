@@ -341,13 +341,13 @@ export function NewCommunityForm() {
                     }
                     placeholder="Rule title"
                     aria-label={`Rule ${index + 1} title`}
-                    className="min-w-0 flex-1 bg-transparent text-small font-semibold text-fg outline-none placeholder:text-fg-subtle"
+                    className="min-h-11 -my-2 min-w-0 flex-1 bg-transparent text-small font-semibold text-fg outline-none placeholder:text-fg-subtle"
                   />
                   <button
                     type="button"
                     aria-label={`Remove rule ${index + 1}`}
                     onClick={() => setRules((current) => current.filter((_, i) => i !== index))}
-                    className="flex size-8 items-center justify-center rounded-full text-fg-subtle hover:bg-surface-2 hover:text-danger"
+                    className="flex -m-1.5 size-11 items-center justify-center rounded-full text-fg-subtle hover:bg-surface-2 hover:text-danger"
                   >
                     <Trash2 aria-hidden="true" className="size-4" />
                   </button>
@@ -360,7 +360,7 @@ export function NewCommunityForm() {
                   placeholder="Explain the rule"
                   aria-label={`Rule ${index + 1} description`}
                   rows={2}
-                  className="mt-1.5 w-full resize-none bg-transparent text-small text-fg-muted outline-none placeholder:text-fg-subtle"
+                  className="mt-1.5 w-full min-h-11 resize-none bg-transparent text-small text-fg-muted outline-none placeholder:text-fg-subtle"
                 />
               </div>
             ))}

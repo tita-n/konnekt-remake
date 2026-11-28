@@ -40,7 +40,7 @@ export default async function VerificationDetailPage({ params }: { params: Promi
         <RubberStamp status={stampStatus} />
       </header>
 
-      <div className="grid gap-4 lg:grid-cols-[1.1fr_1fr]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[1.1fr_1fr]">
         <Card className="overflow-hidden">
           <div className="border-b border-border px-4 py-3">
             <h2 className="text-h3 text-fg">Submitted document</h2>

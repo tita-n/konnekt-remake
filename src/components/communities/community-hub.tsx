@@ -327,7 +327,7 @@ export function CommunityHub({
               </div>
             ) : (
               <>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-2">
                   {payload.communities.map((community) => (
                     <CommunityCard key={community.id} community={community} showActivity />
                   ))}

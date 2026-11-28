@@ -129,7 +129,7 @@ export function ProfileEditForm({
               };
               input.click();
             }}
-            className="inline-flex items-center gap-1.5 text-small font-semibold text-accent-ink underline-offset-2 hover:underline"
+            className="inline-flex min-h-11 items-center gap-1.5 text-small font-semibold text-accent-ink underline-offset-2 hover:underline"
           >
             <Camera aria-hidden="true" className="size-4" />
             Change photo

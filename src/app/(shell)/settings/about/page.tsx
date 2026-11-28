@@ -24,7 +24,7 @@ export default async function AboutPage() {
           </p>
           <a
             href="/api/account/export"
-            className="mt-3 inline-flex h-9 items-center gap-2 rounded-button border border-border-strong bg-surface px-3 text-small font-semibold text-fg hover:bg-surface-2"
+            className="mt-3 inline-flex -my-1 min-h-11 items-center gap-2 rounded-button border border-border-strong bg-surface px-3 text-small font-semibold text-fg hover:bg-surface-2"
           >
             <Download aria-hidden="true" className="size-4" />
             Export my data (JSON)
@@ -41,7 +41,7 @@ export default async function AboutPage() {
               { href: "/legal/community-rules", label: "Community Rules", icon: Users },
             ].map((item) => (
               <li key={item.href}>
-                <Link href={item.href} className="flex items-center gap-2.5 py-2.5 text-small font-medium text-fg hover:text-accent-ink">
+                <Link href={item.href} className="flex min-h-11 items-center gap-2.5 py-2.5 text-small font-medium text-fg hover:text-accent-ink">
                   <item.icon aria-hidden="true" className="size-4 text-fg-subtle" />
                   {item.label}
                   <ExternalLink aria-hidden="true" className="ml-auto size-3.5 text-fg-subtle" />

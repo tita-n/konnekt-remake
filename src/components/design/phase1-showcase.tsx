@@ -725,7 +725,7 @@ export function Phase1Showcase() {
             <div className="rounded-card border border-border bg-surface">
               <ErrorState description="Check your connection and try again." onRetry={() => undefined} />
             </div>
-            <div className="flex min-h-9 items-center gap-2.5 rounded-[12px] border border-warning/30 bg-highlight-soft px-3.5 py-2 text-small font-medium text-highlight-fg">
+            <div className="flex min-h-11 items-center gap-2.5 rounded-[12px] border border-warning/30 bg-highlight-soft px-3.5 py-2 text-small font-medium highlight-ink">
               <CloudOff aria-hidden="true" className="size-4 shrink-0" />
               You&apos;re offline. Showing saved content.
             </div>
@@ -848,7 +848,7 @@ export function Phase1Showcase() {
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5">
-                      <span className={cn("rounded-chip px-2 py-0.5 text-[0.6875rem] font-semibold", idx === 0 ? "bg-danger-soft text-danger" : "bg-highlight-soft text-highlight-fg")}>
+                      <span className={cn("rounded-chip px-2 py-0.5 text-[0.6875rem] font-semibold", idx === 0 ? "bg-danger-soft text-danger" : "bg-highlight-soft highlight-ink")}>
                         {idx === 0 ? "High" : "Medium"}
                       </span>
                       <span className="rounded-chip bg-accent-soft px-2 py-0.5 text-[0.6875rem] font-semibold text-accent-ink">

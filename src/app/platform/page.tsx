@@ -40,11 +40,11 @@ export default async function PlatformOverviewPage() {
         </Link>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((card) => (
           <Card key={card.label} className="p-4">
             <div className="flex items-start justify-between gap-3">
-              <span className="flex size-9 items-center justify-center rounded-[10px] bg-accent-soft text-accent-soft-fg">
+              <span className="flex size-11 items-center justify-center rounded-[10px] bg-accent-soft text-accent-soft-fg">
                 <card.icon aria-hidden="true" className="size-[18px]" />
               </span>
               <span className="text-[1.75rem] font-bold leading-none tabular-nums text-fg">{card.value}</span>
@@ -55,7 +55,7 @@ export default async function PlatformOverviewPage() {
         ))}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.3fr_1fr]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[1.3fr_1fr]">
         <Card>
           <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3.5">
             <h2 className="text-h3 text-fg">Campus spaces</h2>

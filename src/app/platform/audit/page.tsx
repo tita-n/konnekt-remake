@@ -45,12 +45,12 @@ export default async function AuditPage({
             <label htmlFor="action" className="mb-1 block text-small font-semibold text-fg">Action contains</label>
             <div className="relative">
               <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fg-subtle" />
-              <input id="action" name="action" defaultValue={action} placeholder="verification, student.suspended…" className="h-10 w-full rounded-input border border-border bg-surface pl-9 pr-3 text-small" />
+              <input id="action" name="action" defaultValue={action} placeholder="verification, student.suspended…" className="h-11 w-full rounded-input border border-border bg-surface pl-9 pr-3 text-small" />
             </div>
           </div>
           <div>
             <label htmlFor="universityId" className="mb-1 block text-small font-semibold text-fg">University</label>
-            <select id="universityId" name="universityId" defaultValue={universityId} className="h-10 rounded-input border border-border bg-surface px-3 text-small">
+            <select id="universityId" name="universityId" defaultValue={universityId} className="h-11 rounded-input border border-border bg-surface px-3 text-small">
               <option value="">All universities</option>
               {result.universities.map((university) => (
                 <option key={university.id} value={university.id}>{university.shortName}</option>
@@ -100,7 +100,13 @@ export default async function AuditPage({
                   <td className="px-4 py-3 text-fg-muted">{event.university?.shortName ?? "Platform"}</td>
                   <td className="px-4 py-3 text-fg-muted">
                     {event.targetType}
-                    {event.targetId ? <span className="block max-w-[160px] truncate font-mono text-[0.6875rem]">{event.targetId}</span> : null}
+                    {/* Ids are opaque and never wrap usefully, so the cell truncates and carries the
+                    full value as a title instead. */}
+                    {event.targetId ? (
+                      <span className="block max-w-[160px] truncate font-mono text-[0.6875rem]" title={event.targetId}>
+                        {event.targetId}
+                      </span>
+                    ) : null}
                   </td>
                   <td className="max-w-[240px] px-4 py-3">
                     <code className="block break-all text-[0.6875rem] text-fg-subtle">{JSON.stringify(event.metadata)}</code>

@@ -604,7 +604,7 @@ export function ScreenPreviewClient({ screen, theme }: { screen: string; theme: 
                   ))}
                 </div>
                 <div className="mt-2 flex justify-center">
-                  <span className="inline-flex h-9 items-center gap-1.5 rounded-chip bg-accent px-4 text-small font-semibold text-accent-fg shadow-pill">
+                  <span className="inline-flex -my-1 min-h-11 items-center gap-1.5 rounded-chip bg-accent px-4 text-small font-semibold text-accent-fg shadow-pill">
                     <ArrowUp aria-hidden="true" className="size-4" /> 5 new posts
                   </span>
                 </div>
@@ -640,7 +640,7 @@ export function ScreenPreviewClient({ screen, theme }: { screen: string; theme: 
 
       {screen === "pulse-states" ? (
         <main className="mx-auto max-w-feed space-y-4 px-4 py-5">
-          <div className="flex min-h-9 items-center gap-2.5 rounded-[12px] border border-warning/30 bg-highlight-soft px-3.5 py-2 text-small font-medium text-highlight-fg">
+          <div className="flex min-h-11 items-center gap-2.5 rounded-[12px] border border-warning/30 bg-highlight-soft px-3.5 py-2 text-small font-medium highlight-ink">
             <CloudOff aria-hidden="true" className="size-4 shrink-0" />
             You&apos;re offline. Showing saved content.
           </div>
@@ -772,7 +772,7 @@ export function ScreenPreviewClient({ screen, theme }: { screen: string; theme: 
             </div>
             <div className="flex gap-2 overflow-x-auto">
               {["All", "Posts", "Questions", "Polls"].map((chip, i) => (
-                <span key={chip} className={cn("inline-flex h-8 shrink-0 items-center rounded-chip px-3.5 text-small font-semibold", i === 0 ? "bg-accent text-accent-fg" : "border border-border bg-surface text-fg-muted")}>{chip}</span>
+                <span key={chip} className={cn("inline-flex -my-1.5 min-h-11 shrink-0 items-center rounded-chip px-3.5 text-small font-semibold", i === 0 ? "bg-accent text-accent-fg" : "border border-border bg-surface text-fg-muted")}>{chip}</span>
               ))}
             </div>
             <PostCard post={DETAIL_QUESTION} />
@@ -1257,7 +1257,7 @@ export function ScreenPreviewClient({ screen, theme }: { screen: string; theme: 
       {screen === "platform-overview" ? (
         <div className="flex min-h-dvh bg-bg text-fg">
           <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-surface px-3 py-5 md:flex">
-            <div className="mx-2 mb-6 flex items-center gap-2.5"><LogoMark className="size-9" /><div><p className="font-display text-small font-bold">Konnekt</p><p className="text-[0.6875rem] text-fg-subtle">Platform console</p></div></div>
+            <div className="mx-2 mb-6 flex min-h-11 items-center gap-2.5"><LogoMark className="size-9" /><div><p className="font-display text-small font-bold">Konnekt</p><p className="text-[0.6875rem] text-fg-subtle">Platform console</p></div></div>
             <nav className="flex-1 space-y-1">
               {[{ label: "Overview", icon: Activity, active: true }, { label: "Universities", icon: Building2 }, { label: "Waitlist", icon: ClipboardList }].map((item) => (
                 <div key={item.label} className={cn("flex items-center gap-2.5 rounded-button px-3 py-2 text-small font-semibold", item.active ? "bg-accent-soft text-accent-ink" : "text-fg-muted")}><item.icon aria-hidden="true" className="size-[18px]" />{item.label}</div>

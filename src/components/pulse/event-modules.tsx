@@ -31,13 +31,13 @@ export function PulseEventModules({
         <section aria-labelledby="pulse-happening-now">
           <div className="mb-2 flex items-center justify-between">
             <h2 id="pulse-happening-now" className="flex items-center gap-2 text-h3 text-fg">
-              <span className="inline-flex items-center gap-1 rounded-chip bg-highlight-soft px-2 py-0.5 text-[0.6875rem] font-extrabold uppercase tracking-wide text-highlight-fg">
+              <span className="inline-flex items-center gap-1 rounded-chip bg-highlight-soft px-2 py-0.5 text-[0.6875rem] font-extrabold uppercase tracking-wide highlight-ink">
                 <span className="size-1.5 rounded-full bg-highlight" aria-hidden="true" />
                 Live
               </span>
               Happening now
             </h2>
-            <Link href="/events" className="inline-flex min-h-9 items-center text-tiny font-semibold text-accent-ink">
+            <Link href="/events" className="inline-flex min-h-11 min-w-11 items-center px-1 text-tiny font-semibold text-accent-ink">
               All events
               <ChevronRight aria-hidden="true" className="size-4" />
             </Link>
@@ -63,7 +63,7 @@ export function PulseEventModules({
               <CalendarDays aria-hidden="true" className="size-4 text-fg-muted" />
               Upcoming on campus
             </h2>
-            <Link href="/events" className="inline-flex min-h-9 items-center text-tiny font-semibold text-accent-ink">
+            <Link href="/events" className="inline-flex min-h-11 min-w-11 items-center px-1 text-tiny font-semibold text-accent-ink">
               See all
               <ChevronRight aria-hidden="true" className="size-4" />
             </Link>
