@@ -3,8 +3,41 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const workflow = readFileSync(path.join(process.cwd(), ".github/workflows/deploy.yml"), "utf8");
+const ci = readFileSync(path.join(process.cwd(), ".github/workflows/ci.yml"), "utf8");
+const vercel = JSON.parse(readFileSync(path.join(process.cwd(), "vercel.json"), "utf8"));
 
 describe("staging deploy workflow", () => {
+  it("is the only deploy path: Vercel Git deployments are disabled", () => {
+    expect(vercel.git.deploymentEnabled).toBe(false);
+  });
+
+  it("runs automatically after a successful CI push to main", () => {
+    expect(workflow).toContain("workflow_run:");
+    expect(workflow).toContain("workflows: [CI]");
+    expect(workflow).toContain("branches: [main]");
+    expect(workflow).toContain("github.event.workflow_run.conclusion == 'success'");
+    expect(workflow).toContain("github.event.workflow_run.event == 'push'");
+    expect(workflow).toContain("github.event.workflow_run.head_branch == 'main'");
+    expect(workflow).toContain("github.event.workflow_run.head_sha");
+  });
+
+  it("keeps validate, migrate, deploy, smoke in dependency order and fails loudly", () => {
+    expect(workflow).toContain("needs: validate-env");
+    expect(workflow).toContain("needs: migrate");
+    expect(workflow).toContain("needs: deploy");
+    expect(workflow.indexOf("npm run check:env -- staging")).toBeLessThan(
+      workflow.indexOf("npx prisma migrate deploy"),
+    );
+    expect(workflow.indexOf("npx prisma migrate deploy")).toBeLessThan(workflow.indexOf("npx vercel deploy --prod"));
+    expect(workflow.indexOf("npx vercel deploy --prod")).toBeLessThan(workflow.indexOf("npm run smoke:staging"));
+    expect(workflow).not.toContain("continue-on-error");
+  });
+
+  it("lints migrations in CI before applying them", () => {
+    expect(ci.indexOf("npm run lint:migrations")).toBeGreaterThan(-1);
+    expect(ci.indexOf("npm run lint:migrations")).toBeLessThan(ci.indexOf("npx prisma migrate deploy"));
+  });
+
   it("installs dev dependencies even though validation runs in production mode", () => {
     expect(workflow).not.toMatch(/^\s{4}env:\n(?:\s{6}.*\n)*\s{6}NODE_ENV:\s*production/m);
     const installs = workflow.match(/npm ci[^\n]*/g) ?? [];
