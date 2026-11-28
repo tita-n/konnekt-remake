@@ -48,6 +48,8 @@ export interface RepostSourceView {
   createdAt: string;
   author: PostAuthorView;
   status: PostStatusView;
+  /** True when the viewer cannot see the original (block, mute, removal). */
+  unavailable?: boolean;
 }
 
 export interface PostCommunityView {
@@ -85,6 +87,7 @@ export interface PostView {
   viewer: {
     reacted: boolean;
     bookmarked: boolean;
+    reposted: boolean;
     canInteract: boolean;
     isMember: boolean;
     role: "OWNER" | "MODERATOR" | "MEMBER" | null;
@@ -147,6 +150,9 @@ export interface PostDetailPayload {
 
 export interface DraftView {
   id: string;
+  clientDraftId: string;
+  contextKey: string;
+  version: number;
   type: PostTypeView;
   payload: {
     body?: string;

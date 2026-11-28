@@ -21,8 +21,17 @@ async function createPost(page: Page, body: string, audience?: string): Promise<
     await page.getByRole("button", { name: "Done", exact: true }).click();
   }
   await page.getByRole("banner").getByRole("button", { name: "Post", exact: true }).click();
-  await page.waitForURL(/\/p\/[^/]+$/, { timeout: 30_000 });
-  return page.url().split("/p/")[1]!;
+  return waitForPostedId(page, body);
+}
+
+/** Posting now lands on Pulse; wait for the queued item to reconcile. */
+async function waitForPostedId(page: Page, marker: string): Promise<string> {
+  await page.waitForURL(/\/pulse/, { timeout: 30_000 });
+  await expect(page.getByTestId("pending-post")).toHaveCount(0, { timeout: 30_000 });
+  const card = page.locator("article").filter({ hasText: marker }).first();
+  await expect(card).toBeVisible({ timeout: 30_000 });
+  const href = await card.locator('a[href^="/p/"]').first().getAttribute("href");
+  return href!.split("/p/")[1]!.split("#")[0]!;
 }
 
 async function deletePost(page: Page, id: string): Promise<void> {
@@ -75,8 +84,7 @@ test.describe("audiences and the Pulse product", () => {
     await page.getByLabel("Option 1").fill("Library");
     await page.getByLabel("Option 2").fill("Reading room");
     await page.getByRole("banner").getByRole("button", { name: "Post", exact: true }).click();
-    await page.waitForURL(/\/p\/[^/]+$/);
-    const id = page.url().split("/p/")[1]!;
+    const id = await waitForPostedId(page, marker);
 
     await switchUser(page, LEVELMATE);
     await page.goto(`/p/${id}`, { waitUntil: "networkidle" });
@@ -148,6 +156,53 @@ test.describe("audiences and the Pulse product", () => {
       headers: { "x-konnekt-csrf": csrf ?? "" },
     });
     expect(unblock.ok()).toBe(true);
+    await switchUser(page, STUDENT);
+    await deletePost(page, id);
+  });
+});
+
+test.describe("reposts", () => {
+  test("repost, undo, fast double tap, quote and profile/feed rules", async ({ page }) => {
+    test.setTimeout(180_000);
+    const marker = `E2E repost ${Date.now()}`;
+    const quoteMarker = `E2E quote ${Date.now()}`;
+    await login(page, STUDENT);
+    const id = await createPost(page, marker);
+
+    await switchUser(page, LEVELMATE);
+    await page.goto(`/p/${id}`, { waitUntil: "networkidle" });
+    const repost = page.getByRole("button", { name: /^Repost \(0\)$/ });
+    await expect(repost).toBeVisible();
+    await repost.click();
+    await expect(page.getByRole("button", { name: /^Undo repost \(1\)$/ })).toBeVisible();
+    await Promise.all([
+      page.waitForResponse((response) => response.url().includes("/repost") && response.request().method() === "DELETE"),
+      page.getByRole("button", { name: /^Undo repost \(1\)$/ }).click(),
+    ]);
+    await expect(page.getByRole("button", { name: /^Repost \(0\)$/ })).toBeVisible();
+
+    // Two taps while the first request is in flight must still count once.
+    await Promise.all([
+      page.waitForResponse((response) => response.url().includes("/repost") && response.request().method() === "POST"),
+      page.getByRole("button", { name: /^Repost \(0\)$/ }).dblclick(),
+    ]);
+    await expect(page.getByRole("button", { name: /^Undo repost \(1\)$/ })).toBeVisible();
+
+    // A plain repost is profile-only: the original still appears once in Pulse.
+    await page.goto("/profile/aisha_bello", { waitUntil: "networkidle" });
+    await expect(page.getByText(marker).first()).toBeVisible();
+    await expect(page.getByText(/reposted/i).first()).toBeVisible();
+    await page.goto("/pulse", { waitUntil: "networkidle" });
+    await expect(page.getByText(marker)).toHaveCount(1);
+    await page.goto(`/p/${id}`, { waitUntil: "networkidle" });
+
+    await page.getByRole("button", { name: "Post options" }).click();
+    await page.getByRole("menuitem", { name: "Share", exact: true }).click();
+    await page.getByRole("menuitem", { name: "Quote post" }).click();
+    await page.getByLabel("Quote comment").fill(quoteMarker);
+    await page.getByRole("button", { name: "Post quote" }).click();
+    await expect(page.getByText("Quote posted")).toBeVisible({ timeout: 20_000 });
+
     await switchUser(page, STUDENT);
     await deletePost(page, id);
   });

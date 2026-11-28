@@ -31,9 +31,14 @@ export default defineConfig({
   ],
   webServer: {
     command: "npx tsx scripts/e2e-server.ts",
-    url: baseURL,
+    // Probe a tiny route instead of the app shell. Waiting on `/` made the
+    // readiness check compile every shared layout before answering, which can
+    // exceed the timeout on a cold dev server. `/api/health` also proves the
+    // e2e database is migrated before the first browser test starts.
+    url: `${baseURL}/api/health`,
     reuseExistingServer: false,
-    timeout: 120_000,
+    // A cold Next dev compile of the first tested page can take minutes on CI.
+    timeout: 300_000,
     env: {
       ...process.env,
       NODE_ENV: "development",

@@ -151,6 +151,45 @@ describe("audience visibility", () => {
   });
 });
 
+describe("repost audience rules matrix", () => {
+  const cases = [
+    {
+      name: "public stays public",
+      original: { audiencePath: ["PUBLIC"], audienceKind: "PUBLIC" as const },
+      seen: [path(100), path(300), path(400)],
+      unseen: [],
+    },
+    {
+      name: "level stays at the same level",
+      original: { audiencePath: [UNI, COLLEGE, FACULTY, DEPT, "300"], audienceKind: "LEVEL" as const },
+      seen: [path(300)],
+      unseen: [path(200), path(400), path(300, { department: OTHER_DEPT })],
+    },
+    {
+      name: "department never widens to the faculty or campus",
+      original: { audiencePath: [UNI, COLLEGE, FACULTY, DEPT], audienceKind: "DEPARTMENT" as const },
+      seen: [path(300), path(100)],
+      unseen: [path(300, { department: OTHER_DEPT }), path(300, { faculty: OTHER_FACULTY })],
+    },
+  ];
+
+  for (const testCase of cases) {
+    it(testCase.name, () => {
+      const repost = inheritedRepostAudience(testCase.original);
+      expect(repost.audiencePath).toEqual(testCase.original.audiencePath);
+      expect(repost.audienceKind).toBe(testCase.original.audienceKind);
+      for (const viewerPath of testCase.seen) expect(canSeePost(viewerPath, repost)).toBe(true);
+      for (const viewerPath of testCase.unseen) expect(canSeePost(viewerPath, repost)).toBe(false);
+    });
+  }
+
+  it("keeps a community repost out of every academic audience", () => {
+    const repost = inheritedRepostAudience({ audiencePath: [], audienceKind: "COMMUNITY" as const });
+    expect(repost.audienceKind).toBe("COMMUNITY");
+    expect(canSeePost(path(300), repost)).toBe(false);
+  });
+});
+
 describe("block and mute rules", () => {
   it("hides content in both directions when either side blocked", () => {
     const none = { blockedByViewer: new Set<string>(), blockedViewer: new Set<string>() };

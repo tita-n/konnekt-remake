@@ -30,6 +30,8 @@ export const POLICIES = {
   adminMutation: { limit: 120, windowSeconds: 60 },
   dataExport: { limit: 3, windowSeconds: 24 * 60 * 60 },
   postCreate: { limit: 10, windowSeconds: 60 * 60 },
+  repost: { limit: 30, windowSeconds: 60 * 60 },
+  draftSave: { limit: 120, windowSeconds: 60 * 60 },
   commentCreate: { limit: 5, windowSeconds: 60 },
   commentCreateHourly: { limit: 60, windowSeconds: 60 * 60 },
   reaction: { limit: 120, windowSeconds: 60 },

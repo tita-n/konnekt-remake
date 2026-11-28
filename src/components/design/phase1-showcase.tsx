@@ -87,7 +87,7 @@ const DEMO_POSTS: PostView[] = [
     reactionCount: 128,
     repostCount: 32,
     bookmarkCount: 19,
-    viewer: { reacted: true, bookmarked: false, canInteract: true, isMember: false, role: null, muted: false },
+    viewer: { reacted: true, bookmarked: false, reposted: false, canInteract: true, isMember: false, role: null, muted: false },
     isOwner: true,
   },
   {
@@ -120,7 +120,7 @@ const DEMO_POSTS: PostView[] = [
     reactionCount: 42,
     repostCount: 6,
     bookmarkCount: 11,
-    viewer: { reacted: false, bookmarked: true, canInteract: true, isMember: false, role: null, muted: false },
+    viewer: { reacted: false, bookmarked: true, reposted: false, canInteract: true, isMember: false, role: null, muted: false },
     isOwner: false,
   },
   {
@@ -166,7 +166,7 @@ const DEMO_POSTS: PostView[] = [
     reactionCount: 65,
     repostCount: 14,
     bookmarkCount: 8,
-    viewer: { reacted: false, bookmarked: false, canInteract: true, isMember: false, role: null, muted: false },
+    viewer: { reacted: false, bookmarked: false, reposted: false, canInteract: true, isMember: false, role: null, muted: false },
     isOwner: false,
   },
   {
@@ -213,7 +213,7 @@ const DEMO_POSTS: PostView[] = [
     reactionCount: 73,
     repostCount: 17,
     bookmarkCount: 5,
-    viewer: { reacted: true, bookmarked: false, canInteract: true, isMember: false, role: null, muted: false },
+    viewer: { reacted: true, bookmarked: false, reposted: false, canInteract: true, isMember: false, role: null, muted: false },
     isOwner: false,
   },
   {
@@ -246,7 +246,7 @@ const DEMO_POSTS: PostView[] = [
     reactionCount: 0,
     repostCount: 6,
     bookmarkCount: 0,
-    viewer: { reacted: false, bookmarked: false, canInteract: true, isMember: false, role: null, muted: false },
+    viewer: { reacted: false, bookmarked: false, reposted: false, canInteract: true, isMember: false, role: null, muted: false },
     isOwner: false,
   },
 ];
@@ -325,6 +325,9 @@ const DEMO_COMMENTS: CommentView[] = [
 const DEMO_DRAFTS: DraftView[] = [
   {
     id: "draft-1",
+    clientDraftId: "draft-1",
+    contextKey: "post",
+    version: 1,
     type: "POST",
     payload: {
       body: "Here is the breakdown of our final year project sprint milestones and demo schedule for Software Engineering 400L.",
@@ -343,6 +346,9 @@ const DEMO_DRAFTS: DraftView[] = [
   },
   {
     id: "draft-2",
+    clientDraftId: "draft-2",
+    contextKey: "question",
+    version: 1,
     type: "QUESTION",
     payload: {
       questionTitle: "Who is supervising SWE 412 hardware lab presentations?",

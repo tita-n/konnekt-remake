@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { requireStudent } from "@/lib/auth/guards";
-import { composerAudiences, listDrafts } from "@/lib/services/posts";
+import { composerAudiences, getDraftForContext, listDrafts } from "@/lib/services/posts";
 import { listCommunityOptions } from "@/lib/services/communities";
 import { loadSocialViewer } from "@/lib/services/social";
 import { Composer } from "@/components/pulse/composer";
@@ -20,7 +20,9 @@ export default async function ComposePage({
   const params = await searchParams;
   const type = params.type === "question" ? "QUESTION" : params.type === "poll" ? "POLL" : "POST";
   const [draft, communityOptions] = await Promise.all([
-    params.draft ? listDrafts(viewer).then((items) => items.find((item) => item.id === params.draft) ?? null) : Promise.resolve(null),
+    params.draft
+      ? listDrafts(viewer).then((items) => items.find((item) => item.id === params.draft) ?? null)
+      : getDraftForContext(viewer, type.toLowerCase()),
     listCommunityOptions(viewer),
   ]);
 

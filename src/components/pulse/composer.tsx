@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import {
   AtSign,
   BarChart2,
@@ -24,16 +24,80 @@ import {
   X,
 } from "lucide-react";
 import type { DraftView } from "@/lib/posts/types";
-import { ApiError, apiDelete, apiGet, apiPost } from "@/lib/posts/client";
+import { ApiError, apiGet, apiPut } from "@/lib/posts/client";
 import { uploadPostImage, type UploadedPostImage } from "@/lib/client/post-image";
-import { enqueueOutbox } from "@/lib/offline/store";
+import {
+  enqueueOutbox,
+  readLocalDraft,
+  saveLocalDraft,
+  type LocalDraft,
+  type OutboxItem,
+} from "@/lib/offline/store";
 import { Avatar, VerifiedTick } from "@/components/ui/display";
 import { Button } from "@/components/ui/button";
 import { BottomSheet } from "@/components/ui/overlays";
 import { useToast } from "@/components/providers/toast-provider";
 import { cn } from "@/lib/utils";
+import { createDebouncedTask } from "@/lib/client/debounce";
 
 type Mode = "POST" | "QUESTION" | "POLL";
+
+/**
+ * The editor owns its text so a keystroke renders one small component instead
+ * of the whole composer. The parent receives the latest value immediately via
+ * a ref and commits it to state after a short pause for validation and sync.
+ */
+const BodyEditor = memo(function BodyEditor({
+  textareaRef,
+  initial,
+  label,
+  placeholder,
+  rows,
+  className,
+  autoGrow,
+  onChangeRef,
+  onCaret,
+}: {
+  textareaRef: RefObject<HTMLTextAreaElement | null>;
+  initial: string;
+  label: string;
+  placeholder: string;
+  rows: number;
+  className: string;
+  autoGrow?: boolean;
+  onChangeRef: RefObject<(value: string) => void>;
+  onCaret: (value: number) => void;
+}) {
+  const [text, setText] = useState(initial);
+  return (
+    <>
+      <textarea
+        id="post-body"
+        ref={textareaRef}
+        aria-label={label}
+        value={text}
+        onSelect={(event) => onCaret(event.currentTarget.selectionStart)}
+        onChange={(event) => {
+          const next = event.target.value.slice(0, 2000);
+          setText(next);
+          onCaret(event.currentTarget.selectionStart);
+          onChangeRef.current(next);
+          if (autoGrow) {
+            const node = event.currentTarget;
+            node.style.height = "auto";
+            node.style.height = `${Math.min(node.scrollHeight, 380)}px`;
+          }
+        }}
+        rows={rows}
+        placeholder={placeholder}
+        className={className}
+      />
+      <p className={cn("mt-1 text-right text-tiny tabular-nums", text.length > 1900 ? "text-warning" : "text-fg-subtle")}>
+        {text.length} / 2000
+      </p>
+    </>
+  );
+});
 
 interface ComposerViewer {
   id: string;
@@ -74,6 +138,7 @@ export function Composer({
   const [mode, setMode] = useState<Mode>(initialMode);
   const [online, setOnline] = useState(true);
   const [body, setBody] = useState(initialDraft?.payload.body ?? "");
+  const [bodyResetKey, setBodyResetKey] = useState(0);
   const [questionTitle, setQuestionTitle] = useState(initialDraft?.payload.questionTitle ?? "");
   const [topicTag, setTopicTag] = useState(initialDraft?.payload.topicTag ?? "");
   const [editingTopic, setEditingTopic] = useState(!(initialDraft?.payload.topicTag));
@@ -95,8 +160,12 @@ export function Composer({
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [draftId, setDraftId] = useState<string | null>(initialDraft?.id ?? null);
-  const [draftState, setDraftState] = useState<"idle" | "saving" | "saved">(initialDraft ? "saved" : "idle");
+  const [clientDraftId, setClientDraftId] = useState(initialDraft?.clientDraftId ?? crypto.randomUUID());
+  const [draftVersion, setDraftVersion] = useState(initialDraft?.version ?? 0);
+  const [draftState, setDraftState] = useState<"idle" | "saving" | "saved" | "device">(
+    initialDraft ? "saved" : "idle",
+  );
+  const [restoredNotice, setRestoredNotice] = useState(Boolean(initialDraft));
   const [suggestions, setSuggestions] = useState<
     | { kind: "mention"; items: Array<{ username: string; fullName: string; photoUrl: string | null }> }
     | { kind: "hashtag"; items: string[] }
@@ -108,6 +177,80 @@ export function Composer({
   const caret = useRef(0);
   const idempotencyKey = useRef(crypto.randomUUID());
   const audience = audiences.find((option) => option.id === audienceId) ?? audiences[0];
+  const contextKey = audience?.communityId ? `community:${audience.communityId}` : mode.toLowerCase();
+  const draftVersionRef = useRef(draftVersion);
+  const clientDraftIdRef = useRef(clientDraftId);
+  const lastSynced = useRef<string>(initialDraft ? "" : "");
+  const syncing = useRef(false);
+  const latest = useRef({ body: "", mode, payload: {} as Record<string, unknown>, audience: {} as Record<string, unknown> });
+  const blobs = useRef<Blob[]>([]);
+  const restoredLocal = useRef(false);
+  const postingRef = useRef(false);
+  const bodyRef = useRef(initialDraft?.payload.body ?? "");
+  const bodyChangeRef = useRef<(value: string) => void>(() => undefined);
+  const bodyCommit = useRef(createDebouncedTask<string>((value) => setBody(value), 150));
+  const localSaver = useRef(
+    createDebouncedTask<LocalDraft>((draft) => {
+      void saveLocalDraft(draft).then(() => {
+        setDraftState(navigator.onLine ? "saved" : "device");
+      });
+    }, 300),
+  );
+  const hasContent =
+    Boolean(body.trim()) || Boolean(questionTitle.trim()) || media.length > 0 || pollOptions.some((option) => option.trim());
+
+  const draftPayload = useMemo(
+    () => ({
+      body,
+      questionTitle,
+      topicTag,
+      pollOptions,
+      pollDurationDays: pollDays,
+      media,
+    }),
+    [body, questionTitle, topicTag, pollOptions, pollDays, media],
+  );
+  const draftAudience = useMemo(
+    () => ({ id: audience?.id, label: audience?.label, communityId: audience?.communityId }),
+    [audience?.id, audience?.label, audience?.communityId],
+  );
+  latest.current = { body, mode, payload: draftPayload, audience: draftAudience };
+  draftVersionRef.current = draftVersion;
+  clientDraftIdRef.current = clientDraftId;
+  bodyChangeRef.current = (value) => {
+    bodyRef.current = value;
+    bodyCommit.current.schedule(value);
+    const payload = {
+      body: value,
+      questionTitle,
+      topicTag,
+      pollOptions,
+      pollDurationDays: pollDays,
+      media,
+    };
+    latest.current = { body: value, mode, payload, audience: draftAudience };
+    if (value.trim() || questionTitle.trim() || media.length > 0 || pollOptions.some((option) => option.trim())) {
+      localSaver.current.schedule({
+        key: `${viewer.id}:${clientDraftIdRef.current}`,
+        userId: viewer.id,
+        clientDraftId: clientDraftIdRef.current,
+        contextKey,
+        type: mode,
+        version: draftVersionRef.current,
+        clientUpdatedAt: new Date().toISOString(),
+        payload,
+        audience: draftAudience,
+      });
+    }
+  };
+
+  useEffect(
+    () => () => {
+      bodyCommit.current.cancel();
+      localSaver.current.cancel();
+    },
+    [],
+  );
 
   useEffect(() => {
     setOnline(navigator.onLine);
@@ -125,37 +268,135 @@ export function Composer({
     if (mode !== "POLL" && pollOptions.length === 0) setPollOptions(["", ""]);
   }, [mode, pollOptions.length]);
 
+  // Offline fallback: if the server had nothing to restore, use the newest
+  // local snapshot for this composer context. Runs once.
   useEffect(() => {
-    const hasContent =
-      body.trim() || questionTitle.trim() || media.length > 0 || pollOptions.some((option) => option.trim());
+    if (initialDraft || restoredLocal.current) return;
+    restoredLocal.current = true;
+    void readLocalDraft(viewer.id, contextKey).then((local) => {
+      if (!local) return;
+      const fresh = Date.now() - new Date(local.clientUpdatedAt).getTime() < 7 * 24 * 60 * 60 * 1000;
+      if (!fresh || !local.payload) return;
+      setClientDraftId(local.clientDraftId);
+      setDraftVersion(local.version);
+      bodyRef.current = typeof local.payload.body === "string" ? local.payload.body : "";
+      setBody(bodyRef.current);
+      setBodyResetKey((value) => value + 1);
+      setQuestionTitle(typeof local.payload.questionTitle === "string" ? local.payload.questionTitle : "");
+      setPollOptions(Array.isArray(local.payload.pollOptions) ? (local.payload.pollOptions as string[]) : ["", ""]);
+      setMedia(Array.isArray(local.payload.media) ? (local.payload.media as UploadedPostImage[]) : []);
+      setRestoredNotice(true);
+      setDraftState("device");
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Local-first snapshot: 300 ms after typing stops, write to this device only.
+  // This never blocks a keystroke and works offline.
+  useEffect(() => {
     if (!hasContent) return;
+    setDraftState((current) => (current === "device" ? current : "saving"));
+    const saver = localSaver.current;
+    saver.schedule({
+      key: `${viewer.id}:${clientDraftIdRef.current}`,
+      userId: viewer.id,
+      clientDraftId: clientDraftIdRef.current,
+      contextKey,
+      type: mode,
+      version: draftVersionRef.current,
+      clientUpdatedAt: new Date().toISOString(),
+      payload: latest.current.payload,
+      audience: latest.current.audience,
+      ...(blobs.current.length > 0 ? { blobs: blobs.current.slice(0, 4) } : {}),
+    });
+    return () => saver.cancel();
+  }, [body, questionTitle, topicTag, pollOptions, pollDays, media, mode, contextKey, hasContent, viewer.id]);
+
+  // Server sync: 2 s after the last change, only when content changed. Blur,
+  // tab hide and pagehide flush with keepalive.
+  const syncDraft = useRef<(keepalive?: boolean) => Promise<void>>(async () => undefined);
+  const syncDraftNow = async (keepalive = false) => {
+    if (postingRef.current) return;
+    if (!hasContent || syncing.current || !navigator.onLine) {
+      if (!navigator.onLine && hasContent) setDraftState("device");
+      return;
+    }
+    const snapshot = JSON.stringify({ payload: latest.current.payload, audience: latest.current.audience, type: latest.current.mode });
+    if (snapshot === lastSynced.current) return;
+    syncing.current = true;
     setDraftState("saving");
-    const timer = window.setTimeout(async () => {
-      try {
-        const result = await apiPost<{ id: string }>("/api/drafts", {
-          id: draftId ?? undefined,
-          type: mode,
-          payload: {
-            body,
-            questionTitle,
-            topicTag,
-            pollOptions,
-            pollDurationDays: pollDays,
-            media,
-          },
-          audience: { id: audience?.id, label: audience?.label, kind: undefined },
-        });
-        setDraftId(result.id);
+    try {
+      const saved = await apiPut<{ version: number }>(
+        "/api/drafts",
+        {
+          clientDraftId: clientDraftIdRef.current,
+          contextKey,
+          type: latest.current.mode,
+          version: draftVersionRef.current || undefined,
+          clientUpdatedAt: new Date().toISOString(),
+          payload: latest.current.payload,
+          audience: latest.current.audience,
+        },
+        { keepalive },
+      );
+      setDraftVersion(saved.version);
+      draftVersionRef.current = saved.version;
+      lastSynced.current = snapshot;
+      setDraftState("saved");
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409 && err.code === "draft_conflict") {
+        const current = (err.details as { draft?: { version?: number } } | undefined)?.draft;
+        if (current?.version) {
+          setDraftVersion(current.version);
+          draftVersionRef.current = current.version;
+        }
+        lastSynced.current = snapshot;
         setDraftState("saved");
-      } catch {
-        setDraftState("idle");
+      } else if (err instanceof ApiError && err.status === 0) {
+        setDraftState("device");
+      } else {
+        setDraftState("device");
       }
-    }, 1400);
-    return () => window.clearTimeout(timer);
-  }, [body, questionTitle, topicTag, pollOptions, pollDays, media, audienceId, mode, draftId, audience?.id, audience?.label]);
+    } finally {
+      syncing.current = false;
+    }
+  };
+  syncDraft.current = syncDraftNow;
 
   useEffect(() => {
-    const value = body.slice(0, caret.current);
+    if (!hasContent) return;
+    const timer = window.setTimeout(() => void syncDraft.current(false), 2000);
+    return () => window.clearTimeout(timer);
+  }, [body, questionTitle, topicTag, pollOptions, pollDays, media, mode, audienceId, hasContent]);
+
+  useEffect(() => {
+    const flush = () => void syncDraft.current(true);
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    const onBlur = () => flush();
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", flush);
+    window.addEventListener("blur", onBlur);
+    window.addEventListener("online", flush);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", flush);
+      window.removeEventListener("blur", onBlur);
+      window.removeEventListener("online", flush);
+    };
+  }, []);
+
+  // Parsing mentions and hashtags is debounced instead of deferred per
+  // keystroke: one extra render after typing stops, not two on every key.
+  const [parseBody, setParseBody] = useState(body);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setParseBody(body), 400);
+    return () => window.clearTimeout(timer);
+  }, [body]);
+
+  useEffect(() => {
+    const value = parseBody.slice(0, caret.current);
     const match = value.match(/([@#])([\p{L}\p{N}_]*)$/u);
     if (!match) {
       setSuggestions(null);
@@ -187,15 +428,18 @@ export function Composer({
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [body]);
+  }, [parseBody]);
 
   function insert(token: string, replaceLength = 0) {
     const node = textarea.current;
-    const position = node?.selectionStart ?? body.length;
-    const before = body.slice(0, Math.max(0, position - replaceLength));
-    const after = body.slice(position);
-    const next = `${before}${token}${after}`;
-    setBody(next.slice(0, 2000));
+    const current = bodyRef.current;
+    const position = node?.selectionStart ?? current.length;
+    const before = current.slice(0, Math.max(0, position - replaceLength));
+    const after = current.slice(position);
+    const next = `${before}${token}${after}`.slice(0, 2000);
+    bodyRef.current = next;
+    setBody(next);
+    setBodyResetKey((value) => value + 1);
     setSuggestions(null);
     requestAnimationFrame(() => {
       node?.focus();
@@ -206,8 +450,8 @@ export function Composer({
 
   function applySuggestion(value: string) {
     const node = textarea.current;
-    const position = node?.selectionStart ?? body.length;
-    const before = body.slice(0, position);
+    const position = node?.selectionStart ?? bodyRef.current.length;
+    const before = bodyRef.current.slice(0, position);
     const match = before.match(/([@#])([\p{L}\p{N}_]*)$/u);
     if (!match) return;
     const replaceLength = match[0].length;
@@ -224,14 +468,20 @@ export function Composer({
     setUploading(true);
     setError(null);
     const selected = Array.from(files).slice(0, room);
+    // Keep the original blobs locally until the upload succeeds, so an offline
+    // or failed upload can still be restored with the draft.
+    blobs.current = [...blobs.current, ...selected].slice(0, 4);
+    let uploadedCount = 0;
     try {
       for (const file of selected) {
         const uploaded = await uploadPostImage(file);
+        uploadedCount += 1;
         setMedia((current) => [...current, uploaded].slice(0, 4));
       }
     } catch (err) {
       toast({ title: "Couldn't add that image", description: err instanceof Error ? err.message : undefined, variant: "error" });
     } finally {
+      blobs.current = blobs.current.slice(uploadedCount);
       setUploading(false);
       if (fileInput.current) fileInput.current.value = "";
       if (cameraInput.current) cameraInput.current.value = "";
@@ -239,18 +489,19 @@ export function Composer({
   }
 
   function validate(): string | null {
+    const text = bodyRef.current;
     if (mode === "POLL") {
       const options = pollOptions.map((option) => option.trim()).filter(Boolean);
-      if (!body.trim()) return "Ask a poll question first.";
+      if (!text.trim()) return "Ask a poll question first.";
       if (options.length < 2) return "Add at least two options.";
       if (new Set(options.map((option) => option.toLowerCase())).size !== options.length) return "Each option needs to be different.";
     }
     if (mode === "QUESTION") {
       if (questionTitle.trim().length < 8) return "Give your question a clear title (at least 8 characters).";
-      if (!body.trim()) return "Add a little detail so people can help.";
+      if (!text.trim()) return "Add a little detail so people can help.";
     }
-    if (mode === "POST" && !body.trim() && media.length === 0) return "Write something or attach an image.";
-    if (body.length > 2000) return "Posts can be up to 2,000 characters.";
+    if (mode === "POST" && !text.trim() && media.length === 0) return "Write something or attach an image.";
+    if (text.length > 2000) return "Posts can be up to 2,000 characters.";
     return null;
   }
 
@@ -264,7 +515,7 @@ export function Composer({
     setError(null);
     const payload = {
       type: mode,
-      body,
+      body: bodyRef.current,
       audienceId: audience?.communityId ? "" : (audience?.id ?? ""),
       communityId: audience?.communityId,
       questionTitle: mode === "QUESTION" ? questionTitle : undefined,
@@ -273,30 +524,32 @@ export function Composer({
       pollDurationDays: mode === "POLL" ? pollDays : undefined,
       media,
       idempotencyKey: idempotencyKey.current,
+      // Deleted after the server accepts the post, so a failure keeps the draft.
+      _draftClientDraftId: clientDraftIdRef.current,
     };
+    postingRef.current = true;
     try {
-      if (!online) {
-        await enqueueOutbox({
-          id: `${viewer.id}-${idempotencyKey.current}`,
-          userId: viewer.id,
-          createdAt: new Date().toISOString(),
-          attempts: 0,
-          status: "sending",
-          payload,
-        });
-        toast({ title: "Saved to your outbox", description: "It will send when you're back online." });
-        return;
-      }
-      const result = await apiPost<{ id: string; flagged: boolean }>("/api/posts", payload);
-      if (draftId) await apiDelete(`/api/drafts/${draftId}`).catch(() => undefined);
-      toast({ title: mode === "QUESTION" ? "Question posted" : mode === "POLL" ? "Poll posted" : "Post published" });
-      router.push(`/p/${result.id}`);
+      // Posting feels instant: queue the intent (idempotent) and leave at once.
+      // Pulse shows it as Posting…, then reconciles with the server.
+      const item: OutboxItem = {
+        id: `${viewer.id}-${idempotencyKey.current}`,
+        userId: viewer.id,
+        createdAt: new Date().toISOString(),
+        attempts: 0,
+        status: "sending",
+        payload,
+      };
+      await enqueueOutbox(item);
+      toast({
+        title: online ? "Posting…" : "Saved to your outbox",
+        description: online ? "It will appear at the top of Pulse." : "It will send when you're back online.",
+      });
+      // A client-side navigation cannot complete while offline; stay put and
+      // keep the queued confirmation visible. Pulse flushes it on reconnect.
+      if (online) router.push("/pulse");
     } catch (err) {
-      if (err instanceof ApiError && err.status === 0) {
-        setError("You're offline. Try again when you have a connection.");
-      } else {
-        setError(err instanceof Error ? err.message : "Couldn't publish that.");
-      }
+      postingRef.current = false;
+      setError(err instanceof Error ? err.message : "Couldn't queue that post.");
     } finally {
       setSubmitting(false);
     }
@@ -314,7 +567,13 @@ export function Composer({
               {mode === "POST" ? "Post" : mode === "QUESTION" ? "Question" : "Poll"}
             </p>
             {draftState !== "idle" ? (
-              <p className="text-[0.6875rem] text-fg-subtle">{draftState === "saved" ? "Draft saved" : "Saving…"}</p>
+              <p role="status" className="text-[0.6875rem] text-fg-subtle">
+                {draftState === "saving"
+                  ? "Saving…"
+                  : draftState === "device"
+                    ? "Saved on this device"
+                    : "Saved"}
+              </p>
             ) : null}
           </div>
           <Button size="sm" className="rounded-full px-5 font-semibold" onClick={() => void submit()} loading={submitting} loadingLabel="Posting…">
@@ -398,7 +657,8 @@ export function Composer({
                   value={body}
                   onSelect={(event) => { caret.current = event.currentTarget.selectionStart; }}
                   onChange={(event) => {
-                    setBody(event.target.value.slice(0, 2000));
+                    bodyRef.current = event.target.value.slice(0, 2000);
+                    setBody(bodyRef.current);
                     caret.current = event.currentTarget.selectionStart;
                   }}
                   rows={4}
@@ -417,7 +677,10 @@ export function Composer({
                 <input
                   id="post-body"
                   value={body}
-                  onChange={(event) => setBody(event.target.value.slice(0, 500))}
+                  onChange={(event) => {
+                    bodyRef.current = event.target.value.slice(0, 500);
+                    setBody(bodyRef.current);
+                  }}
                   placeholder="Best place to study at night?"
                   className="mt-1.5 h-12 w-full rounded-[12px] border border-border bg-surface px-3.5 text-[0.9375rem] font-medium text-fg placeholder:text-fg-subtle focus:border-accent"
                 />
@@ -503,30 +766,18 @@ export function Composer({
             </div>
           ) : (
             <div className="mt-3">
-              <label htmlFor="post-body" className="sr-only">What&apos;s happening on campus?</label>
-              <textarea
-                id="post-body"
-                ref={textarea}
-                value={body}
-                onSelect={(event) => { caret.current = event.currentTarget.selectionStart; }}
-                onChange={(event) => {
-                  const next = event.target.value.slice(0, 2000);
-                  setBody(next);
-                  caret.current = event.currentTarget.selectionStart;
-                  requestAnimationFrame(() => {
-                    const node = textarea.current;
-                    if (!node) return;
-                    node.style.height = "auto";
-                    node.style.height = `${Math.min(node.scrollHeight, 380)}px`;
-                  });
-                }}
-                rows={5}
+              <BodyEditor
+                key={`editor-${bodyResetKey}`}
+                textareaRef={textarea}
+                initial={body}
+                label="What's happening on campus?"
                 placeholder="What's happening on campus?"
+                rows={5}
+                autoGrow
+                onChangeRef={bodyChangeRef}
+                onCaret={(value) => { caret.current = value; }}
                 className="min-h-36 w-full resize-none border-0 bg-transparent px-0 py-3 text-[1.0625rem] leading-relaxed text-fg placeholder:text-fg-subtle focus:outline-none focus-visible:outline-none"
               />
-              <p className={cn("mt-1 text-right text-tiny tabular-nums", body.length > 1900 ? "text-warning" : "text-fg-subtle")}>
-                {body.length} / 2000
-              </p>
             </div>
           )}
 
@@ -578,6 +829,11 @@ export function Composer({
             </ul>
           ) : null}
 
+          {restoredNotice ? (
+            <p className="mt-3 rounded-card border border-border bg-surface-2 px-3 py-2 text-small text-fg-muted">
+              Picked up where you left off. Your draft is private to you.
+            </p>
+          ) : null}
           {!online ? (
             <p className="mt-3 rounded-card border border-warning/30 bg-warning-soft px-3 py-2 text-small text-warning">
               You&apos;re offline. This post will join your outbox and send when you reconnect.

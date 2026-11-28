@@ -115,3 +115,30 @@ requests inside 60 s, but the three measured journeys still load a viewer-scoped
 department per request, and they do not repeat that tree load within one run.
 The 3-round-trip target is still not met (12 / 25 / 15 queries) and needs the
 shared read model described in DECISIONS.md, which was not built in this pass.
+
+## Composer typing and text-post latency (reposts and drafts)
+
+Measured on 27 November 2026 against the local e2e development server, Chromium
+390 × 844, with the CDP `Emulation.setCPUThrottlingRate` set to **4×**.
+
+### Composer keystroke latency
+
+The first pass rendered the whole composer on every keystroke:
+65 keystrokes averaged **78.0 ms**, p95 **105.2 ms** (max 114 ms). Removing the
+per-keystroke deferred render moved p95 to 86.2 ms, still over target. The editor
+now owns its text in a memoised `BodyEditor`; the parent receives the value
+through a ref immediately and commits state after 150 ms. Mention/hashtag
+parsing is debounced by 400 ms rather than deferred on every key.
+
+| Run | Avg | p95 | Max | Target |
+| --- | --- | --- | --- | --- |
+| Before (deferred render per key) | 78.0 ms | 105.2 ms | 114.0 ms | < 50 ms |
+| After memoised editor + debounced parsing | **16.5 ms** | **19.2 ms** | 31.5 ms | < 50 ms |
+
+### Warm text-post server time
+
+Fourteen warm `POST /api/posts` requests from the same run, after discarding two
+cold dev-compile outliers (791/794 ms): median **113 ms**, p95 **253 ms**, max
+253 ms. This includes the route, idempotency lookup, transaction, hashtag/mention
+sync and draft deletion, and is within the **< 300 ms** target. It is a dev-server
+measurement, not a staging p95; the staging diag numbers remain pending.

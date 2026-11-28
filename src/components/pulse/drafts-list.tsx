@@ -6,6 +6,8 @@ import { MoreHorizontal, Trash2, Users } from "lucide-react";
 import type { DraftView } from "@/lib/posts/types";
 import { apiDelete } from "@/lib/posts/client";
 import { useToast } from "@/components/providers/toast-provider";
+import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/overlays";
 import { EmptyState } from "@/components/ui/feedback";
 import { cn, timeAgo } from "@/lib/utils";
 
@@ -14,8 +16,19 @@ export function DraftsList({ initialDrafts }: { initialDrafts: DraftView[] }) {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [menuId, setMenuId] = useState<string | null>(null);
   const [swipedId, setSwipedId] = useState<string | null>(null);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
   const pointerStartX = useRef<number | null>(null);
   const { toast } = useToast();
+
+  function requestRemove(draft: DraftView) {
+    const text = draft.payload.questionTitle || draft.payload.body || "";
+    const substantial = text.trim().length > 200 || (draft.payload.media?.length ?? 0) > 0;
+    if (substantial) {
+      setConfirmId(draft.id);
+      return;
+    }
+    void remove(draft.id);
+  }
 
   async function remove(id: string) {
     setDeleting(id);
@@ -41,6 +54,7 @@ export function DraftsList({ initialDrafts }: { initialDrafts: DraftView[] }) {
   }
 
   return (
+    <>
     <ul className="space-y-3">
       {drafts.map((draft) => {
         const preview = draft.payload.media?.[0];
@@ -67,7 +81,7 @@ export function DraftsList({ initialDrafts }: { initialDrafts: DraftView[] }) {
               <button
                 type="button"
                 disabled={deleting === draft.id}
-                onClick={() => void remove(draft.id)}
+                onClick={() => requestRemove(draft)}
                 aria-label="Confirm delete draft"
                 className="absolute inset-y-0 right-0 flex w-24 flex-col items-center justify-center gap-1 bg-danger-btn text-xs font-semibold text-white hover:brightness-95 disabled:opacity-60"
               >
@@ -109,7 +123,7 @@ export function DraftsList({ initialDrafts }: { initialDrafts: DraftView[] }) {
                       <button
                         type="button"
                         role="menuitem"
-                        onClick={() => void remove(draft.id)}
+                        onClick={() => requestRemove(draft)}
                         className="block w-full rounded-[9px] px-3 py-2 text-left text-small font-medium text-danger hover:bg-danger-soft"
                       >
                         Delete draft
@@ -143,7 +157,7 @@ export function DraftsList({ initialDrafts }: { initialDrafts: DraftView[] }) {
                     type="button"
                     aria-label="Delete draft"
                     disabled={deleting === draft.id}
-                    onClick={() => void remove(draft.id)}
+                    onClick={() => requestRemove(draft)}
                     className="-mr-2 flex size-10 items-center justify-center rounded-full text-fg-muted hover:bg-danger-soft hover:text-danger disabled:opacity-50"
                   >
                     <Trash2 aria-hidden="true" className="size-4" />
@@ -155,6 +169,35 @@ export function DraftsList({ initialDrafts }: { initialDrafts: DraftView[] }) {
         );
       })}
     </ul>
+      <Dialog
+        open={confirmId !== null}
+        onClose={() => setConfirmId(null)}
+        title="Discard this draft?"
+        description="This draft has a lot in it. Discarding removes it from every device."
+        destructive
+        centered
+        hideClose
+        footer={
+          <>
+            <Button
+              variant="destructive"
+              fullWidth
+              className="rounded-full"
+              onClick={() => {
+                const id = confirmId;
+                setConfirmId(null);
+                if (id) void remove(id);
+              }}
+            >
+              Discard
+            </Button>
+            <Button variant="secondary" fullWidth className="rounded-full" onClick={() => setConfirmId(null)}>
+              Keep draft
+            </Button>
+          </>
+        }
+      />
+    </>
   );
 }
 

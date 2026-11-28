@@ -42,6 +42,8 @@ export async function POST(request: NextRequest) {
       idempotencyKey:
         request.headers.get("idempotency-key")?.slice(0, 120) ||
         (typeof body.idempotencyKey === "string" ? body.idempotencyKey.slice(0, 120) : undefined),
+      draftClientDraftId:
+        typeof body._draftClientDraftId === "string" ? body._draftClientDraftId.slice(0, 80) : undefined,
     });
     return noStore(result, { status: 201 });
   } catch (error) {

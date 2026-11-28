@@ -1,12 +1,18 @@
 import "server-only";
 import { NextResponse } from "next/server";
 import { assertCsrf, getSession } from "@/lib/auth/session";
-import { SocialError } from "@/lib/posts/errors";
+import { DraftConflict, SocialError } from "@/lib/posts/errors";
 import { loadSocialViewer, type SocialViewer } from "@/lib/services/social";
 import { markAuthComplete } from "@/lib/perf/trace";
 import type { SessionUser } from "@/lib/auth/guards";
 
 export function apiError(error: unknown): NextResponse {
+  if (error instanceof DraftConflict) {
+    return NextResponse.json(
+      { error: error.message, code: error.code, draft: error.current },
+      { status: error.status },
+    );
+  }
   if (error instanceof SocialError) {
     return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
   }

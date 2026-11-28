@@ -302,9 +302,13 @@ export async function seedSocialContent(db: PrismaClient, context: SeedContext):
 
   // Reposts.
   const repostData = [];
+  const repostKeys = new Set<string>();
   for (let index = 0; index < 30; index += 1) {
     const original = pick(random, seededPosts.slice(0, 200));
     const author = pick(random, authors);
+    const key = `${author.id}:${original.id}`;
+    if (repostKeys.has(key)) continue;
+    repostKeys.add(key);
     const createdAt = dateWithin(5);
     const id = randomUUID();
     repostData.push({
@@ -312,6 +316,7 @@ export async function seedSocialContent(db: PrismaClient, context: SeedContext):
       universityId: context.universityId,
       authorId: author.id,
       type: "REPOST",
+      repostKind: "PLAIN",
       body: "",
       audiencePath:
         original.kind === "PUBLIC"
@@ -514,6 +519,7 @@ export async function seedSocialContent(db: PrismaClient, context: SeedContext):
       data: {
         universityId: context.universityId,
         userId: demo.id,
+        clientDraftId: randomUUID(),
         type: "POST",
         payload: { body: "Quick summary of the Software Engineering 300L testing seminar notes before Friday's quiz…" },
         audience: { id: `level:${context.nodeIds.get("dept-swe")}:300`, label: "My Level", kind: "LEVEL" },
